@@ -2,19 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { Card, Typography, Button, InputNumber, Select, Row, Col, message } from 'antd'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useAppContext } from '../contexts/AppContext'
+import type { GradientStep } from '../contexts/AppContext'
 import './HPLCGradientPage.css'
 
 const { Title } = Typography
 const { Option } = Select
-
-interface GradientStep {
-  id: string
-  stepNo: number
-  time: number
-  mobilePhaseA: number
-  flowRate: number
-  curve: string
-}
 
 // 曲线类型定义
 const CURVE_TYPES = [

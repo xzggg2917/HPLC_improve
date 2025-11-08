@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Layout, Menu, Typography, message } from 'antd'
+import { Layout, Menu, Typography, message, Modal } from 'antd'
 import {
   FileOutlined,
   DatabaseOutlined,
   LineChartOutlined,
   InfoCircleOutlined,
+  SaveOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import HomePage from './pages/HomePage'
@@ -16,21 +18,67 @@ import TablePage from './pages/TablePage'
 import AboutPage from './pages/AboutPage'
 import HPLCGradientPage from './pages/HPLCGradientPage'
 import VineBorder from './components/VineBorder'
+import { AppProvider, useAppContext } from './contexts/AppContext'
 import './App.css'
 
 const { Header, Content, Footer, Sider } = Layout
 const { Title } = Typography
+const { confirm } = Modal
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const location = useLocation()
-  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null)
+  const {
+    fileHandle,
+    setFileHandle,
+    currentFilePath,
+    setCurrentFilePath,
+    isDirty,
+    setIsDirty,
+    exportData,
+    setAllData
+  } = useAppContext()
+
+  // 添加关闭前保存提示
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
 
   // 创建新文件
   const handleNewFile = async () => {
+    if (isDirty) {
+      confirm({
+        title: '未保存的更改',
+        icon: <ExclamationCircleOutlined />,
+        content: '当前有未保存的更改，是否先保存？',
+        okText: '保存',
+        cancelText: '不保存',
+        onOk: async () => {
+          await handleSaveFile()
+          await createNewFile()
+        },
+        onCancel: async () => {
+          await createNewFile()
+        }
+      })
+    } else {
+      await createNewFile()
+    }
+  }
+
+  const createNewFile = async () => {
     try {
-      // 使用 File System Access API
+      // 弹出另存为对话框让用户命名新文件
       const handle = await (window as any).showSaveFilePicker({
-        suggestedName: 'hplc_analysis.json',
+        suggestedName: 'new_analysis.json',
         types: [
           {
             description: 'JSON Files',
@@ -39,21 +87,37 @@ const App: React.FC = () => {
         ],
       })
       
-      const writable = await handle.createWritable()
-      const initialData = {
+      // 创建空数据结构
+      const emptyData = {
         version: '1.0.0',
-        created_at: new Date().toISOString(),
-        analyses: [],
-        settings: {}
+        lastModified: new Date().toISOString(),
+        methods: {
+          sampleCount: null,
+          preTreatmentReagents: [{ id: Date.now().toString(), name: '', volume: 0 }],
+          mobilePhaseA: [{ id: Date.now().toString() + '1', name: '', percentage: 0 }],
+          mobilePhaseB: [{ id: Date.now().toString() + '2', name: '', percentage: 0 }]
+        },
+        factors: [],
+        gradient: []
       }
-      await writable.write(JSON.stringify(initialData, null, 2))
+      
+      // 将空数据写入新文件
+      const writable = await handle.createWritable()
+      await writable.write(JSON.stringify(emptyData, null, 2))
       await writable.close()
       
+      // 设置新文件为当前文件
+      setFileHandle(handle)
       setCurrentFilePath(handle.name)
+      
+      // 清空当前数据
+      setAllData(emptyData)
+      setIsDirty(false)
+      
       message.success(`新文件已创建: ${handle.name}`)
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        message.error('创建文件失败')
+        message.error('创建新文件失败')
         console.error(error)
       }
     }
@@ -61,6 +125,27 @@ const App: React.FC = () => {
 
   // 打开文件
   const handleOpenFile = async () => {
+    if (isDirty) {
+      confirm({
+        title: '未保存的更改',
+        icon: <ExclamationCircleOutlined />,
+        content: '当前有未保存的更改，是否先保存？',
+        okText: '保存',
+        cancelText: '不保存',
+        onOk: async () => {
+          await handleSaveFile()
+          openFile()
+        },
+        onCancel: () => {
+          openFile()
+        }
+      })
+    } else {
+      openFile()
+    }
+  }
+
+  const openFile = async () => {
     try {
       const [handle] = await (window as any).showOpenFilePicker({
         types: [
@@ -74,20 +159,23 @@ const App: React.FC = () => {
       
       const file = await handle.getFile()
       const content = await file.text()
-      const data = JSON.parse(content)
+      const loadedData = JSON.parse(content)
       
-      // 将数据同步到系统中（这里可以根据需要存储到状态管理或localStorage）
-      localStorage.setItem('hplc_current_file', JSON.stringify(data))
-      localStorage.setItem('hplc_file_handle', handle.name)
+      // 验证数据格式
+      if (!loadedData.version || !loadedData.methods) {
+        throw new Error('文件格式不正确')
+      }
       
+      // 加载数据到Context
+      setAllData(loadedData)
+      setFileHandle(handle)
       setCurrentFilePath(handle.name)
-      message.success(`文件已打开: ${handle.name}`)
+      setIsDirty(false)
       
-      // 可以在这里触发数据加载到各个页面
-      window.dispatchEvent(new CustomEvent('fileLoaded', { detail: data }))
+      message.success(`文件已打开: ${handle.name}`)
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        message.error('打开文件失败')
+        message.error('打开文件失败: ' + error.message)
         console.error(error)
       }
     }
@@ -96,14 +184,10 @@ const App: React.FC = () => {
   // 保存文件
   const handleSaveFile = async () => {
     try {
-      // 获取当前系统中的数据
-      const currentData = localStorage.getItem('hplc_current_file')
-      if (!currentData) {
-        message.warning('没有可保存的数据')
-        return
-      }
+      const dataToSave = exportData()
+      const jsonContent = JSON.stringify(dataToSave, null, 2)
 
-      if (!currentFilePath) {
+      if (!fileHandle) {
         // 第一次保存，另存为
         const handle = await (window as any).showSaveFilePicker({
           suggestedName: 'hplc_analysis.json',
@@ -116,35 +200,57 @@ const App: React.FC = () => {
         })
         
         const writable = await handle.createWritable()
-        await writable.write(currentData)
+        await writable.write(jsonContent)
         await writable.close()
         
+        setFileHandle(handle)
         setCurrentFilePath(handle.name)
+        setIsDirty(false)
         message.success(`文件已保存: ${handle.name}`)
       } else {
         // 直接保存到原文件
-        // 注意：直接保存需要保持文件句柄，这里简化处理
-        message.info('正在保存文件...')
-        // 实际应用中需要保持文件句柄的引用
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: currentFilePath,
-          types: [
-            {
-              description: 'JSON Files',
-              accept: { 'application/json': ['.json'] },
-            },
-          ],
-        })
-        
-        const writable = await handle.createWritable()
-        await writable.write(currentData)
+        const writable = await fileHandle.createWritable()
+        await writable.write(jsonContent)
         await writable.close()
         
+        setIsDirty(false)
         message.success('文件已保存')
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         message.error('保存文件失败')
+        console.error(error)
+      }
+    }
+  }
+
+  // 另存为
+  const handleSaveAs = async () => {
+    try {
+      const dataToSave = exportData()
+      const jsonContent = JSON.stringify(dataToSave, null, 2)
+
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: currentFilePath || 'hplc_analysis.json',
+        types: [
+          {
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] },
+          },
+        ],
+      })
+      
+      const writable = await handle.createWritable()
+      await writable.write(jsonContent)
+      await writable.close()
+      
+      setFileHandle(handle)
+      setCurrentFilePath(handle.name)
+      setIsDirty(false)
+      message.success(`文件已另存为: ${handle.name}`)
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        message.error('另存为失败')
         console.error(error)
       }
     }
@@ -169,7 +275,13 @@ const App: React.FC = () => {
         {
           key: 'save-file',
           label: 'Save File',
+          icon: isDirty ? <SaveOutlined style={{ color: '#ff4d4f' }} /> : <SaveOutlined />,
           onClick: handleSaveFile,
+        },
+        {
+          key: 'save-as',
+          label: 'Save As...',
+          onClick: handleSaveAs,
         },
       ],
     },
@@ -244,11 +356,18 @@ const App: React.FC = () => {
           <Title level={3} style={{ padding: '0 24px', margin: 0 }}>
             HPLC绿色化学分析系统
           </Title>
-          {currentFilePath && (
-            <span style={{ padding: '0 24px', color: '#666' }}>
-              当前文件: {currentFilePath}
-            </span>
-          )}
+          <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {isDirty && (
+              <span style={{ color: '#ff4d4f', fontSize: '12px' }}>
+                <SaveOutlined /> 未保存
+              </span>
+            )}
+            {currentFilePath && (
+              <span style={{ color: '#666' }}>
+                当前文件: {currentFilePath}
+              </span>
+            )}
+          </div>
         </Header>
         <Content style={{ margin: '24px 16px 0', overflow: 'initial' }}>
           <VineBorder>
@@ -270,6 +389,15 @@ const App: React.FC = () => {
         </Footer>
       </Layout>
     </Layout>
+  )
+}
+
+// 主App组件，包装AppProvider
+const App: React.FC = () => {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   )
 }
 

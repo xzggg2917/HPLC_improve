@@ -3,70 +3,23 @@ import { Card, Typography, InputNumber, Select, Button, Row, Col, message } from
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useAppContext } from '../contexts/AppContext'
+import type { Reagent, PreTreatmentReagent, ReagentFactor } from '../contexts/AppContext'
 import './MethodsPage.css'
 
 const { Title } = Typography
 const { Option } = Select
 
-interface Reagent {
-  id: string
-  name: string
-  percentage: number
-}
-
-interface PreTreatmentReagent {
-  id: string
-  name: string
-  volume: number  // 体积(ml)
-}
-
-interface ReagentFactor {
-  id: string
-  name: string
-  density: number
-  safetyScore: number
-  healthScore: number
-  envScore: number
-  recycleScore: number
-  disposal: number
-  power: number
-}
-
 const MethodsPage: React.FC = () => {
   const navigate = useNavigate()
+  const { data, updateMethodsData, setIsDirty } = useAppContext()
   
-  // 从 localStorage 加载初始数据
-  const loadInitialData = () => {
-    try {
-      const savedRawData = localStorage.getItem('hplc_methods_raw')
-      if (savedRawData) {
-        const data = JSON.parse(savedRawData)
-        return {
-          sampleCount: data.sampleCount || null,
-          preTreatmentReagents: data.preTreatmentReagents || [{ id: Date.now().toString(), name: '', volume: 0 }],
-          mobilePhaseA: data.mobilePhaseA || [{ id: Date.now().toString() + '1', name: '', percentage: 0 }],
-          mobilePhaseB: data.mobilePhaseB || [{ id: Date.now().toString() + '2', name: '', percentage: 0 }]
-        }
-      }
-    } catch (error) {
-      console.error('加载数据失败:', error)
-    }
-    // 返回默认数据
-    return {
-      sampleCount: null,
-      preTreatmentReagents: [{ id: Date.now().toString(), name: '', volume: 0 }],
-      mobilePhaseA: [{ id: Date.now().toString() + '1', name: '', percentage: 0 }],
-      mobilePhaseB: [{ id: Date.now().toString() + '2', name: '', percentage: 0 }]
-    }
-  }
-
-  const initialData = loadInitialData()
-  
-  const [sampleCount, setSampleCount] = useState<number | null>(initialData.sampleCount)
+  // 使用Context中的数据初始化本地状态
+  const [sampleCount, setSampleCount] = useState<number | null>(data.methods.sampleCount)
   const [sampleCountError, setSampleCountError] = useState<string>('')
-  const [preTreatmentReagents, setPreTreatmentReagents] = useState<PreTreatmentReagent[]>(initialData.preTreatmentReagents)
-  const [mobilePhaseA, setMobilePhaseA] = useState<Reagent[]>(initialData.mobilePhaseA)
-  const [mobilePhaseB, setMobilePhaseB] = useState<Reagent[]>(initialData.mobilePhaseB)
+  const [preTreatmentReagents, setPreTreatmentReagents] = useState<PreTreatmentReagent[]>(data.methods.preTreatmentReagents)
+  const [mobilePhaseA, setMobilePhaseA] = useState<Reagent[]>(data.methods.mobilePhaseA)
+  const [mobilePhaseB, setMobilePhaseB] = useState<Reagent[]>(data.methods.mobilePhaseB)
 
   // 从 Factors 页面加载试剂列表
   const [availableReagents, setAvailableReagents] = useState<string[]>([])
@@ -132,7 +85,18 @@ const MethodsPage: React.FC = () => {
     }
   }, [])
 
-  // 自动保存数据到 localStorage (每次状态变化时)
+  // 监听Context数据变化，更新本地状态
+  useEffect(() => {
+    setSampleCount(data.methods.sampleCount)
+    setPreTreatmentReagents(data.methods.preTreatmentReagents)
+    setMobilePhaseA(data.methods.mobilePhaseA)
+    setMobilePhaseB(data.methods.mobilePhaseB)
+  }, [data.methods])
+
+  // 自动保存数据到 Context 和 localStorage (每次状态变化时)
+  // 使用 ref 来避免初始化时触发 dirty
+  const isInitialMount = React.useRef(true)
+  
   useEffect(() => {
     const dataToSave = {
       sampleCount,
@@ -140,8 +104,20 @@ const MethodsPage: React.FC = () => {
       mobilePhaseA,
       mobilePhaseB
     }
+    
+    // 保存到 localStorage
     localStorage.setItem('hplc_methods_raw', JSON.stringify(dataToSave))
-  }, [sampleCount, preTreatmentReagents, mobilePhaseA, mobilePhaseB])
+    
+    // 跳过初始挂载时的更新
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    
+    // 同步到Context并标记为脏数据
+    updateMethodsData(dataToSave)
+    setIsDirty(true)
+  }, [sampleCount, preTreatmentReagents, mobilePhaseA, mobilePhaseB, updateMethodsData, setIsDirty])
 
   // 处理样品数变化
   const handleSampleCountChange = (value: number | null) => {

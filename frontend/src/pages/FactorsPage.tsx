@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Typography, Button, InputNumber, Input, message, Row, Col } from 'antd'
 import { PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons'
+import { useAppContext } from '../contexts/AppContext'
+import type { ReagentFactor } from '../contexts/AppContext'
 import './FactorsPage.css'
 
 const { Title } = Typography
-
-interface ReagentFactor {
-  id: string
-  name: string           // 试剂名称
-  density: number        // 密度 ρ (g/mL)
-  safetyScore: number    // 安全性评分 S
-  healthScore: number    // 健康危害评分 H
-  envScore: number       // 环境影响评分 E
-  recycleScore: number   // 可回收性评分 R
-  disposal: number       // 处置难度 D
-  power: number          // 耗能 P
-}
 
 // 预定义的试剂数据(基于您提供的表格)
 const PREDEFINED_REAGENTS: ReagentFactor[] = [
@@ -36,27 +26,41 @@ const PREDEFINED_REAGENTS: ReagentFactor[] = [
 ]
 
 const FactorsPage: React.FC = () => {
-  // 从 localStorage 加载初始数据
-  const loadInitialData = (): ReagentFactor[] => {
-    try {
-      const savedData = localStorage.getItem('hplc_factors_data')
-      if (savedData) {
-        return JSON.parse(savedData)
-      }
-    } catch (error) {
-      console.error('加载因子数据失败:', error)
-    }
-    // 返回预定义数据
-    return [...PREDEFINED_REAGENTS]
-  }
-
-  const [reagents, setReagents] = useState<ReagentFactor[]>(loadInitialData())
+  const { data, updateFactorsData, setIsDirty } = useAppContext()
+  
+  // 使用Context中的数据初始化
+  const [reagents, setReagents] = useState<ReagentFactor[]>(() => {
+    // 如果Context中有数据就使用，否则使用预定义数据
+    return data.factors.length > 0 ? data.factors : [...PREDEFINED_REAGENTS]
+  })
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
-  // 自动保存数据到 localStorage
+  // 监听Context数据变化
+  useEffect(() => {
+    if (data.factors.length === 0) {
+      // 新文件创建时，factors为空，重置为预定义数据
+      setReagents([...PREDEFINED_REAGENTS])
+    } else {
+      setReagents(data.factors)
+    }
+  }, [data.factors])
+
+  // 自动保存数据到 Context 和 localStorage
+  // 使用 ref 来避免初始化时触发 dirty
+  const isInitialMount = React.useRef(true)
+  
   useEffect(() => {
     localStorage.setItem('hplc_factors_data', JSON.stringify(reagents))
-  }, [reagents])
+    
+    // 跳过初始挂载时的更新
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    
+    updateFactorsData(reagents)
+    setIsDirty(true)
+  }, [reagents, updateFactorsData, setIsDirty])
 
   // 添加新试剂
   const addReagent = () => {
