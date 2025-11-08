@@ -38,6 +38,34 @@ const GraphPage: React.FC = () => {
     }
   }, [])
 
+  // 自定义雷达图标签渲染函数
+  const renderCustomTick = (props: any) => {
+    const { x, y, payload, index } = props
+    const positions = [
+      { dx: 0, dy: -25 },      // 安全性 (S) - 上方，远离数值
+      { dx: 30, dy: -10 },     // 健康危害 (H) - 右上
+      { dx: 35, dy: 10 },      // 环境影响 (E) - 右下  
+      { dx: 0, dy: 18 },       // 可回收性 (R) - 下方，往上提避开图例
+      { dx: -35, dy: 10 },     // 处置难度 (D) - 左下
+      { dx: -30, dy: -10 }     // 耗能 (P) - 左上
+    ]
+    
+    const pos = positions[index] || { dx: 0, dy: 0 }
+    
+    return (
+      <text
+        x={x + pos.dx}
+        y={y + pos.dy}
+        textAnchor="middle"
+        fill="#666"
+        fontSize={15}
+        fontWeight="500"
+      >
+        {payload.value}
+      </text>
+    )
+  }
+
   const calculateTotalScores = () => {
     try {
       // 加载数据
@@ -184,10 +212,13 @@ const GraphPage: React.FC = () => {
         />
       ) : (
         <Card>
-          <ResponsiveContainer width="100%" height={500}>
-            <RadarChart data={radarData}>
+          <ResponsiveContainer width="100%" height={650}>
+            <RadarChart data={radarData} margin={{ top: 80, right: 180, bottom: 100, left: 180 }}>
               <PolarGrid />
-              <PolarAngleAxis dataKey="subject" />
+              <PolarAngleAxis 
+                dataKey="subject" 
+                tick={renderCustomTick}
+              />
               <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
               <Radar
                 name="综合得分"
@@ -196,7 +227,7 @@ const GraphPage: React.FC = () => {
                 fill="#8884d8"
                 fillOpacity={0.6}
               />
-              <Legend />
+              <Legend wrapperStyle={{ paddingTop: 20 }} />
               <Tooltip />
             </RadarChart>
           </ResponsiveContainer>

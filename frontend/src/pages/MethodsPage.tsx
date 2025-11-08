@@ -709,7 +709,7 @@ const MethodsPage: React.FC = () => {
                           {/* X轴标签 - 和图表一起滚动 */}
                           <div style={{ 
                             display: 'flex',
-                            height: 60,
+                            height: 70,
                             alignItems: 'flex-start',
                             paddingTop: 8,
                             borderTop: '1px solid #e0e0e0'
@@ -720,9 +720,9 @@ const MethodsPage: React.FC = () => {
                                 style={{
                                   width: needsScroll ? 200 : `${100 / chartData.length}%`,
                                   textAlign: 'center',
-                                  fontSize: 10,
+                                  fontSize: 13,
                                   color: '#666',
-                                  transform: 'rotate(-45deg)',
+                                  transform: 'rotate(-30deg)',
                                   transformOrigin: 'center top',
                                   whiteSpace: 'nowrap',
                                   marginTop: 20
@@ -891,7 +891,7 @@ const MethodsPage: React.FC = () => {
                           {/* X轴标签 - 和图表一起滚动 */}
                           <div style={{ 
                             display: 'flex',
-                            height: 60,
+                            height: 70,
                             alignItems: 'flex-start',
                             paddingTop: 8,
                             borderTop: '1px solid #e0e0e0'
@@ -902,9 +902,9 @@ const MethodsPage: React.FC = () => {
                                 style={{
                                   width: needsScroll ? 200 : `${100 / chartData.length}%`,
                                   textAlign: 'center',
-                                  fontSize: 10,
+                                  fontSize: 13,
                                   color: '#666',
-                                  transform: 'rotate(-45deg)',
+                                  transform: 'rotate(-30deg)',
                                   transformOrigin: 'center top',
                                   whiteSpace: 'nowrap',
                                   marginTop: 20
@@ -1073,7 +1073,7 @@ const MethodsPage: React.FC = () => {
                           {/* X轴标签 - 和图表一起滚动 */}
                           <div style={{ 
                             display: 'flex',
-                            height: 60,
+                            height: 70,
                             alignItems: 'flex-start',
                             paddingTop: 8,
                             borderTop: '1px solid #e0e0e0'
@@ -1084,9 +1084,9 @@ const MethodsPage: React.FC = () => {
                                 style={{
                                   width: needsScroll ? 200 : `${100 / chartData.length}%`,
                                   textAlign: 'center',
-                                  fontSize: 10,
+                                  fontSize: 13,
                                   color: '#666',
-                                  transform: 'rotate(-45deg)',
+                                  transform: 'rotate(-30deg)',
                                   transformOrigin: 'center top',
                                   whiteSpace: 'nowrap',
                                   marginTop: 20
