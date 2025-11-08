@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试 HPLC Gradient 数据</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { margin: 10px; padding: 10px; font-size: 14px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>HPLC Gradient 数据测试工具</h1>
+    
+    <button onclick="checkData()">检查 localStorage 数据</button>
+    <button onclick="triggerEvent()">触发 gradientDataUpdated 事件</button>
+    <button onclick="clearData()">清空 Gradient 数据</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function checkData() {
+            const output = document.getElementById('output');
+            let html = '<h2>数据检查结果:</h2>';
+            
+            // 检查 Gradient 数据
+            const gradientData = localStorage.getItem('hplc_gradient_data');
+            if (gradientData) {
+                try {
+                    const parsed = JSON.parse(gradientData);
+                    html += '<h3 class="success">✅ Gradient 数据存在</h3>';
+                    html += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                } catch (e) {
+                    html += '<h3 class="error">❌ Gradient 数据格式错误</h3>';
+                    html += '<p>' + e.message + '</p>';
+                }
+            } else {
+                html += '<h3 class="error">❌ Gradient 数据不存在</h3>';
+            }
+            
+            // 检查 Methods 数据
+            const methodsData = localStorage.getItem('hplc_methods_raw');
+            if (methodsData) {
+                try {
+                    const parsed = JSON.parse(methodsData);
+                    html += '<h3 class="success">✅ Methods 数据存在</h3>';
+                    html += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                } catch (e) {
+                    html += '<h3 class="error">❌ Methods 数据格式错误</h3>';
+                }
+            } else {
+                html += '<h3 class="error">❌ Methods 数据不存在</h3>';
+            }
+            
+            // 检查 Factors 数据
+            const factorsData = localStorage.getItem('hplc_factors_data');
+            if (factorsData) {
+                try {
+                    const parsed = JSON.parse(factorsData);
+                    html += '<h3 class="success">✅ Factors 数据存在 (' + parsed.length + ' 个试剂)</h3>';
+                    html += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                } catch (e) {
+                    html += '<h3 class="error">❌ Factors 数据格式错误</h3>';
+                }
+            } else {
+                html += '<h3 class="error">❌ Factors 数据不存在</h3>';
+            }
+            
+            output.innerHTML = html;
+        }
+        
+        function triggerEvent() {
+            console.log('🔔 手动触发 gradientDataUpdated 事件');
+            window.dispatchEvent(new Event('gradientDataUpdated'));
+            alert('已触发 gradientDataUpdated 事件，请查看浏览器控制台');
+        }
+        
+        function clearData() {
+            if (confirm('确定要清空 Gradient 数据吗？')) {
+                localStorage.removeItem('hplc_gradient_data');
+                alert('Gradient 数据已清空');
+                checkData();
+            }
+        }
+        
+        // 监听事件
+        window.addEventListener('gradientDataUpdated', () => {
+            console.log('✅ 收到 gradientDataUpdated 事件');
+        });
+        
+        // 自动检查数据
+        checkData();
+    </script>
+</body>
+</html>

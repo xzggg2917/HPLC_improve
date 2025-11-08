@@ -1,0 +1,192 @@
+.methods-page {
+  padding: 20px;
+}
+
+.phase-card {
+  position: relative;
+  min-height: 500px;
+}
+
+.reagent-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.chart-placeholder {
+  margin-top: 20px;
+  padding: 16px;
+}
+
+/* 藤蔓分隔线样式 */
+.vine-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="100%" viewBox="0 0 60 800"><defs><pattern id="vine" x="0" y="0" width="60" height="100" patternUnits="userSpaceOnUse"><path d="M30,10 Q25,15 30,20 Q35,25 30,30 M30,20 L20,25 M30,20 L40,25 M30,30 Q25,35 30,40 Q35,45 30,50 M30,40 L20,45 M30,40 L40,45 M30,50 Q25,55 30,60 Q35,65 30,70 M30,60 L20,65 M30,60 L40,65 M30,70 Q25,75 30,80 Q35,85 30,90 M30,80 L20,85 M30,80 L40,85" fill="none" stroke="%2393b899" stroke-width="2" stroke-linecap="round"/></pattern></defs><rect width="60" height="100%" fill="url(%23vine)"/></svg>');
+  background-repeat: repeat-y;
+  background-size: contain;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.vine-left {
+  right: -30px;
+}
+
+.vine-middle {
+  right: -30px;
+}
+
+.vine-right {
+  left: -30px;
+  display: none; /* 最后一个不需要右边的藤蔓 */
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .vine-divider {
+    display: none;
+  }
+}
+
+/* 图表滚动区域样式 */
+.chart-placeholder > div > div:first-child {
+  scrollbar-width: thin;
+  scrollbar-color: #93b899 #f0f0f0;
+}
+
+.chart-placeholder > div > div:first-child::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-placeholder > div > div:first-child::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.chart-placeholder > div > div:first-child::-webkit-scrollbar-thumb {
+  background: #93b899;
+  border-radius: 4px;
+}
+
+.chart-placeholder > div > div:first-child::-webkit-scrollbar-thumb:hover {
+  background: #7a9d7f;
+}
+
+/* Y轴控制滑块样式 */
+.y-axis-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.y-axis-control span {
+  font-size: 12px;
+  color: #2c3e50;
+  font-weight: 500;
+  min-width: 110px;
+}
+
+.y-axis-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #e0e0e0 0%, #93b899 100%);
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.y-axis-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+}
+
+.y-axis-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+}
+
+.y-axis-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+}
+
+.y-axis-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+}
+
+.y-axis-reset-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.y-axis-reset-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.y-axis-reset-btn:active {
+  transform: translateY(0);
+}
+
+/* 图表容器布局 */
+.chart-container {
+  position: relative;
+}
+
+.chart-scroll-area {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #93b899 #f0f0f0;
+}
+
+.chart-scroll-area::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-scroll-area::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.chart-scroll-area::-webkit-scrollbar-thumb {
+  background: #93b899;
+  border-radius: 4px;
+}
+
+.chart-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #7a9d7f;
+}
+

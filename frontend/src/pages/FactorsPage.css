@@ -1,0 +1,86 @@
+.factors-page {
+  padding: 20px;
+}
+
+.factors-table-container {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.factors-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.factors-table th,
+.factors-table td {
+  border: 1px solid #d9d9d9;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.factors-table th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.factors-table td {
+  background-color: #fff;
+}
+
+.factors-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* 表格输入框样式 */
+.factors-table .ant-input,
+.factors-table .ant-input-number {
+  border: 1px solid #d9d9d9;
+}
+
+.factors-table .ant-input:hover,
+.factors-table .ant-input-number:hover {
+  border-color: #40a9ff;
+}
+
+.factors-table .ant-input:focus,
+.factors-table .ant-input-number:focus,
+.factors-table .ant-input-number-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Name 列宽度 */
+.factors-table th:first-child,
+.factors-table td:first-child {
+  min-width: 150px;
+  text-align: left;
+  padding-left: 16px;
+}
+
+/* 数值列宽度 */
+.factors-table th:not(:first-child),
+.factors-table td:not(:first-child) {
+  min-width: 100px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .factors-table {
+    font-size: 12px;
+  }
+  
+  .factors-table th,
+  .factors-table td {
+    padding: 8px 4px;
+  }
+  
+  .factors-table th:first-child,
+  .factors-table td:first-child {
+    min-width: 120px;
+  }
+}
