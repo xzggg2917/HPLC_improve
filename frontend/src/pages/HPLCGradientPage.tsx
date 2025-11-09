@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card, Typography, Button, InputNumber, Select, Row, Col, message } from 'antd'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -252,8 +252,7 @@ const HPLCGradientPage: React.FC = () => {
   }
 
   // 计算每个组分的体积
-  const calculateComponentVolumes = () => {
-    const chartData = generateChartData()
+  const calculateComponentVolumes = (chartData: any[]) => {
     if (chartData.length === 0 || gradientSteps.length === 0) return null
 
     console.log(`🔍 开始计算体积，共 ${gradientSteps.length} 个步骤`)
@@ -444,10 +443,8 @@ const HPLCGradientPage: React.FC = () => {
       }
     }
 
-    const chartData = generateChartData()
-    
-    // 计算所有组分体积
-    const componentVolumes = calculateComponentVolumes()
+    // chartData 已由 useMemo 在组件作用域中定义
+    const componentVolumes = calculateComponentVolumes(chartData)
 
     const gradientData = {
       // 基础步骤数据
@@ -502,7 +499,8 @@ const HPLCGradientPage: React.FC = () => {
     message.success('梯度程序已保存，所有计算数据已准备完成')
   }
 
-  const chartData = generateChartData()
+  // 使用 useMemo 确保 curve 改变时图表会更新
+  const chartData = useMemo(() => generateChartData(), [gradientSteps])
 
   return (
     <div className="hplc-gradient-page">
@@ -622,13 +620,14 @@ const HPLCGradientPage: React.FC = () => {
               dot={false}
               strokeWidth={2}
             />
-            <Line 
+            {/* B曲线已隐藏，不再展示给用户 */}
+            {/* <Line 
               type="monotone" 
               dataKey="Mobile Phase B (%)" 
               stroke="#52c41a" 
               dot={false}
               strokeWidth={2}
-            />
+            /> */}
           </LineChart>
         </ResponsiveContainer>
       </Card>
