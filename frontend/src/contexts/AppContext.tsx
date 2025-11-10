@@ -182,16 +182,87 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }
 
   const setAllData = (newData: AppData) => {
-    setData(newData)
+    console.log('📂 setAllData 被调用')
+    console.log('  - methods.mobilePhaseA:', newData.methods.mobilePhaseA)
+    console.log('  - methods.mobilePhaseB:', newData.methods.mobilePhaseB)
+    console.log('  - gradient类型:', Array.isArray(newData.gradient) ? '数组' : '对象')
+    
+    // 如果是对象，打印其结构
+    if (newData.gradient && typeof newData.gradient === 'object' && !Array.isArray(newData.gradient)) {
+      console.log('  - gradient对象键:', Object.keys(newData.gradient))
+      console.log('  - 是否有calculations:', 'calculations' in newData.gradient)
+      if ('calculations' in newData.gradient) {
+        const calcs = (newData.gradient as any).calculations
+        console.log('  - calculations.mobilePhaseA:', calcs?.mobilePhaseA?.components?.length, '个组分')
+        console.log('  - calculations.mobilePhaseB:', calcs?.mobilePhaseB?.components?.length, '个组分')
+      }
+    }
+    
+    // 处理gradient数据：如果是完整计算结果对象，只提取steps数组
+    let gradientSteps: GradientStep[] = []
+    if (Array.isArray(newData.gradient)) {
+      gradientSteps = newData.gradient
+      console.log('  - gradient是数组，包含', gradientSteps.length, '个步骤')
+    } else if (newData.gradient && typeof newData.gradient === 'object' && 'steps' in newData.gradient) {
+      // 如果gradient是包含steps的对象（旧文件格式），提取steps数组
+      gradientSteps = (newData.gradient as any).steps || []
+      console.log('  - 从gradient对象中提取了', gradientSteps.length, '个steps')
+    }
+    
+    const processedData = {
+      ...newData,
+      gradient: gradientSteps
+    }
+    
+    setData(processedData)
+    
     // 同步到localStorage
     localStorage.setItem('hplc_methods_raw', JSON.stringify(newData.methods))
     localStorage.setItem('hplc_factors_data', JSON.stringify(newData.factors))
-    localStorage.setItem('hplc_gradient_data', JSON.stringify(newData.gradient))
+    
+    // gradient数据需要特殊处理
+    if (Array.isArray(newData.gradient)) {
+      if (newData.gradient.length === 0) {
+        // 如果是空数组（新建文件），清除localStorage中的gradient数据
+        console.log('  🗑️ 清除localStorage中的gradient数据（新建文件）')
+        localStorage.removeItem('hplc_gradient_data')
+      } else {
+        // 如果是非空数组，直接存储（但这不包含calculations，柱状图会是空的）
+        console.log('  ⚠️ 警告：存储的是gradient数组，不包含calculations数据')
+        localStorage.setItem('hplc_gradient_data', JSON.stringify(newData.gradient))
+      }
+    } else {
+      // 如果是完整对象（包含计算结果），存储完整对象供Methods页面使用
+      console.log('  ✅ 存储完整gradient对象，包含calculations数据')
+      localStorage.setItem('hplc_gradient_data', JSON.stringify(newData.gradient))
+    }
+    
+    console.log('✅ setAllData 完成，已更新Context和localStorage')
   }
 
   const exportData = (): AppData => {
+    // 尝试从localStorage获取完整的gradient数据（包含calculations）
+    let gradientDataToSave: any = data.gradient
+    try {
+      const gradientDataStr = localStorage.getItem('hplc_gradient_data')
+      if (gradientDataStr) {
+        const gradientData = JSON.parse(gradientDataStr)
+        // 如果localStorage中有完整的计算结果对象，使用它
+        if (gradientData && typeof gradientData === 'object' && 'calculations' in gradientData) {
+          console.log('📦 exportData: 使用localStorage中的完整gradient数据（包含calculations）')
+          gradientDataToSave = gradientData
+        } else if (Array.isArray(gradientData) && gradientData.length > 0) {
+          console.log('📦 exportData: localStorage中只有gradient数组')
+          gradientDataToSave = gradientData
+        }
+      }
+    } catch (error) {
+      console.error('读取localStorage gradient数据失败:', error)
+    }
+    
     return {
       ...data,
+      gradient: gradientDataToSave as any,
       lastModified: new Date().toISOString()
     }
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { Card, Typography, InputNumber, Select, Button, Row, Col, message } from 'antd'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -86,21 +86,42 @@ const MethodsPage: React.FC = () => {
       }
       setChartRefreshKey(prev => prev + 1) // 强制刷新图表
     }
+    
+    // 检查打开文件时gradient数据是否包含calculations
+    const checkGradientDataOnLoad = () => {
+      const gradientDataStr = localStorage.getItem('hplc_gradient_data')
+      if (gradientDataStr) {
+        try {
+          const gradientData = JSON.parse(gradientDataStr)
+          // 如果gradient是数组或没有calculations，提示用户需要重新计算
+          if (Array.isArray(gradientData) || !gradientData.calculations) {
+            console.warn('⚠️ 打开的文件缺少gradient calculations数据')
+            message.warning('此文件缺少梯度计算数据，请前往 HPLC Gradient Prg 页面点击"确定"按钮重新计算', 5)
+          }
+        } catch (e) {
+          console.error('检查gradient数据失败:', e)
+        }
+      }
+    }
+    
+    // 延迟检查，等待文件数据加载完成
+    const checkTimer = setTimeout(checkGradientDataOnLoad, 500)
 
     // 自定义事件监听(同页面内的更新)
     window.addEventListener('factorsDataUpdated', loadFactorsData as EventListener)
     window.addEventListener('gradientDataUpdated', handleGradientDataUpdated)
 
     return () => {
+      clearTimeout(checkTimer)
       window.removeEventListener('factorsDataUpdated', loadFactorsData as EventListener)
       window.removeEventListener('gradientDataUpdated', handleGradientDataUpdated)
     }
   }, [])
 
-  // 监听Context数据变化，更新本地状态（但要避免循环更新）
+  // 监听Context数据变化，立即更新本地状态（使用useLayoutEffect确保同步更新）
   const lastSyncedData = React.useRef<string>('')
   
-  useEffect(() => {
+  useLayoutEffect(() => {
     const currentDataStr = JSON.stringify(data.methods)
     
     // 如果数据没有变化，跳过更新
@@ -109,12 +130,18 @@ const MethodsPage: React.FC = () => {
       return
     }
     
-    console.log('🔄 MethodsPage: Context数据变化，更新本地状态')
+    console.log('🔄 MethodsPage: Context数据变化，立即更新本地状态')
     lastSyncedData.current = currentDataStr
+    
+    // 立即更新所有状态
     setSampleCount(data.methods.sampleCount)
     setPreTreatmentReagents(data.methods.preTreatmentReagents)
     setMobilePhaseA(data.methods.mobilePhaseA)
     setMobilePhaseB(data.methods.mobilePhaseB)
+    
+    // 立即刷新图表（特别是在新建文件或打开文件时）
+    console.log('🔄 立即刷新图表')
+    setChartRefreshKey(prev => prev + 1)
   }, [data.methods])
 
   // 自动保存数据到 Context 和 localStorage (每次状态变化时)
@@ -287,19 +314,38 @@ const MethodsPage: React.FC = () => {
     
     try {
       const gradientDataStr = localStorage.getItem('hplc_gradient_data')
-      if (!gradientDataStr) return chartData
+      console.log(`📊 计算 Mobile Phase ${phaseType} 图表数据`)
+      console.log('  - localStorage中的gradient数据:', gradientDataStr ? '存在' : '不存在')
+      
+      if (!gradientDataStr) {
+        console.log('  ❌ 没有gradient数据')
+        return chartData
+      }
       
       const gradientData = JSON.parse(gradientDataStr)
+      console.log('  - gradient数据类型:', Array.isArray(gradientData) ? '数组' : '对象')
+      console.log('  - gradient对象键:', Object.keys(gradientData))
+      console.log('  - 是否有calculations:', 'calculations' in gradientData)
+      
       const phaseKey = phaseType === 'A' ? 'mobilePhaseA' : 'mobilePhaseB'
       const phaseData = gradientData.calculations?.[phaseKey]
       
-      if (!phaseData || !phaseData.components) return chartData
+      console.log(`  - ${phaseKey} 数据:`, phaseData)
+      console.log(`  - ${phaseKey} components:`, phaseData?.components)
+      
+      if (!phaseData || !phaseData.components) {
+        console.log(`  ❌ 没有 ${phaseKey} 的 components 数据`)
+        return chartData
+      }
       
       phaseData.components.forEach((component: any) => {
         if (!component.reagentName || component.volume <= 0) return
         
         const factor = factorsData.find(f => f.name === component.reagentName)
-        if (!factor) return
+        if (!factor) {
+          console.log(`  ⚠️ 找不到试剂 ${component.reagentName} 的factor数据`)
+          return
+        }
         
         const mass = component.volume * factor.density // 质量 = 体积 × 密度
         
@@ -313,8 +359,10 @@ const MethodsPage: React.FC = () => {
           P: Number((mass * factor.power).toFixed(3))
         })
       })
+      
+      console.log(`  ✅ 生成了 ${chartData.length} 个柱状图数据点`)
     } catch (error) {
-      console.error('计算 Mobile Phase 图表数据失败:', error)
+      console.error('❌ 计算 Mobile Phase 图表数据失败:', error)
     }
 
     return chartData
