@@ -1,21 +1,23 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 // 预定义的试剂数据(用于新建文件时初始化)
-const PREDEFINED_REAGENTS: ReagentFactor[] = [
+export const PREDEFINED_REAGENTS: ReagentFactor[] = [
   { id: '1', name: 'Acetone', density: 0.791, safetyScore: 1.995, healthScore: 0.809, envScore: 0.310, recycleScore: 0, disposal: 2, power: 1 },
   { id: '2', name: 'Acetonitrile', density: 0.786, safetyScore: 2.724, healthScore: 1.056, envScore: 0.772, recycleScore: 0, disposal: 2, power: 2 },
   { id: '3', name: 'Chloroform', density: 1.483, safetyScore: 1.077, healthScore: 1.425, envScore: 1.435, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '4', name: 'Dichloromethane', density: 1.327, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '5', name: 'Ethanol', density: 0.789, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '6', name: 'Ethyl acetate', density: 0.902, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '7', name: 'Heptane', density: 0.684, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '8', name: 'Hexane (n)', density: 0.659, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '9', name: 'Isooctane', density: 0.692, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '10', name: 'Isopropanol', density: 0.785, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '11', name: 'Methanol', density: 0.791, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '12', name: 'Sulfuric acid 96%', density: 1.84, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '13', name: 't-butyl methyl ether', density: 0.74, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '14', name: 'Tetrahydrofuran', density: 0.889, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 }
+  { id: '4', name: 'CO2', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
+  { id: '5', name: 'Dichloromethane', density: 1.327, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '6', name: 'Ethanol', density: 0.789, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '7', name: 'Ethyl acetate', density: 0.902, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '8', name: 'Heptane', density: 0.684, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '9', name: 'Hexane (n)', density: 0.659, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '10', name: 'Isooctane', density: 0.692, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '11', name: 'Isopropanol', density: 0.785, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '12', name: 'Methanol', density: 0.791, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '13', name: 'Sulfuric acid 96%', density: 1.84, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '14', name: 't-butyl methyl ether', density: 0.74, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '15', name: 'Tetrahydrofuran', density: 0.889, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '16', name: 'Water', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
 ]
 
 // 定义数据类型
@@ -106,18 +108,17 @@ const getDefaultData = (): AppData => ({
 })
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<AppData>(getDefaultData())
-  const [fileHandle, setFileHandle] = useState<any | null>(null)
-  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null)
-  const [isDirty, setIsDirty] = useState(false)
-
-  // 从localStorage加载初始数据
-  useEffect(() => {
+  // 初始化时直接从localStorage加载数据,避免数据丢失
+  const [data, setData] = useState<AppData>(() => {
+    console.log('🔄 AppContext初始化: 开始加载localStorage数据')
     try {
-      // 尝试从localStorage恢复数据
       const savedMethodsRaw = localStorage.getItem('hplc_methods_raw')
       const savedFactors = localStorage.getItem('hplc_factors_data')
       const savedGradient = localStorage.getItem('hplc_gradient_data')
+      
+      console.log('  - methods:', savedMethodsRaw ? '存在' : '不存在')
+      console.log('  - factors:', savedFactors ? '存在' : '不存在')
+      console.log('  - gradient:', savedGradient ? '存在' : '不存在')
       
       const loadedData: AppData = {
         version: '1.0.0',
@@ -127,11 +128,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         gradient: savedGradient ? JSON.parse(savedGradient) : []
       }
       
-      setData(loadedData)
+      console.log('✅ AppContext初始化: 数据加载完成')
+      return loadedData
     } catch (error) {
-      console.error('加载初始数据失败:', error)
+      console.error('❌ AppContext初始化: 加载数据失败:', error)
+      return getDefaultData()
     }
-  }, [])
+  })
+  
+  const [fileHandle, setFileHandle] = useState<any | null>(null)
+  const [currentFilePath, setCurrentFilePathState] = useState<string | null>(() => {
+    // 从localStorage恢复currentFilePath
+    const saved = localStorage.getItem('currentFilePath')
+    console.log('🔄 AppContext初始化: 恢复currentFilePath:', saved)
+    return saved
+  })
+  const [isDirty, setIsDirty] = useState(false)
+
+  // 包装setCurrentFilePath,同时保存到localStorage
+  const setCurrentFilePath = (path: string | null) => {
+    console.log('💾 AppContext: 设置currentFilePath:', path)
+    setCurrentFilePathState(path)
+    if (path) {
+      localStorage.setItem('currentFilePath', path)
+    } else {
+      localStorage.removeItem('currentFilePath')
+    }
+  }
 
   const updateMethodsData = (methodsData: AppData['methods']) => {
     setData(prev => {

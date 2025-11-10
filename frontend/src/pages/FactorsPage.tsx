@@ -12,26 +12,57 @@ const PREDEFINED_REAGENTS: ReagentFactor[] = [
   { id: '1', name: 'Acetone', density: 0.791, safetyScore: 1.995, healthScore: 0.809, envScore: 0.310, recycleScore: 0, disposal: 2, power: 1 },
   { id: '2', name: 'Acetonitrile', density: 0.786, safetyScore: 2.724, healthScore: 1.056, envScore: 0.772, recycleScore: 0, disposal: 2, power: 2 },
   { id: '3', name: 'Chloroform', density: 1.483, safetyScore: 1.077, healthScore: 1.425, envScore: 1.435, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '4', name: 'Dichloromethane', density: 1.327, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '5', name: 'Ethanol', density: 0.789, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '6', name: 'Ethyl acetate', density: 0.902, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '7', name: 'Heptane', density: 0.684, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '8', name: 'Hexane (n)', density: 0.659, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '9', name: 'Isooctane', density: 0.692, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '10', name: 'Isopropanol', density: 0.785, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '11', name: 'Methanol', density: 0.791, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '12', name: 'Sulfuric acid 96%', density: 1.84, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '13', name: 't-butyl methyl ether', density: 0.74, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '14', name: 'Tetrahydrofuran', density: 0.889, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 }
+  { id: '4', name: 'CO2', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
+  { id: '5', name: 'Dichloromethane', density: 1.327, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '6', name: 'Ethanol', density: 0.789, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '7', name: 'Ethyl acetate', density: 0.902, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '8', name: 'Heptane', density: 0.684, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '9', name: 'Hexane (n)', density: 0.659, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '10', name: 'Isooctane', density: 0.692, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '11', name: 'Isopropanol', density: 0.785, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '12', name: 'Methanol', density: 0.791, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '13', name: 'Sulfuric acid 96%', density: 1.84, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '14', name: 't-butyl methyl ether', density: 0.74, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '15', name: 'Tetrahydrofuran', density: 0.889, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '16', name: 'Water', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
 ]
+
+const FACTORS_DATA_VERSION = 2 // Increment this when PREDEFINED_REAGENTS changes
 
 const FactorsPage: React.FC = () => {
   const { data, updateFactorsData, setIsDirty } = useAppContext()
   
+  // Check if factors data needs update
+  const checkAndUpdateFactorsData = (existingFactors: ReagentFactor[]) => {
+    const storedVersion = localStorage.getItem('hplc_factors_version')
+    const currentVersion = FACTORS_DATA_VERSION.toString()
+    
+    // If version doesn't match or missing reagents, update to latest
+    if (storedVersion !== currentVersion) {
+      console.log('🔄 FactorsPage: Updating factors data to version', currentVersion)
+      localStorage.setItem('hplc_factors_version', currentVersion)
+      return [...PREDEFINED_REAGENTS]
+    }
+    
+    // Check if CO2 and Water exist
+    const hasCO2 = existingFactors.some(f => f.name === 'CO2')
+    const hasWater = existingFactors.some(f => f.name === 'Water')
+    
+    if (!hasCO2 || !hasWater) {
+      console.log('🔄 FactorsPage: Missing CO2 or Water, updating to complete data')
+      return [...PREDEFINED_REAGENTS]
+    }
+    
+    return existingFactors
+  }
+  
   // 使用Context中的数据初始化
   const [reagents, setReagents] = useState<ReagentFactor[]>(() => {
     // 如果Context中有数据就使用，否则使用预定义数据
-    return data.factors.length > 0 ? data.factors : [...PREDEFINED_REAGENTS]
+    if (data.factors.length > 0) {
+      return checkAndUpdateFactorsData(data.factors)
+    }
+    return [...PREDEFINED_REAGENTS]
   })
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
@@ -53,20 +84,32 @@ const FactorsPage: React.FC = () => {
       // 只在第一次遇到空数据时使用预定义数据
       hasInitialized.current = true
       console.log('🔄 FactorsPage: 检测到空数据，使用预定义试剂列表')
-      setReagents([...PREDEFINED_REAGENTS])
+      const updatedReagents = [...PREDEFINED_REAGENTS]
+      setReagents(updatedReagents)
       // 立即同步到Context，避免其他页面读取到空数据
-      updateFactorsData([...PREDEFINED_REAGENTS])
+      updateFactorsData(updatedReagents)
       // 🔥 立即写入localStorage，避免MethodsPage读取时为空
-      localStorage.setItem('hplc_factors_data', JSON.stringify([...PREDEFINED_REAGENTS]))
+      localStorage.setItem('hplc_factors_data', JSON.stringify(updatedReagents))
+      localStorage.setItem('hplc_factors_version', FACTORS_DATA_VERSION.toString())
       console.log('✅ FactorsPage: 已立即写入localStorage')
       // 🔥 触发事件通知其他页面factors数据已更新
       window.dispatchEvent(new Event('factorsDataUpdated'))
       console.log('📢 FactorsPage: 触发 factorsDataUpdated 事件')
     } else if (data.factors.length > 0) {
-      // 有数据时直接使用
+      // 有数据时检查是否需要更新
       hasInitialized.current = true
+      const updatedReagents = checkAndUpdateFactorsData(data.factors)
       console.log('🔄 FactorsPage: 立即同步Context数据')
-      setReagents(data.factors)
+      setReagents(updatedReagents)
+      
+      // If data was updated, sync back
+      if (JSON.stringify(updatedReagents) !== JSON.stringify(data.factors)) {
+        updateFactorsData(updatedReagents)
+        localStorage.setItem('hplc_factors_data', JSON.stringify(updatedReagents))
+        localStorage.setItem('hplc_factors_version', FACTORS_DATA_VERSION.toString())
+        window.dispatchEvent(new Event('factorsDataUpdated'))
+        console.log('📢 FactorsPage: 数据已更新并同步')
+      }
     }
   }, [data.factors, updateFactorsData])
 
@@ -130,42 +173,42 @@ const FactorsPage: React.FC = () => {
     setIsEditing(true) // 添加新行后自动进入编辑模式
   }
 
-  // 删除最后一个试剂
+  // Delete last reagent
   const deleteLastReagent = () => {
     if (reagents.length <= 1) {
-      message.warning('至少保留一个试剂')
+      message.warning('At least one reagent must be kept')
       return
     }
     setReagents(reagents.slice(0, -1))
   }
 
-  // 更新试剂数据
+  // Update reagent data
   const updateReagent = (id: string, field: keyof ReagentFactor, value: string | number) => {
     setReagents(reagents.map(r => 
       r.id === id ? { ...r, [field]: value } : r
     ))
   }
 
-  // 切换编辑模式
+  // Toggle edit mode
   const toggleEdit = () => {
     if (isEditing) {
-      // 验证数据
+      // Validate data
       const hasEmptyName = reagents.some(r => !r.name.trim())
       if (hasEmptyName) {
-        message.error('试剂名称不能为空')
+        message.error('Reagent name cannot be empty')
         return
       }
-      message.success('数据已保存')
+      message.success('Data saved')
     }
     setIsEditing(!isEditing)
   }
 
-  // 重置为预定义数据
+  // Reset to predefined data
   const resetToDefault = () => {
-    if (window.confirm('确定要重置为默认数据吗？这将覆盖所有自定义数据。')) {
+    if (window.confirm('Are you sure you want to reset to default data? This will overwrite all custom data.')) {
       setReagents([...PREDEFINED_REAGENTS])
       setIsEditing(false)
-      message.success('已重置为默认数据')
+      message.success('Reset to default data successfully')
     }
   }
 
@@ -344,17 +387,17 @@ const FactorsPage: React.FC = () => {
         </Row>
 
         <div style={{ marginTop: 16, color: '#666', fontSize: 12 }}>
-          <p><strong>说明：</strong></p>
+          <p><strong>Note:</strong></p>
           <ul>
-            <li><strong>ρ</strong>: 密度 (g/mL) - Density</li>
-            <li><strong>S</strong>: 安全性评分 (Safety Score)</li>
-            <li><strong>H</strong>: 健康危害评分 (Health Hazard Score)</li>
-            <li><strong>E</strong>: 环境影响评分 (Environmental Impact Score)</li>
-            <li><strong>R</strong>: 可回收性评分 (Recyclability Score)</li>
-            <li><strong>D</strong>: 处置难度 (Disposal Difficulty)</li>
-            <li><strong>P</strong>: 耗能 (Power Consumption)</li>
+            <li><strong>ρ</strong>: Density (g/mL)</li>
+            <li><strong>S</strong>: Safety Score</li>
+            <li><strong>H</strong>: Health Hazard Score</li>
+            <li><strong>E</strong>: Environmental Impact Score</li>
+            <li><strong>R</strong>: Recyclability Score</li>
+            <li><strong>D</strong>: Disposal Difficulty</li>
+            <li><strong>P</strong>: Power Consumption</li>
           </ul>
-          <p>这些因子将用于 Methods 和 HPLC Gradient 的绿色化学评估计算。</p>
+          <p>These factors will be used for green chemistry assessment calculations in Methods and HPLC Gradient.</p>
         </div>
       </Card>
     </div>

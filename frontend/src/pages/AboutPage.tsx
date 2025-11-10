@@ -15,37 +15,37 @@ const { Title, Paragraph, Text } = Typography
 const AboutPage: React.FC = () => {
   return (
     <div className="about-page">
-      <Title level={2}>关于 HPLC 绿色化学分析系统</Title>
+      <Title level={2}>About HPLC Green Chemistry Analysis System</Title>
 
-      {/* 系统概述 */}
-      <Card title="系统概述" style={{ marginBottom: 24 }}>
+      {/* System Overview */}
+      <Card title="System Overview" style={{ marginBottom: 24 }}>
         <Paragraph>
-          <Text strong>HPLC 绿色化学分析系统</Text>是一个专业的高效液相色谱（HPLC）分析平台，
-          旨在帮助科研人员和实验室技术人员对HPLC实验方法进行<Text mark>绿色化学评估</Text>。
+          <Text strong>HPLC Green Chemistry Analysis System</Text> is a professional High-Performance Liquid Chromatography (HPLC) analysis platform,
+          designed to help researchers and laboratory technicians conduct <Text mark>green chemistry assessments</Text> of HPLC experimental methods.
         </Paragraph>
         <Paragraph>
-          本系统基于绿色化学十二原则，通过量化分析实验中使用的试剂对环境、健康和安全的影响，
-          为优化实验方法、减少环境负担提供科学依据。
+          Based on the twelve principles of green chemistry, this system quantitatively analyzes the environmental, health, and safety impacts of reagents used in experiments,
+          providing scientific evidence for optimizing experimental methods and reducing environmental burdens.
         </Paragraph>
       </Card>
 
-      {/* 核心功能 */}
-      <Card title="核心功能模块" style={{ marginBottom: 24 }}>
+      {/* Core Functions */}
+      <Card title="Core Function Modules" style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]}>
           <Col span={12}>
             <Card type="inner" size="small">
               <SafetyOutlined style={{ fontSize: 24, color: '#1890ff', marginRight: 8 }} />
-              <Text strong>Factors - 试剂因子管理</Text>
+              <Text strong>Factors - Reagent Factor Management</Text>
               <Paragraph style={{ marginTop: 8, fontSize: 14 }}>
-                管理和配置实验中使用的各类试剂的基础参数：
+                Manage and configure basic parameters for all reagents used in experiments:
                 <ul>
-                  <li><strong>密度 (Density)</strong>: 试剂的密度值 (g/ml)</li>
-                  <li><strong>安全性 (S)</strong>: 试剂的安全等级评分</li>
-                  <li><strong>健康危害 (H)</strong>: 对人体健康的影响评分</li>
-                  <li><strong>环境影响 (E)</strong>: 对环境的影响评分</li>
-                  <li><strong>可回收性 (R)</strong>: 试剂的可回收程度</li>
-                  <li><strong>处置难度 (D)</strong>: 废弃物处置的复杂度</li>
-                  <li><strong>耗能 (P)</strong>: 生产和使用过程的能耗</li>
+                  <li><strong>Density</strong>: Reagent density value (g/ml)</li>
+                  <li><strong>Safety (S)</strong>: Reagent safety rating score</li>
+                  <li><strong>Health Hazard (H)</strong>: Human health impact score</li>
+                  <li><strong>Environmental Impact (E)</strong>: Environmental impact score</li>
+                  <li><strong>Recyclability (R)</strong>: Degree of reagent recyclability</li>
+                  <li><strong>Disposal Difficulty (D)</strong>: Waste disposal complexity</li>
+                  <li><strong>Energy Consumption (P)</strong>: Production and usage energy consumption</li>
                 </ul>
               </Paragraph>
             </Card>
@@ -53,44 +53,44 @@ const AboutPage: React.FC = () => {
           <Col span={12}>
             <Card type="inner" size="small">
               <ExperimentOutlined style={{ fontSize: 24, color: '#52c41a', marginRight: 8 }} />
-              <Text strong>Methods - 实验方法配置</Text>
+              <Text strong>Methods - Experimental Method Configuration</Text>
               <Paragraph style={{ marginTop: 8, fontSize: 14 }}>
-                配置HPLC实验的详细参数：
+                Configure detailed HPLC experiment parameters:
                 <ul>
-                  <li><strong>样品数量</strong>: 实验处理的样品总数</li>
-                  <li><strong>Sample PreTreatment</strong>: 样品前处理试剂及体积</li>
-                  <li><strong>Mobile Phase A</strong>: 流动相A的组分配比</li>
-                  <li><strong>Mobile Phase B</strong>: 流动相B的组分配比</li>
+                  <li><strong>Sample Count</strong>: Total number of samples processed</li>
+                  <li><strong>Sample PreTreatment</strong>: Pretreatment reagents and volumes</li>
+                  <li><strong>Mobile Phase A</strong>: Component ratio of mobile phase A</li>
+                  <li><strong>Mobile Phase B</strong>: Component ratio of mobile phase B</li>
                 </ul>
-                系统自动计算每种试剂的使用量并生成绿色化学评估图表。
+                System automatically calculates reagent usage and generates green chemistry assessment charts.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <LineChartOutlined style={{ fontSize: 24, color: '#722ed1', marginRight: 8 }} />
-              <Text strong>HPLC Gradient - 梯度程序</Text>
+              <Text strong>HPLC Gradient - Gradient Program</Text>
               <Paragraph style={{ marginTop: 8, fontSize: 14 }}>
-                设置并可视化HPLC梯度洗脱程序：
+                Configure and visualize HPLC gradient elution program:
                 <ul>
-                  <li><strong>梯度步骤</strong>: 定义每个时间节点的流动相比例</li>
-                  <li><strong>流速控制</strong>: 设置每段的流速 (ml/min)</li>
-                  <li><strong>曲线类型</strong>: 支持11种不同的梯度曲线（见下方说明）</li>
-                  <li><strong>体积计算</strong>: 自动计算每段的积分面积和试剂体积</li>
+                  <li><strong>Gradient Steps</strong>: Define mobile phase ratio at each time point</li>
+                  <li><strong>Flow Rate Control</strong>: Set flow rate for each segment (ml/min)</li>
+                  <li><strong>Curve Type</strong>: Supports 11 different gradient curves (see explanation below)</li>
+                  <li><strong>Volume Calculation</strong>: Automatically calculates integral area and reagent volume for each segment</li>
                 </ul>
-                系统通过梯形法则计算曲线下面积，结合流速精确计算各试剂用量。
+                System uses trapezoidal rule to calculate area under curve and precisely calculates reagent usage based on flow rate.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <BarChartOutlined style={{ fontSize: 24, color: '#fa8c16', marginRight: 8 }} />
-              <Text strong>Graph & Table - 数据可视化</Text>
+              <Text strong>Graph & Table - Data Visualization</Text>
               <Paragraph style={{ marginTop: 8, fontSize: 14 }}>
                 <ul>
-                  <li><strong>雷达图 (Graph)</strong>: 六维绿色化学评估雷达图，直观展示S、H、E、R、D、P总得分</li>
-                  <li><strong>柱状图 (Methods)</strong>: 各试剂组的分类得分对比</li>
-                  <li><strong>数据表格 (Table)</strong>: 详细的计算过程和结果汇总</li>
+                  <li><strong>Radar Chart (Graph)</strong>: Six-dimensional green chemistry assessment radar chart displaying total scores for S, H, E, R, D, P</li>
+                  <li><strong>Bar Chart (Methods)</strong>: Score comparison for each reagent group</li>
+                  <li><strong>Data Table (Table)</strong>: Detailed calculation process and results summary</li>
                 </ul>
               </Paragraph>
             </Card>
@@ -98,53 +98,53 @@ const AboutPage: React.FC = () => {
         </Row>
       </Card>
 
-      {/* 计算规则 */}
-      <Card title="核心计算规则" style={{ marginBottom: 24 }}>
+      {/* Calculation Rules */}
+      <Card title="Core Calculation Rules" style={{ marginBottom: 24 }}>
         <Timeline>
           <Timeline.Item color="green">
-            <Text strong>第一步：体积到质量的转换</Text>
+            <Text strong>Step 1: Volume to Mass Conversion</Text>
             <Paragraph style={{ marginLeft: 24, fontSize: 14 }}>
-              质量 (g) = 体积 (ml) × 密度 (g/ml)
+              Mass (g) = Volume (ml) × Density (g/ml)
               <br />
-              <Text type="secondary">从Factors页面获取每种试剂的密度值</Text>
+              <Text type="secondary">Obtain density value for each reagent from Factors page</Text>
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="green">
-            <Text strong>第二步：梯度曲线积分计算</Text>
+            <Text strong>Step 2: Gradient Curve Integration Calculation</Text>
             <Paragraph style={{ marginLeft: 24, fontSize: 14 }}>
-              使用<Tag color="purple">梯形法则</Tag>计算梯度曲线下的面积（积分值）
+              Use <Tag color="purple">Trapezoidal Rule</Tag> to calculate area under gradient curve (integral value)
               <br />
-              体积 = Σ(各段积分面积 × 流速 / 100)
+              Volume = Σ(Integral area of each segment × Flow rate / 100)
               <br />
-              <Text type="secondary">对每个梯度步骤分别计算，然后累加得到总体积</Text>
+              <Text type="secondary">Calculate for each gradient step separately, then sum to get total volume</Text>
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="orange">
-            <Text strong>第三步：试剂体积分配</Text>
+            <Text strong>Step 3: Reagent Volume Distribution</Text>
             <Paragraph style={{ marginLeft: 24, fontSize: 14 }}>
-              试剂体积 = Mobile Phase 总体积 × 试剂百分比 / 100
+              Reagent volume = Total Mobile Phase volume × Reagent percentage / 100
               <br />
-              <Text type="secondary">根据Methods页面配置的百分比分配体积</Text>
+              <Text type="secondary">Distribute volume based on percentage configured on Methods page</Text>
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="red">
-            <Text strong>第四步：绿色化学得分计算</Text>
+            <Text strong>Step 4: Green Chemistry Score Calculation</Text>
             <Paragraph style={{ marginLeft: 24, fontSize: 14 }}>
-              各项得分 = 质量 (g) × 对应因子值
+              Score for each metric = Mass (g) × Corresponding factor value
               <br />
-              总得分 = Σ(所有试剂的对应得分)
+              Total score = Σ(Corresponding score for all reagents)
               <br />
-              <Text type="secondary">分别计算S、H、E、R、D、P六个维度的总得分</Text>
+              <Text type="secondary">Calculate total scores for six dimensions: S, H, E, R, D, P separately</Text>
             </Paragraph>
           </Timeline.Item>
         </Timeline>
       </Card>
 
-      {/* 梯度曲线类型说明 */}
-      <Card title="HPLC 梯度曲线类型说明" style={{ marginBottom: 24 }}>
+      {/* Gradient Curve Type Explanation */}
+      <Card title="HPLC Gradient Curve Type Explanation" style={{ marginBottom: 24 }}>
         <Paragraph>
-          系统支持<Text strong>11种不同的梯度曲线类型</Text>，用于模拟不同的洗脱策略。
-          每种曲线适用于不同的分离需求和样品特性。
+          System supports <Text strong>11 different gradient curve types</Text> for simulating various elution strategies.
+          Each curve type is suitable for different separation needs and sample characteristics.
         </Paragraph>
         
         <Row gutter={24} style={{ marginTop: 24 }}>
@@ -152,7 +152,7 @@ const AboutPage: React.FC = () => {
             <div style={{ textAlign: 'center' }}>
               <Image
                 src="/gradient_curves.png"
-                alt="11种梯度曲线对比图"
+                alt="11 gradient curve comparison chart"
                 width="100%"
                 preview={true}
                 placeholder={
@@ -165,7 +165,7 @@ const AboutPage: React.FC = () => {
                     justifyContent: 'center',
                     color: '#999'
                   }}>
-                    梯度曲线对比图
+                    Gradient Curve Comparison Chart
                   </div>
                 }
               />
@@ -176,57 +176,57 @@ const AboutPage: React.FC = () => {
             <Row gutter={[12, 12]}>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="blue">1. 预先骤曲线</Tag>
+                  <Tag color="blue">1. Pre-step Curve</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    起始时刻立即跳跃到终值。
+                    Jumps immediately to final value at start.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="red">2-4. 凸曲线系列</Tag>
+                  <Tag color="red">2-4. Convex Curve Series</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    前期变化快，后期趋缓。
+                    Rapid change in early stage, slower in later stage.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="orange">5. 超凸曲线</Tag>
+                  <Tag color="orange">5. Super Convex Curve</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    极快的初期变化，后期几乎不变。
+                    Extremely rapid initial change, almost no change in later stage.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="green">6. 线性曲线</Tag>
+                  <Tag color="green">6. Linear Curve</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    匀速变化，最常用的梯度类型。
+                    Uniform change, most commonly used gradient type.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="purple">7-9. 凹曲线系列</Tag>
+                  <Tag color="purple">7-9. Concave Curve Series</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    前期变化慢，后期加速。
+                    Slow change in early stage, accelerates in later stage.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="magenta">10. 超凹曲线</Tag>
+                  <Tag color="magenta">10. Super Concave Curve</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    前期几乎不变，后期急剧变化。
+                    Almost no change in early stage, rapid change in later stage.
                   </Paragraph>
                 </Card>
               </Col>
               <Col span={24}>
                 <Card size="small" type="inner">
-                  <Tag color="gold">11. 后步骤曲线</Tag>
+                  <Tag color="gold">11. Post-step Curve</Tag>
                   <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    保持初值，最后时刻跳跃到终值。
+                    Maintains initial value, jumps to final value at last moment.
                   </Paragraph>
                 </Card>
               </Col>
@@ -235,141 +235,141 @@ const AboutPage: React.FC = () => {
         </Row>
       </Card>
 
-      {/* 使用流程 */}
-      <Card title="系统使用流程" style={{ marginBottom: 24 }}>
+      {/* Usage Workflow */}
+      <Card title="System Usage Workflow" style={{ marginBottom: 24 }}>
         <Timeline>
           <Timeline.Item color="blue">
-            <Text strong>步骤 1：配置试剂因子 (Factors)</Text>
+            <Text strong>Step 1: Configure Reagent Factors (Factors)</Text>
             <Paragraph style={{ fontSize: 14 }}>
-              在Factors页面添加并配置实验中将使用的所有试剂的参数（密度、S、H、E、R、D、P）
+              Add and configure parameters (Density, S, H, E, R, D, P) for all reagents to be used in experiments on Factors page
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="green">
-            <Text strong>步骤 2：设置实验方法 (Methods)</Text>
+            <Text strong>Step 2: Set Experimental Methods (Methods)</Text>
             <Paragraph style={{ fontSize: 14 }}>
-              输入样品数量、前处理试剂体积、流动相A和B的组分配比
+              Enter sample count, pretreatment reagent volumes, component ratios for mobile phases A and B
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="purple">
-            <Text strong>步骤 3：配置梯度程序 (HPLC Gradient)</Text>
+            <Text strong>Step 3: Configure Gradient Program (HPLC Gradient)</Text>
             <Paragraph style={{ fontSize: 14 }}>
-              设置梯度步骤（时间、流动相比例、流速、曲线类型），保存后系统自动计算各试剂体积
+              Set gradient steps (time, mobile phase ratio, flow rate, curve type), system automatically calculates reagent volumes after saving
             </Paragraph>
           </Timeline.Item>
           <Timeline.Item color="orange">
-            <Text strong>步骤 4：查看结果 (Graph & Table)</Text>
+            <Text strong>Step 4: View Results (Graph & Table)</Text>
             <Paragraph style={{ fontSize: 14 }}>
-              在Graph页面查看雷达图，在Table页面查看详细数据报告
+              View radar chart on Graph page, view detailed data report on Table page
             </Paragraph>
           </Timeline.Item>
         </Timeline>
       </Card>
 
-      {/* 绿色化学指标说明 */}
-      <Card title="绿色化学评估指标" style={{ marginBottom: 24 }}>
+      {/* Green Chemistry Metrics Explanation */}
+      <Card title="Green Chemistry Assessment Metrics" style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]}>
           <Col span={12}>
             <Card type="inner" size="small">
               <SafetyOutlined style={{ fontSize: 20, color: '#3f8600', marginRight: 8 }} />
-              <Text strong>安全性 (S - Safety)</Text>
+              <Text strong>Safety (S)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估试剂的易燃、易爆、腐蚀性等安全风险。
-                得分越低越安全。
+                Assesses safety risks such as flammability, explosiveness, and corrosiveness of reagents.
+                Lower scores indicate higher safety.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <EnvironmentOutlined style={{ fontSize: 20, color: '#cf1322', marginRight: 8 }} />
-              <Text strong>健康危害 (H - Health)</Text>
+              <Text strong>Health Hazard (H)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估试剂对人体的急性和慢性毒性影响。
-                得分越低对健康影响越小。
+                Assesses acute and chronic toxic effects of reagents on human body.
+                Lower scores indicate lower health impacts.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <EnvironmentOutlined style={{ fontSize: 20, color: '#1890ff', marginRight: 8 }} />
-              <Text strong>环境影响 (E - Environment)</Text>
+              <Text strong>Environmental Impact (E)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估试剂对水体、土壤、大气的污染程度。
-                得分越低对环境越友好。
+                Assesses pollution levels of reagents on water, soil, and atmosphere.
+                Lower scores indicate more environmentally friendly.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <ReconciliationOutlined style={{ fontSize: 20, color: '#faad14', marginRight: 8 }} />
-              <Text strong>可回收性 (R - Recyclability)</Text>
+              <Text strong>Recyclability (R)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估试剂的回收利用难度和可行性。
-                得分越低越容易回收。
+                Assesses difficulty and feasibility of reagent recycling and reuse.
+                Lower scores indicate easier recycling.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <EnvironmentOutlined style={{ fontSize: 20, color: '#722ed1', marginRight: 8 }} />
-              <Text strong>处置难度 (D - Disposal)</Text>
+              <Text strong>Disposal Difficulty (D)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估废弃试剂的处理复杂度和成本。
-                得分越低越容易处置。
+                Assesses complexity and cost of waste reagent disposal.
+                Lower scores indicate easier disposal.
               </Paragraph>
             </Card>
           </Col>
           <Col span={12}>
             <Card type="inner" size="small">
               <ThunderboltOutlined style={{ fontSize: 20, color: '#eb2f96', marginRight: 8 }} />
-              <Text strong>耗能 (P - Power)</Text>
+              <Text strong>Energy Consumption (P)</Text>
               <Paragraph style={{ fontSize: 14, marginTop: 8 }}>
-                评估试剂生产、运输和使用过程的能量消耗。
-                得分越低能耗越小。
+                Assesses energy consumption during reagent production, transportation, and usage.
+                Lower scores indicate lower energy consumption.
               </Paragraph>
             </Card>
           </Col>
         </Row>
       </Card>
 
-      {/* 技术栈 */}
-      <Card title="技术栈" style={{ marginBottom: 24 }}>
+      {/* Technology Stack */}
+      <Card title="Technology Stack" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
           <Col span={12}>
             <Paragraph>
-              <Text strong>前端技术：</Text>
+              <Text strong>Frontend Technologies:</Text>
               <ul>
-                <li>React 18 - UI框架</li>
-                <li>TypeScript - 类型安全</li>
-                <li>Ant Design - UI组件库</li>
-                <li>Recharts - 数据可视化</li>
-                <li>Vite - 构建工具</li>
+                <li>React 18 - UI Framework</li>
+                <li>TypeScript - Type Safety</li>
+                <li>Ant Design - UI Component Library</li>
+                <li>Recharts - Data Visualization</li>
+                <li>Vite - Build Tool</li>
               </ul>
             </Paragraph>
           </Col>
           <Col span={12}>
             <Paragraph>
-              <Text strong>数据存储：</Text>
+              <Text strong>Data Storage:</Text>
               <ul>
-                <li>LocalStorage - 本地数据持久化</li>
-                <li>自定义事件 - 跨组件通信</li>
-                <li>React Hooks - 状态管理</li>
+                <li>LocalStorage - Local Data Persistence</li>
+                <li>Custom Events - Cross-component Communication</li>
+                <li>React Hooks - State Management</li>
               </ul>
             </Paragraph>
           </Col>
         </Row>
       </Card>
 
-      {/* 版本信息 */}
+      {/* Version Information */}
       <Card>
         <Paragraph>
-          <Text strong>系统版本：</Text> 1.0.0
+          <Text strong>System Version:</Text> 1.0.0
         </Paragraph>
         <Paragraph>
-          <Text strong>开发日期：</Text> 2025年11月
+          <Text strong>Development Date:</Text> November 2025
         </Paragraph>
         <Paragraph>
           <Text type="secondary" style={{ fontSize: 14 }}>
-            本系统遵循绿色化学原则，致力于推动实验室的可持续发展。
+            This system follows green chemistry principles and is committed to promoting sustainable laboratory development.
           </Text>
         </Paragraph>
       </Card>

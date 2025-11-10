@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Typography, message, Modal, Button, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
@@ -23,7 +23,7 @@ import LoginPage from './pages/LoginPage'
 import VineBorder from './components/VineBorder'
 import PasswordVerifyModal from './components/PasswordVerifyModal'
 import PasswordConfirmModal from './components/PasswordConfirmModal'
-import { AppProvider, useAppContext } from './contexts/AppContext'
+import { AppProvider, useAppContext, PREDEFINED_REAGENTS } from './contexts/AppContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { encryptData, decryptData } from './utils/encryption'
 import './App.css'
@@ -47,6 +47,10 @@ const AppContent: React.FC = () => {
     setAllData
   } = useAppContext()
 
+  // 使用ref来存储处理函数，避免Hooks规则问题
+  const handleNewFileRef = useRef<(() => void) | null>(null)
+  const handleOpenFileRef = useRef<(() => void) | null>(null)
+
   // 密码验证模态框状态（用于打开其他用户的文件）
   const [verifyModalVisible, setVerifyModalVisible] = useState(false)
   const [pendingFileData, setPendingFileData] = useState<any>(null)
@@ -61,14 +65,40 @@ const AppContent: React.FC = () => {
     console.log('🔔 isDirty状态变化:', isDirty, '文件:', currentFilePath)
   }, [isDirty, currentFilePath])
 
-  // 添加关闭前保存提示 - 必须在条件判断之前调用
+  // 保存当前路由到 localStorage (用于刷新后恢复)
+  useEffect(() => {
+    // 只有在有打开文件时才保存路由
+    if (currentFilePath) {
+      localStorage.setItem('lastRoute', location.pathname)
+      console.log('💾 保存当前路由:', location.pathname)
+    }
+  }, [location.pathname, currentFilePath])
+
+  // 页面加载时恢复上次的路由
+  useEffect(() => {
+    const lastRoute = localStorage.getItem('lastRoute')
+    
+    // 如果有保存的路由且当前在首页，尝试恢复
+    if (lastRoute && lastRoute !== '/' && location.pathname === '/' && currentFilePath) {
+      console.log('🔄 检测到刷新，恢复上次路由:', lastRoute)
+      navigate(lastRoute, { replace: true })
+    }
+  }, []) // 只在初始加载时执行一次
+
+  // 添加关闭浏览器前的保存提示
+  // 注意: 刷新页面(F5)不会触发此提示,因为数据已自动保存到localStorage
+  // 只有关闭标签页/浏览器窗口时才提示,因为这会丢失localStorage
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // 只有在已打开文件且有未保存更改时才提示
-      if (currentFilePath && isDirty) {
+      // 检测是否为刷新操作
+      // 注意: 浏览器限制下,无法完全准确区分刷新和关闭
+      // 这里只在有未保存文件时提示
+      if (currentFilePath && isDirty && currentFilePath !== 'Untitled Project.json') {
+        // Only prompt for files that have been saved before (i.e., with a file path)
+        // Untitled projects can be restored through refresh, so no prompt needed
         e.preventDefault()
-        e.returnValue = ''
-        return ''
+        e.returnValue = 'File has not been saved to disk, closing window will lose changes. Leave anyway?'
+        return 'File has not been saved to disk, closing window will lose changes. Leave anyway?'
       }
     }
 
@@ -78,32 +108,62 @@ const AppContent: React.FC = () => {
 
   // 路由守卫：如果没有打开文件，禁止访问操作页面
   useEffect(() => {
-    // 需要文件才能访问的页面
+    // Pages requiring a file to be opened
     const protectedPaths = ['/methods', '/factors', '/graph', '/table', '/hplc-gradient']
     
-    // 如果当前在受保护的路径，但没有打开文件，则重定向到首页
+    // If currently on a protected path but no file is open, redirect to home page
     if (!currentFilePath && protectedPaths.includes(location.pathname)) {
-      console.log('🚫 未打开文件，重定向到首页')
-      message.warning('请先创建或打开一个文件')
+      console.log('🚫 No file open, redirecting to home page')
+      message.warning('Please create or open a file first')
       navigate('/', { replace: true })
     }
   }, [location.pathname, currentFilePath, navigate])
+
+  // 监听HomePage触发的文件操作事件 - 必须在所有条件判断之前声明
+  useEffect(() => {
+    console.log('🔧 设置文件操作事件监听器')
+    const handleTriggerNewFile = () => {
+      console.log('📢 收到触发New File事件')
+      // 通过ref调用实际的处理函数
+      if (handleNewFileRef.current) {
+        handleNewFileRef.current()
+      }
+    }
+
+    const handleTriggerOpenFile = () => {
+      console.log('📢 收到触发Open File事件')
+      // 通过ref调用实际的处理函数
+      if (handleOpenFileRef.current) {
+        handleOpenFileRef.current()
+      }
+    }
+
+    window.addEventListener('triggerNewFile', handleTriggerNewFile)
+    window.addEventListener('triggerOpenFile', handleTriggerOpenFile)
+
+    return () => {
+      window.removeEventListener('triggerNewFile', handleTriggerNewFile)
+      window.removeEventListener('triggerOpenFile', handleTriggerOpenFile)
+    }
+  }, [])
+
+  console.log('🎨 AppContent渲染 - isAuthenticated:', isAuthenticated)
 
   // 如果未登录，显示登录页面
   if (!isAuthenticated) {
     return <LoginPage />
   }
 
-  // 创建新文件（内存模式）
+  // Create new file (memory mode)
   const handleNewFile = async () => {
-    // 只有在已打开文件且有未保存更改时，才提示保存
+    // Only prompt to save if file is already open and has unsaved changes
     if (currentFilePath && isDirty) {
       confirm({
-        title: '未保存的更改',
+        title: 'Unsaved Changes',
         icon: <ExclamationCircleOutlined />,
-        content: '当前有未保存的更改，是否先保存？',
-        okText: '保存',
-        cancelText: '不保存',
+        content: 'You have unsaved changes. Save them first?',
+        okText: 'Save',
+        cancelText: 'Don\'t Save',
         onOk: async () => {
           await handleSaveFile()
           createNewFile()
@@ -117,45 +177,60 @@ const AppContent: React.FC = () => {
     }
   }
 
+  // 更新ref，供事件监听器使用
+  handleNewFileRef.current = handleNewFile
+
   const createNewFile = () => {
-    // 创建空数据结构，添加所有者信息
+    // Create empty data structure, add owner information
     const emptyData = {
       version: '1.0.0',
       lastModified: new Date().toISOString(),
-      owner: currentUser?.username || 'unknown',  // 添加所有者
-      createdAt: new Date().toISOString(),  // 添加创建时间
+      owner: currentUser?.username || 'unknown',  // Add owner
+      createdAt: new Date().toISOString(),  // Add creation time
       methods: {
         sampleCount: null,
         preTreatmentReagents: [{ id: Date.now().toString(), name: '', volume: 0 }],
         mobilePhaseA: [{ id: Date.now().toString() + '1', name: '', percentage: 0 }],
         mobilePhaseB: [{ id: Date.now().toString() + '2', name: '', percentage: 0 }]
       },
-      // 新建文件时factors为空数组，让FactorsPage使用预定义数据
-      factors: [],
-      // 新建文件时gradient为空数组，让HPLC Gradient页面初始化
+      // 🔥 Use predefined reagents including CO2 and Water
+      factors: [...PREDEFINED_REAGENTS],
+      // Empty gradient array for new files, let HPLC Gradient page initialize
       gradient: []
     }
     
-    // 清空文件句柄，设置为"未命名"状态
-    setFileHandle(null)
-    setCurrentFilePath('未命名项目.json')
+    // 🔥 Immediately write factors to localStorage to ensure MethodsPage can load them
+    localStorage.setItem('hplc_factors_data', JSON.stringify(PREDEFINED_REAGENTS))
+    localStorage.setItem('hplc_factors_version', '2')
+    console.log('✅ App: Created new file with predefined reagents (including CO2 and Water)')
     
-    // 加载空数据
+    // Clear file handle, set to "Untitled" state
+    setFileHandle(null)
+        setCurrentFilePath('Untitled Project.json')
+    
+    // Load empty data
     setAllData(emptyData)
     setIsDirty(false)
     
-    message.success(`新项目已创建（所有者：${currentUser?.username}），请在编辑后点击保存`)
+    // 🔥 Trigger event to notify other pages that factors data is ready
+    setTimeout(() => {
+      window.dispatchEvent(new Event('factorsDataUpdated'))
+      console.log('📢 App: Triggered factorsDataUpdated event')
+    }, 50)
+    
+    message.success(`New project created (Owner: ${currentUser?.username}), please save after editing`)
   }
-  // 打开文件
+  
+  // Open file
   const handleOpenFile = async () => {
-    // 只有在已打开文件且有未保存更改时，才提示保存
+    // Only prompt to save if file is already open and has unsaved changes
     if (currentFilePath && isDirty) {
       confirm({
-        title: '未保存的更改',
+        title: 'Unsaved Changes',
         icon: <ExclamationCircleOutlined />,
-        content: '当前有未保存的更改，是否先保存？',
-        okText: '保存',
-        cancelText: '不保存',
+        content: 'You have unsaved changes. Save them first?',
+        okText: 'Save',
+        cancelText: 'Don\'t Save',
         onOk: async () => {
           await handleSaveFile()
           openFile()
@@ -168,6 +243,9 @@ const AppContent: React.FC = () => {
       openFile()
     }
   }
+
+  // 更新ref，供事件监听器使用
+  handleOpenFileRef.current = handleOpenFile
 
   const openFile = async () => {
     try {
@@ -185,149 +263,149 @@ const AppContent: React.FC = () => {
       const file = await handle.getFile()
       const content = await file.text()
       
-      // 尝试解析为加密数据（检查是否为对象格式）
+      // Try parsing as encrypted data (check if object format)
       let parsedContent
       try {
         parsedContent = JSON.parse(content)
       } catch (e) {
-        // 如果不是JSON，可能是纯加密字符串（旧版本）
-        message.error('文件格式错误，无法解析')
+        // If not JSON, may be pure encrypted string (old version)
+        message.error('File format error, cannot parse')
         return
       }
 
-      // 检查是否为加密数据
+      // Check if encrypted data
       if (parsedContent.encrypted && parsedContent.data) {
-        console.log('🔐 检测到加密文件，需要密码解密')
+        console.log('🔐 Encrypted file detected, password required')
         
-        // 尝试获取文件所有者信息（从加密元数据中）
+        // Try getting file owner info (from encrypted metadata)
         const fileOwner = parsedContent.owner || 'unknown'
         
-        // 检查是否为当前用户的文件
+        // Check if it's current user's file
         if (fileOwner === currentUser?.username) {
-          console.log('✅ 这是当前用户的文件，弹出密码确认框')
-          // 是当前用户的文件，直接让用户输入密码解密
+          console.log('✅ This is current user\'s file, show password confirmation dialog')
+          // Current user's file, let user enter password to decrypt
           setPendingFileData(parsedContent)
           setPendingFileHandle(handle)
           setVerifyModalVisible(true)
         } else {
-          console.log('⚠️ 这是其他用户的文件，需要验证原所有者密码')
-          // 是其他用户的文件，需要验证原所有者的密码
+          console.log('⚠️ This is another user\'s file, need to verify original owner password')
+          // Another user's file, need to verify original owner's password
           setPendingFileData(parsedContent)
           setPendingFileHandle(handle)
           setVerifyModalVisible(true)
         }
       } else {
-        // 未加密的旧文件格式，直接加载
-        console.log('📂 打开未加密的旧格式文件')
+        // Unencrypted old file format, load directly
+        console.log('📂 Opening unencrypted old format file')
         
-        // 验证数据格式
+        // Validate data format
         if (!parsedContent.version || !parsedContent.methods) {
-          throw new Error('文件格式不正确')
+          throw new Error('Incorrect file format')
         }
         
-        // 直接加载数据
+        // Load data directly
         setAllData(parsedContent)
         setFileHandle(handle)
         setCurrentFilePath(handle.name)
         setIsDirty(false)
         
-        message.warning(`文件已打开: ${handle.name}（未加密文件，建议重新保存以加密）`)
+        message.warning(`File opened: ${handle.name} (Unencrypted file, recommend re-saving to encrypt)`)
       }
       
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        message.error('打开文件失败: ' + error.message)
+        message.error('Failed to open file: ' + error.message)
         console.error(error)
       }
     }
   }
 
-  // 验证密码后打开文件
+  // Open file after password verification
   const handleVerifyPassword = async (username: string, password: string): Promise<boolean> => {
     if (!pendingFileData || !pendingFileHandle) {
-      message.error('没有待打开的文件')
+      message.error('No file pending to open')
       return false
     }
 
     try {
-      // 验证用户密码
+      // Verify user password
       const isValid = await verifyUser(username, password)
       
       if (!isValid) {
-        message.error('密码错误，无法打开文件')
+        message.error('Incorrect password, cannot open file')
         return false
       }
 
-      // 密码正确，解密数据
-      console.log('🔓 密码验证成功，开始解密数据...')
+      // Password correct, decrypt data
+      console.log('🔓 Password verification successful, decrypting data...')
       const decryptedJson = decryptData(pendingFileData.data, password)
       
       if (!decryptedJson) {
-        message.error('解密失败，密码可能不正确或文件已损坏')
+        message.error('Decryption failed, password may be incorrect or file corrupted')
         return false
       }
 
-      // 解析解密后的JSON字符串
+      // Parse decrypted JSON string
       const decryptedData = JSON.parse(decryptedJson)
 
-      // 验证解密后的数据格式
+      // Validate decrypted data format
       if (!decryptedData.version || !decryptedData.methods) {
-        throw new Error('文件格式不正确')
+        throw new Error('Incorrect file format')
       }
 
-      // 加载解密后的数据
+      // Load decrypted data
       setAllData(decryptedData)
       setFileHandle(pendingFileHandle)
       setCurrentFilePath(pendingFileHandle.name)
       setIsDirty(false)
 
-      // 清理临时数据
+      // Clear temporary data
       setPendingFileData(null)
       setPendingFileHandle(null)
       setVerifyModalVisible(false)
 
-      message.success(`文件已解密并打开: ${pendingFileHandle.name}`)
+      message.success(`File decrypted and opened: ${pendingFileHandle.name}`)
       return true
     } catch (error: any) {
-      message.error('解密文件失败: ' + error.message)
-      console.error('❌ 解密失败:', error)
+      message.error('Failed to decrypt file: ' + error.message)
+      console.error('❌ Decryption failed:', error)
       return false
     }
   }
 
-  // 取消密码验证
+  // Cancel password verification
   const handleCancelVerify = () => {
     setVerifyModalVisible(false)
     setPendingFileData(null)
     setPendingFileHandle(null)
-    message.info('已取消打开文件')
+    message.info('Cancelled opening file')
   }
 
-  // 保存文件
+  // Save file
   const handleSaveFile = async () => {
-    console.log('💾 开始保存文件，当前isDirty:', isDirty)
+    console.log('💾 Starting file save, current isDirty:', isDirty)
     
     try {
       const dataToSave = exportData()
-      // 更新 lastModified 时间戳
+      // Update lastModified timestamp
       dataToSave.lastModified = new Date().toISOString()
       
-      // 弹出密码确认对话框，等待用户输入密码
+      // Show password confirmation dialog, wait for user input
       setPendingSaveData(dataToSave)
       setConfirmModalVisible(true)
       
     } catch (error: any) {
-      message.error('准备保存文件失败')
-      console.error('❌ 准备保存失败:', error)
+      message.error('Failed to prepare file for saving')
+      console.error('❌ Failed to prepare save:', error)
     }
   }
 
-  // 确认密码后执行实际保存
+  // Execute actual save after password confirmation
   const handleConfirmPassword = async (password: string) => {
     setConfirmModalVisible(false)
     
     if (!pendingSaveData) {
-      message.error('没有待保存的数据')
+      message.error('No data pending to save')
       return
     }
 
@@ -368,41 +446,41 @@ const AppContent: React.FC = () => {
         setFileHandle(handle)
         setCurrentFilePath(handle.name)
         
-        // 保存成功后，只清除dirty标记，不更新Context数据（避免循环）
-        console.log('🧹 清除isDirty标记')
+        // After successful save, only clear dirty flag, don't update Context data (avoid loops)
+        console.log('🧹 Clearing isDirty flag')
         setIsDirty(false)
         setPendingSaveData(null)
         
-        message.success(`文件已加密保存: ${handle.name}`)
+        message.success(`File encrypted and saved: ${handle.name}`)
       } else {
-        console.log('💾 保存到现有文件:', currentFilePath)
-        // 直接保存到原文件
+        console.log('💾 Saving to existing file:', currentFilePath)
+        // Save directly to original file
         const writable = await fileHandle.createWritable()
         await writable.write(encryptedFileContent)
         await writable.close()
         
-        // 保存成功后，只清除dirty标记，不更新Context数据（避免循环）
-        console.log('🧹 清除isDirty标记')
+        // After successful save, only clear dirty flag, don't update Context data (avoid loops)
+        console.log('🧹 Clearing isDirty flag')
         setIsDirty(false)
         setPendingSaveData(null)
         
-        message.success('文件已加密保存')
+        message.success('File encrypted and saved')
       }
-      console.log('✅ 保存完成，当前isDirty应该为false')
+      console.log('✅ Save completed, current isDirty should be false')
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        message.error('保存文件失败')
-        console.error('❌ 保存失败:', error)
+        message.error('Failed to save file')
+        console.error('❌ Save failed:', error)
       }
       setPendingSaveData(null)
     }
   }
 
-  // 取消密码确认
+  // Cancel password confirmation
   const handleCancelPasswordConfirm = () => {
     setConfirmModalVisible(false)
     setPendingSaveData(null)
-    message.info('已取消保存')
+    message.info('Cancelled saving')
   }
 
   const menuItems: MenuProps['items'] = [
@@ -466,21 +544,21 @@ const AppContent: React.FC = () => {
     },
   ]
 
-  // 用户下拉菜单
+  // User dropdown menu
   const handleLogout = () => {
     confirm({
-      title: '确认退出',
+      title: 'Confirm Logout',
       icon: <ExclamationCircleOutlined />,
-      content: (currentFilePath && isDirty) ? '您有未保存的更改，确定要退出吗？' : '确定要退出登录吗？',
-      okText: '退出',
-      cancelText: '取消',
+      content: (currentFilePath && isDirty) ? 'You have unsaved changes, are you sure you want to logout?' : 'Are you sure you want to logout?',
+      okText: 'Logout',
+      cancelText: 'Cancel',
       onOk: () => {
-        // 清理文件相关状态
+        // Clear file-related state
         setFileHandle(null)
         setCurrentFilePath(null)
         setIsDirty(false)
         
-        // 清理所有数据，恢复到初始状态
+        // Clear all data, restore to initial state
         const emptyData = {
           version: '1.0.0',
           lastModified: new Date().toISOString(),
@@ -495,9 +573,9 @@ const AppContent: React.FC = () => {
         }
         setAllData(emptyData)
         
-        // 退出登录
+        // Logout
         logout()
-        message.success('已退出登录')
+        message.success('Logged out successfully')
       }
     })
   }
@@ -509,7 +587,7 @@ const AppContent: React.FC = () => {
         <div style={{ padding: '8px 0' }}>
           <div style={{ fontWeight: 500 }}>{currentUser?.username}</div>
           <div style={{ fontSize: '12px', color: '#999' }}>
-            注册于: {currentUser?.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString() : ''}
+            Registered: {currentUser?.registeredAt ? new Date(currentUser.registeredAt).toLocaleDateString() : ''}
           </div>
         </div>
       ),
@@ -521,7 +599,7 @@ const AppContent: React.FC = () => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: 'Logout',
       onClick: handleLogout
     }
   ]
@@ -542,7 +620,7 @@ const AppContent: React.FC = () => {
       >
         <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px' }}>
           <Title level={4} style={{ color: 'white', margin: 0 }}>
-            HPLC分析
+            HPLC Analysis
           </Title>
         </div>
         <Menu
@@ -558,13 +636,13 @@ const AppContent: React.FC = () => {
       <Layout style={{ marginLeft: 200 }}>
         <Header style={{ padding: 0, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Title level={3} style={{ padding: '0 24px', margin: 0 }}>
-            HPLC绿色化学分析系统
+            HPLC Green Chemistry Analysis System
           </Title>
           <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             {currentFilePath && (
-              <span style={{ color: currentFilePath === '未命名项目.json' ? '#faad14' : '#666' }}>
-                当前文件: {currentFilePath}
-                {currentFilePath === '未命名项目.json' && <span style={{ fontSize: 12, marginLeft: 8 }}>(尚未保存)</span>}
+              <span style={{ color: currentFilePath === 'Untitled Project.json' ? '#faad14' : '#666' }}>
+                Current File: {currentFilePath}
+                {currentFilePath === 'Untitled Project.json' && <span style={{ fontSize: 12, marginLeft: 8 }}>(Not saved yet)</span>}
               </span>
             )}
             {currentFilePath && isDirty && (
@@ -575,7 +653,7 @@ const AppContent: React.FC = () => {
                 onClick={handleSaveFile}
                 style={{ padding: 0, height: 'auto', fontSize: '14px' }}
               >
-                未保存
+                Unsaved
               </Button>
             )}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
@@ -601,7 +679,7 @@ const AppContent: React.FC = () => {
           </VineBorder>
         </Content>
         <Footer style={{ textAlign: 'center' }}>
-          HPLC绿色化学分析系统 ©2025 Created with React + FastAPI
+          HPLC Green Chemistry Analysis System ©2025 Created with React + FastAPI
         </Footer>
       </Layout>
 

@@ -197,73 +197,73 @@ const TablePage: React.FC = () => {
     }
   }
 
-  // 试剂详情表格列定义
+  // Reagent detail table column definitions
   const reagentColumns: ColumnsType<ReagentDetail> = [
     {
-      title: '试剂名称',
+      title: 'Reagent Name',
       dataIndex: 'reagentName',
       key: 'reagentName',
       width: 150,
       fixed: 'left'
     },
     {
-      title: '体积 (ml)',
+      title: 'Volume (ml)',
       dataIndex: 'volume',
       key: 'volume',
       width: 100,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '密度 (g/ml)',
+      title: 'Density (g/ml)',
       dataIndex: 'density',
       key: 'density',
       width: 100,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '质量 (g)',
+      title: 'Mass (g)',
       dataIndex: 'mass',
       key: 'mass',
       width: 100,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '安全性 (S)',
+      title: 'Safety (S)',
       dataIndex: 'S',
       key: 'S',
       width: 100,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '健康危害 (H)',
+      title: 'Health Hazard (H)',
       dataIndex: 'H',
       key: 'H',
       width: 120,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '环境影响 (E)',
+      title: 'Environmental Impact (E)',
       dataIndex: 'E',
       key: 'E',
       width: 120,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '可回收性 (R)',
+      title: 'Recyclability (R)',
       dataIndex: 'R',
       key: 'R',
       width: 120,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '处置难度 (D)',
+      title: 'Disposal Difficulty (D)',
       dataIndex: 'D',
       key: 'D',
       width: 120,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '耗能 (P)',
+      title: 'Energy Consumption (P)',
       dataIndex: 'P',
       key: 'P',
       width: 100,
@@ -271,16 +271,16 @@ const TablePage: React.FC = () => {
     }
   ]
 
-  // 梯度步骤表格列定义
+  // Gradient step table column definitions
   const gradientStepsColumns: ColumnsType<any> = [
     {
-      title: '步骤',
+      title: 'Step',
       dataIndex: 'stepNo',
       key: 'stepNo',
       width: 80
     },
     {
-      title: '时间 (min)',
+      title: 'Time (min)',
       dataIndex: 'time',
       key: 'time',
       width: 100
@@ -298,20 +298,20 @@ const TablePage: React.FC = () => {
       width: 150
     },
     {
-      title: '流速 (ml/min)',
+      title: 'Flow Rate (ml/min)',
       dataIndex: 'flowRate',
       key: 'flowRate',
       width: 120
     },
     {
-      title: '体积 (ml)',
+      title: 'Volume (ml)',
       dataIndex: 'volume',
       key: 'volume',
       width: 100,
       render: (val) => val.toFixed(3)
     },
     {
-      title: '曲线类型',
+      title: 'Curve Type',
       dataIndex: 'curve',
       key: 'curve',
       width: 100
@@ -320,27 +320,27 @@ const TablePage: React.FC = () => {
 
   return (
     <div className="table-page">
-      <Title level={2}>综合数据报告</Title>
+      <Title level={2}>Comprehensive Data Report</Title>
 
       {!hasData ? (
         <Alert
-          message="暂无数据"
-          description="请先完成 Factors、Methods 和 HPLC Gradient 的配置。"
+          message="No Data Available"
+          description="Please complete Factors, Methods, and HPLC Gradient configuration first."
           type="info"
           showIcon
           style={{ marginBottom: 24 }}
         />
       ) : (
         <>
-          {/* 基本信息总览 */}
-          <Card title="基本信息" style={{ marginBottom: 24 }}>
+          {/* Basic Information Overview */}
+          <Card title="Basic Information" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col span={6}>
-                <Statistic title="样品数量" value={sampleCount} suffix="个" />
+                <Statistic title="Sample Count" value={sampleCount} />
               </Col>
               <Col span={6}>
                 <Statistic 
-                  title="总体积" 
+                  title="Total Volume" 
                   value={totalScores?.totalVolume || 0} 
                   precision={3}
                   suffix="ml" 
@@ -348,7 +348,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={6}>
                 <Statistic 
-                  title="总质量" 
+                  title="Total Mass" 
                   value={totalScores?.totalMass || 0} 
                   precision={3}
                   suffix="g" 
@@ -356,7 +356,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={6}>
                 <Statistic 
-                  title="梯度总时间" 
+                  title="Total Gradient Time" 
                   value={gradientInfo?.totalTime || 0} 
                   suffix="min" 
                 />
@@ -364,12 +364,12 @@ const TablePage: React.FC = () => {
             </Row>
           </Card>
 
-          {/* 总得分汇总 */}
-          <Card title="绿色化学评估总得分" style={{ marginBottom: 24 }}>
+          {/* Total Score Summary */}
+          <Card title="Green Chemistry Assessment Total Scores" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col span={4}>
                 <Statistic 
-                  title="安全性 (S)" 
+                  title="Safety (S)" 
                   value={totalScores?.S || 0} 
                   precision={3}
                   valueStyle={{ color: '#3f8600' }}
@@ -377,7 +377,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={4}>
                 <Statistic 
-                  title="健康危害 (H)" 
+                  title="Health Hazard (H)" 
                   value={totalScores?.H || 0} 
                   precision={3}
                   valueStyle={{ color: '#cf1322' }}
@@ -385,7 +385,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={4}>
                 <Statistic 
-                  title="环境影响 (E)" 
+                  title="Environmental Impact (E)" 
                   value={totalScores?.E || 0} 
                   precision={3}
                   valueStyle={{ color: '#1890ff' }}
@@ -393,7 +393,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={4}>
                 <Statistic 
-                  title="可回收性 (R)" 
+                  title="Recyclability (R)" 
                   value={totalScores?.R || 0} 
                   precision={3}
                   valueStyle={{ color: '#faad14' }}
@@ -401,7 +401,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={4}>
                 <Statistic 
-                  title="处置难度 (D)" 
+                  title="Disposal Difficulty (D)" 
                   value={totalScores?.D || 0} 
                   precision={3}
                   valueStyle={{ color: '#722ed1' }}
@@ -409,7 +409,7 @@ const TablePage: React.FC = () => {
               </Col>
               <Col span={4}>
                 <Statistic 
-                  title="耗能 (P)" 
+                  title="Energy Consumption (P)" 
                   value={totalScores?.P || 0} 
                   precision={3}
                   valueStyle={{ color: '#eb2f96' }}
@@ -418,9 +418,9 @@ const TablePage: React.FC = () => {
             </Row>
           </Card>
 
-          {/* 详细数据表格 */}
+          {/* Detailed Data Tables */}
           <Tabs defaultActiveKey="1">
-            <TabPane tab="Sample PreTreatment 详情" key="1">
+            <TabPane tab="Sample PreTreatment Details" key="1">
               <Table
                 columns={reagentColumns}
                 dataSource={preTreatmentData}
@@ -430,7 +430,7 @@ const TablePage: React.FC = () => {
                 summary={() => (
                   <Table.Summary fixed>
                     <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>小计</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         {preTreatmentData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
                       </Table.Summary.Cell>
@@ -462,13 +462,13 @@ const TablePage: React.FC = () => {
               />
             </TabPane>
 
-            <TabPane tab="Mobile Phase A 详情" key="2">
+            <TabPane tab="Mobile Phase A Details" key="2">
               <Card size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
-                  <Descriptions.Item label="总体积">
+                  <Descriptions.Item label="Total Volume">
                     {phaseAData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)} ml
                   </Descriptions.Item>
-                  <Descriptions.Item label="平均百分比">
+                  <Descriptions.Item label="Average Percentage">
                     {gradientInfo?.totalVolume > 0 
                       ? ((phaseAData.reduce((sum, r) => sum + r.volume, 0) / gradientInfo.totalVolume) * 100).toFixed(2)
                       : 0} %
@@ -484,7 +484,7 @@ const TablePage: React.FC = () => {
                 summary={() => (
                   <Table.Summary fixed>
                     <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>小计</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         {phaseAData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
                       </Table.Summary.Cell>
@@ -516,13 +516,13 @@ const TablePage: React.FC = () => {
               />
             </TabPane>
 
-            <TabPane tab="Mobile Phase B 详情" key="3">
+            <TabPane tab="Mobile Phase B Details" key="3">
               <Card size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
-                  <Descriptions.Item label="总体积">
+                  <Descriptions.Item label="Total Volume">
                     {phaseBData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)} ml
                   </Descriptions.Item>
-                  <Descriptions.Item label="平均百分比">
+                  <Descriptions.Item label="Average Percentage">
                     {gradientInfo?.totalVolume > 0 
                       ? ((phaseBData.reduce((sum, r) => sum + r.volume, 0) / gradientInfo.totalVolume) * 100).toFixed(2)
                       : 0} %
@@ -538,7 +538,7 @@ const TablePage: React.FC = () => {
                 summary={() => (
                   <Table.Summary fixed>
                     <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>小计</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         {phaseBData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
                       </Table.Summary.Cell>
@@ -570,7 +570,7 @@ const TablePage: React.FC = () => {
               />
             </TabPane>
 
-            <TabPane tab="梯度步骤信息" key="4">
+            <TabPane tab="Gradient Step Information" key="4">
               <Table
                 columns={gradientStepsColumns}
                 dataSource={gradientInfo?.steps || []}
@@ -579,7 +579,7 @@ const TablePage: React.FC = () => {
               />
             </TabPane>
 
-            <TabPane tab="汇总表" key="5">
+            <TabPane tab="Summary Table" key="5">
               <Table
                 columns={reagentColumns}
                 dataSource={[...preTreatmentData, ...phaseAData, ...phaseBData]}
@@ -589,7 +589,7 @@ const TablePage: React.FC = () => {
                 summary={() => (
                   <Table.Summary fixed>
                     <Table.Summary.Row style={{ backgroundColor: '#e6f7ff', fontWeight: 'bold', fontSize: 14 }}>
-                      <Table.Summary.Cell index={0}>总计</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0}>Total</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         {totalScores?.totalVolume.toFixed(3)}
                       </Table.Summary.Cell>
@@ -622,22 +622,22 @@ const TablePage: React.FC = () => {
             </TabPane>
           </Tabs>
 
-          {/* 计算公式说明 */}
-          <Card title="计算公式说明" style={{ marginTop: 24 }}>
+          {/* Calculation Formula Explanation */}
+          <Card title="Calculation Formula Explanation" style={{ marginTop: 24 }}>
             <Descriptions column={1} bordered>
-              <Descriptions.Item label="质量计算">
-                质量 (g) = 体积 (ml) × 密度 (g/ml)
+              <Descriptions.Item label="Mass Calculation">
+                Mass (g) = Volume (ml) × Density (g/ml)
               </Descriptions.Item>
-              <Descriptions.Item label="得分计算">
-                各项得分 = 质量 (g) × 对应因子值
+              <Descriptions.Item label="Score Calculation">
+                Score for each metric = Mass (g) × Corresponding factor value
               </Descriptions.Item>
-              <Descriptions.Item label="Mobile Phase 体积计算">
-                体积 = Σ(各段积分面积 × 流速 / 100)
+              <Descriptions.Item label="Mobile Phase Volume Calculation">
+                Volume = Σ(Integral area of each segment × Flow rate / 100)
                 <br />
-                积分面积 = 梯度曲线下面积（使用梯形法则计算）
+                Integral area = Area under gradient curve (calculated using trapezoidal rule)
               </Descriptions.Item>
-              <Descriptions.Item label="试剂体积分配">
-                试剂体积 = Mobile Phase 总体积 × 试剂百分比 / 100
+              <Descriptions.Item label="Reagent Volume Distribution">
+                Reagent volume = Total Mobile Phase volume × Reagent percentage / 100
               </Descriptions.Item>
             </Descriptions>
           </Card>

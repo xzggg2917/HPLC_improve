@@ -13,6 +13,8 @@ const LoginPage: React.FC = () => {
   const [registerForm] = Form.useForm()
   const [loading, setLoading] = useState(false)
 
+  console.log('🔐 LoginPage Render')
+
   const handleLogin = async (values: any) => {
     setLoading(true)
     try {
@@ -51,23 +53,23 @@ const LoginPage: React.FC = () => {
           <div className="logo-wrapper">
             <ExperimentOutlined className="logo-icon" />
             <Title level={1} className="system-title">
-              HPLC绿色化学分析系统
+              HPLC Green Chemistry Analysis System
             </Title>
             <Title level={4} className="system-subtitle">
-              High Performance Liquid Chromatography Green Chemistry Analysis System
+              Professional HPLC Method Assessment & Environmental Impact Evaluation
             </Title>
           </div>
           
           <div className="system-description">
             <Paragraph className="description-text">
-              <Text strong>专业的HPLC绿色化学评估平台</Text>
+              <Text strong>Professional HPLC Green Chemistry Assessment Platform</Text>
             </Paragraph>
             <Space direction="vertical" size="small" className="features-list">
-              <Text>🧪 全面的试剂安全性评估</Text>
-              <Text>📊 多维度绿色化学指标分析</Text>
-              <Text>📈 直观的数据可视化展示</Text>
-              <Text>💾 完整的实验数据管理</Text>
-              <Text>🌱 支持环境友好型方法优化</Text>
+              <Text>🧪 Comprehensive Reagent Safety Assessment</Text>
+              <Text>📊 Multi-dimensional Green Chemistry Metrics</Text>
+              <Text>📈 Intuitive Data Visualization</Text>
+              <Text>💾 Complete Experimental Data Management</Text>
+              <Text>🌱 Eco-friendly Method Optimization</Text>
             </Space>
           </div>
         </div>
@@ -82,7 +84,7 @@ const LoginPage: React.FC = () => {
               items={[
                 {
                   key: 'login',
-                  label: '登录',
+                  label: 'Login',
                   children: (
                     <Form
                       form={loginForm}
@@ -92,21 +94,21 @@ const LoginPage: React.FC = () => {
                     >
                       <Form.Item
                         name="username"
-                        rules={[{ required: true, message: '请输入用户名' }]}
+                        rules={[{ required: true, message: 'Please enter username' }]}
                       >
                         <Input
                           prefix={<UserOutlined />}
-                          placeholder="用户名"
+                          placeholder="Username"
                         />
                       </Form.Item>
 
                       <Form.Item
                         name="password"
-                        rules={[{ required: true, message: '请输入密码' }]}
+                        rules={[{ required: true, message: 'Please enter password' }]}
                       >
                         <Input.Password
                           prefix={<LockOutlined />}
-                          placeholder="密码"
+                          placeholder="Password"
                         />
                       </Form.Item>
 
@@ -118,15 +120,15 @@ const LoginPage: React.FC = () => {
                           block
                           size="large"
                         >
-                          登录
+                          Login
                         </Button>
                       </Form.Item>
 
                       <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">
-                          还没有账号？
+                          Don't have an account?
                           <Button type="link" onClick={() => setActiveTab('register')}>
-                            立即注册
+                            Sign up now
                           </Button>
                         </Text>
                       </div>
@@ -135,7 +137,7 @@ const LoginPage: React.FC = () => {
                 },
                 {
                   key: 'register',
-                  label: '注册',
+                  label: 'Register',
                   children: (
                     <Form
                       form={registerForm}
@@ -146,14 +148,14 @@ const LoginPage: React.FC = () => {
                       <Form.Item
                         name="username"
                         rules={[
-                          { required: true, message: '请输入用户名' },
-                          { min: 3, message: '用户名至少3个字符' },
-                          { max: 20, message: '用户名最多20个字符' }
+                          { required: true, message: 'Please enter username' },
+                          { min: 3, message: 'Username must be at least 3 characters' },
+                          { max: 20, message: 'Username must be at most 20 characters' }
                         ]}
                       >
                         <Input
                           prefix={<UserOutlined />}
-                          placeholder="用户名（3-20个字符）"
+                          placeholder="Username (3-20 characters)"
                         />
                       </Form.Item>
 
@@ -161,13 +163,13 @@ const LoginPage: React.FC = () => {
                       <Form.Item
                         name="password"
                         rules={[
-                          { required: true, message: '请输入密码' },
-                          { min: 6, message: '密码至少6个字符' }
+                          { required: true, message: 'Please enter password' },
+                          { min: 6, message: 'Password must be at least 6 characters' }
                         ]}
                       >
                         <Input.Password
                           prefix={<LockOutlined />}
-                          placeholder="密码（至少6个字符）"
+                          placeholder="Password (min. 6 characters)"
                         />
                       </Form.Item>
 
@@ -175,20 +177,20 @@ const LoginPage: React.FC = () => {
                         name="confirmPassword"
                         dependencies={['password']}
                         rules={[
-                          { required: true, message: '请确认密码' },
+                          { required: true, message: 'Please confirm password' },
                           ({ getFieldValue }) => ({
                             validator(_, value) {
                               if (!value || getFieldValue('password') === value) {
                                 return Promise.resolve()
                               }
-                              return Promise.reject(new Error('两次输入的密码不一致'))
+                              return Promise.reject(new Error('Passwords do not match'))
                             },
                           }),
                         ]}
                       >
                         <Input.Password
                           prefix={<LockOutlined />}
-                          placeholder="确认密码"
+                          placeholder="Confirm Password"
                         />
                       </Form.Item>
 
@@ -200,15 +202,15 @@ const LoginPage: React.FC = () => {
                           block
                           size="large"
                         >
-                          注册
+                          Register
                         </Button>
                       </Form.Item>
 
                       <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">
-                          已有账号？
+                          Already have an account?
                           <Button type="link" onClick={() => setActiveTab('login')}>
-                            立即登录
+                            Login now
                           </Button>
                         </Text>
                       </div>
@@ -221,7 +223,7 @@ const LoginPage: React.FC = () => {
 
           <div className="footer-text">
             <Text type="secondary">
-              © 2025 HPLC绿色化学分析系统 | 专业、安全、环保
+              © 2025 HPLC Green Chemistry Analysis System | Professional, Secure, Eco-friendly
             </Text>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, Row, Col, Typography, Space, Empty } from 'antd'
+import { Card, Row, Col, Typography, Space, Empty, Button } from 'antd'
 import {
   FileAddOutlined,
   FolderOpenOutlined,
@@ -14,7 +14,22 @@ const { Title, Paragraph, Text } = Typography
 const HomePage: React.FC = () => {
   const { currentFilePath } = useAppContext()
 
-  // 如果没有打开文件，显示引导界面
+  console.log('🏠 HomePage Render - currentFilePath:', currentFilePath)
+
+  // Trigger menu click events
+  const handleNewFileClick = () => {
+    // Trigger File menu's New File click event
+    const event = new CustomEvent('triggerNewFile')
+    window.dispatchEvent(event)
+  }
+
+  const handleOpenFileClick = () => {
+    // Trigger File menu's Open File click event
+    const event = new CustomEvent('triggerOpenFile')
+    window.dispatchEvent(event)
+  }
+
+  // If no file is open, show guidance interface
   if (!currentFilePath) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -23,9 +38,9 @@ const HomePage: React.FC = () => {
           imageStyle={{ height: 120 }}
           description={
             <Space direction="vertical" size="large" style={{ marginTop: 20 }}>
-              <Title level={2}>欢迎使用HPLC绿色化学分析系统</Title>
+              <Title level={2}>Welcome to HPLC Green Chemistry Analysis System</Title>
               <Paragraph style={{ fontSize: 16, color: '#666', maxWidth: 600, margin: '0 auto' }}>
-                在开始分析之前，请先创建一个新文件或打开现有文件
+                Before starting analysis, please create a new file or open an existing file
               </Paragraph>
             </Space>
           }
@@ -33,44 +48,46 @@ const HomePage: React.FC = () => {
           <Space size="large" style={{ marginTop: 32 }}>
             <Card
               hoverable
-              style={{ width: 280, textAlign: 'center' }}
+              style={{ width: 280, textAlign: 'center', cursor: 'pointer' }}
               bodyStyle={{ padding: '40px 24px' }}
+              onClick={handleNewFileClick}
             >
               <FileAddOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-              <Title level={4}>创建新文件</Title>
+              <Title level={4}>Create New File</Title>
               <Paragraph style={{ color: '#666', marginBottom: 24 }}>
-                开始一个新的HPLC分析项目
+                Start a new HPLC analysis project
               </Paragraph>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                请点击左侧菜单 File → New File
-              </Text>
+              <Button type="primary" size="large">
+                New File
+              </Button>
             </Card>
 
             <Card
               hoverable
-              style={{ width: 280, textAlign: 'center' }}
+              style={{ width: 280, textAlign: 'center', cursor: 'pointer' }}
               bodyStyle={{ padding: '40px 24px' }}
+              onClick={handleOpenFileClick}
             >
               <FolderOpenOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-              <Title level={4}>打开现有文件</Title>
+              <Title level={4}>Open Existing File</Title>
               <Paragraph style={{ color: '#666', marginBottom: 24 }}>
-                继续编辑之前保存的项目
+                Continue editing a previously saved project
               </Paragraph>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                请点击左侧菜单 File → Open File
-              </Text>
+              <Button type="primary" size="large" style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}>
+                Open File
+              </Button>
             </Card>
           </Space>
 
           <div style={{ marginTop: 60, maxWidth: 800, margin: '60px auto 0' }}>
-            <Card title="系统功能介绍" bordered={false}>
+            <Card title="System Features" bordered={false}>
               <Row gutter={24}>
                 <Col span={8}>
                   <div style={{ textAlign: 'center', padding: 20 }}>
                     <ExperimentOutlined style={{ fontSize: 32, color: '#1890ff' }} />
                     <Title level={5} style={{ marginTop: 16 }}>Methods</Title>
                     <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                      配置样品预处理和流动相参数
+                      Configure sample pretreatment and mobile phase parameters
                     </Paragraph>
                   </div>
                 </Col>
@@ -79,7 +96,7 @@ const HomePage: React.FC = () => {
                     <SafetyOutlined style={{ fontSize: 32, color: '#52c41a' }} />
                     <Title level={5} style={{ marginTop: 16 }}>Factors</Title>
                     <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                      管理试剂因子和绿色化学评分
+                      Manage reagent factors and green chemistry scores
                     </Paragraph>
                   </div>
                 </Col>
@@ -88,7 +105,7 @@ const HomePage: React.FC = () => {
                     <BarChartOutlined style={{ fontSize: 32, color: '#faad14' }} />
                     <Title level={5} style={{ marginTop: 16 }}>Results</Title>
                     <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                      查看图表和分析结果
+                      View charts and analysis results
                     </Paragraph>
                   </div>
                 </Col>
@@ -100,16 +117,16 @@ const HomePage: React.FC = () => {
     )
   }
 
-  // 如果已打开文件，显示原来的统计界面
+  // If file is open, show the original statistics interface
   return (
     <div>
-      <Title level={2}>欢迎使用HPLC绿色化学分析系统</Title>
+      <Title level={2}>Welcome to HPLC Green Chemistry Analysis System</Title>
       <Paragraph>
-        当前文件: <Text strong>{currentFilePath}</Text>
+        Current File: <Text strong>{currentFilePath}</Text>
       </Paragraph>
       <Paragraph>
-        本系统集成了高效液相色谱（HPLC）数据分析与绿色化学评估功能，
-        帮助您优化实验方案，减少环境影响，提高实验效率。
+        This system integrates High Performance Liquid Chromatography (HPLC) data analysis with green chemistry assessment,
+        helping you optimize experimental protocols, reduce environmental impact, and improve experimental efficiency.
       </Paragraph>
 
       <Row gutter={16} style={{ marginTop: 32 }}>
@@ -119,7 +136,7 @@ const HomePage: React.FC = () => {
               <ExperimentOutlined style={{ fontSize: 32, color: '#1890ff' }} />
               <Title level={5} style={{ marginTop: 16 }}>Methods</Title>
               <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                配置样品预处理和流动相参数
+                Configure sample pretreatment and mobile phase parameters
               </Paragraph>
             </div>
           </Card>
@@ -130,7 +147,7 @@ const HomePage: React.FC = () => {
               <SafetyOutlined style={{ fontSize: 32, color: '#52c41a' }} />
               <Title level={5} style={{ marginTop: 16 }}>Factors</Title>
               <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                管理试剂因子和绿色化学评分
+                Manage reagent factors and green chemistry scores
               </Paragraph>
             </div>
           </Card>
@@ -141,7 +158,7 @@ const HomePage: React.FC = () => {
               <BarChartOutlined style={{ fontSize: 32, color: '#faad14' }} />
               <Title level={5} style={{ marginTop: 16 }}>Results</Title>
               <Paragraph style={{ fontSize: 12, color: '#666' }}>
-                查看图表和分析结果
+                View charts and analysis results
               </Paragraph>
             </div>
           </Card>
@@ -150,26 +167,26 @@ const HomePage: React.FC = () => {
 
       <Row gutter={16} style={{ marginTop: 24 }}>
         <Col span={12}>
-          <Card title="系统功能" bordered={false}>
+          <Card title="System Features" bordered={false}>
             <Paragraph>
               <ul>
-                <li>溶剂系统绿色化学评分</li>
-                <li>Eco-Scale评估</li>
-                <li>色谱图数据自动分析</li>
-                <li>HPLC分析记录管理</li>
-                <li>环境影响评估报告</li>
+                <li>Solvent System Green Chemistry Scoring</li>
+                <li>Eco-Scale Assessment</li>
+                <li>Automated Chromatogram Data Analysis</li>
+                <li>HPLC Analysis Record Management</li>
+                <li>Environmental Impact Assessment Reports</li>
               </ul>
             </Paragraph>
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="快速开始" bordered={false}>
+          <Card title="Quick Start" bordered={false}>
             <Paragraph>
               <ol>
-                <li>在左侧菜单"Data → Methods"中配置实验方法</li>
-                <li>在"Data → Factors"中管理试剂因子</li>
-                <li>在"Results"中查看分析结果和图表</li>
-                <li>根据评分结果优化您的实验方案</li>
+                <li>Configure experimental methods in "Data → Methods"</li>
+                <li>Manage reagent factors in "Data → Factors"</li>
+                <li>View analysis results and charts in "Results"</li>
+                <li>Optimize your experimental protocols based on scores</li>
               </ol>
             </Paragraph>
           </Card>

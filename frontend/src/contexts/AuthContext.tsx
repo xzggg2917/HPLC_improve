@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 interface User {
   username: string
@@ -17,22 +17,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-
-  // 从 localStorage 加载登录状态
-  useEffect(() => {
+  // 初始化时直接从localStorage读取,避免闪现登录页面
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const savedUser = localStorage.getItem('hplc_current_user')
+    return !!savedUser
+  })
+  
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('hplc_current_user')
     if (savedUser) {
       try {
-        const user = JSON.parse(savedUser)
-        setCurrentUser(user)
-        setIsAuthenticated(true)
+        return JSON.parse(savedUser)
       } catch (error) {
         console.error('加载用户信息失败:', error)
+        return null
       }
     }
-  }, [])
+    return null
+  })
+
+  console.log('🔒 AuthProvider 渲染 - isAuthenticated:', isAuthenticated, 'currentUser:', currentUser)
 
   const register = async (username: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {

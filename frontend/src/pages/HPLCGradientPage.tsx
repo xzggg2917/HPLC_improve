@@ -10,20 +10,20 @@ import './HPLCGradientPage.css'
 const { Title } = Typography
 const { Option } = Select
 
-// 曲线类型定义
+// Curve type definitions
 const CURVE_TYPES = [
-  { value: 'initial', label: 'Initial', color: '#999999' },  // Initial状态，仅用于第一行
-  { value: 'pre-step', label: '1. 预先骤曲线 (Pre-step)', color: '#1890ff' },
-  { value: 'weak-convex', label: '2. 弱凸曲线 (Weak Convex)', color: '#f5222d' },
-  { value: 'medium-convex', label: '3. 中凸曲线 (Medium Convex)', color: '#f5222d' },
-  { value: 'strong-convex', label: '4. 强凸曲线 (Strong Convex)', color: '#f5222d' },
-  { value: 'ultra-convex', label: '5. 超凸曲线 (Ultra Convex)', color: '#f5222d' },
-  { value: 'linear', label: '6. 线性曲线 (Linear)', color: '#52c41a' },
-  { value: 'weak-concave', label: '7. 弱凹曲线 (Weak Concave)', color: '#722ed1' },
-  { value: 'medium-concave', label: '8. 中凹曲线 (Medium Concave)', color: '#722ed1' },
-  { value: 'strong-concave', label: '9. 强凹曲线 (Strong Concave)', color: '#722ed1' },
-  { value: 'ultra-concave', label: '10. 超凹曲线 (Ultra Concave)', color: '#722ed1' },
-  { value: 'post-step', label: '11. 后步骤曲线 (Post-step)', color: '#fa8c16' },
+  { value: 'initial', label: 'Initial', color: '#999999' },
+  { value: 'pre-step', label: '1. Pre-step Curve', color: '#1890ff' },
+  { value: 'weak-convex', label: '2. Weak Convex', color: '#f5222d' },
+  { value: 'medium-convex', label: '3. Medium Convex', color: '#f5222d' },
+  { value: 'strong-convex', label: '4. Strong Convex', color: '#f5222d' },
+  { value: 'ultra-convex', label: '5. Ultra Convex', color: '#f5222d' },
+  { value: 'linear', label: '6. Linear', color: '#52c41a' },
+  { value: 'weak-concave', label: '7. Weak Concave', color: '#722ed1' },
+  { value: 'medium-concave', label: '8. Medium Concave', color: '#722ed1' },
+  { value: 'strong-concave', label: '9. Strong Concave', color: '#722ed1' },
+  { value: 'ultra-concave', label: '10. Ultra Concave', color: '#722ed1' },
+  { value: 'post-step', label: '11. Post-step Curve', color: '#fa8c16' },
 ]
 
 // 曲线计算函数
@@ -179,10 +179,10 @@ const HPLCGradientPage: React.FC = () => {
     setGradientSteps([...gradientSteps, newStep])
   }
 
-  // 删除最后一步
+  // Delete last step
   const deleteLastStep = () => {
     if (gradientSteps.length <= 2) {
-      message.warning('至少保留两个步骤（Initial + 一个步骤）')
+      message.warning('At least two steps must be kept (Initial + one step)')
       return
     }
     setGradientSteps(gradientSteps.slice(0, -1))
@@ -190,9 +190,16 @@ const HPLCGradientPage: React.FC = () => {
 
   // 更新步骤数据
   const updateStep = (id: string, field: keyof GradientStep, value: any) => {
-    setGradientSteps(gradientSteps.map(step => 
-      step.id === id ? { ...step, [field]: value } : step
-    ))
+    setGradientSteps(gradientSteps.map(step => {
+      if (step.id === id) {
+        // 如果修改的是 phaseA，自动更新 phaseB 保持互补关系
+        if (field === 'phaseA') {
+          return { ...step, phaseA: value, phaseB: 100 - value }
+        }
+        return { ...step, [field]: value }
+      }
+      return step
+    }))
   }
 
   // 生成图表数据
@@ -360,6 +367,8 @@ const HPLCGradientPage: React.FC = () => {
 
     // 从 Methods 页面获取组分信息
     const methodsData = localStorage.getItem('hplc_methods_raw')
+    console.log('📋 读取Methods数据:', methodsData ? `存在(${methodsData.length}字符)` : '不存在')
+    
     let componentVolumes: any = {
       totalVolume,
       totalTime,
@@ -380,31 +389,61 @@ const HPLCGradientPage: React.FC = () => {
 
     if (methodsData) {
       const methods = JSON.parse(methodsData)
+      console.log('📋 Methods数据解析成功:', {
+        hasMobilePhaseA: !!methods.mobilePhaseA,
+        mobilePhaseALength: methods.mobilePhaseA?.length,
+        hasMobilePhaseB: !!methods.mobilePhaseB,
+        mobilePhaseBLength: methods.mobilePhaseB?.length,
+        mobilePhaseA: methods.mobilePhaseA,
+        mobilePhaseB: methods.mobilePhaseB
+      })
       
       // 计算 Mobile Phase A 中各试剂的体积
       if (methods.mobilePhaseA && Array.isArray(methods.mobilePhaseA)) {
+        console.log('  ✅ 开始计算Mobile Phase A组分')
         const totalPercentage = methods.mobilePhaseA.reduce((sum: number, r: any) => sum + (r.percentage || 0), 0)
+        console.log('    - totalPercentage:', totalPercentage)
+        console.log('    - totalVolumeA:', totalVolumeA)
+        
         componentVolumes.mobilePhaseA.components = methods.mobilePhaseA
           .filter((r: any) => r.name && r.name.trim())
-          .map((r: any) => ({
-            reagentName: r.name,
-            percentage: r.percentage,
-            ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
-            volume: totalPercentage > 0 ? (totalVolumeA * r.percentage / totalPercentage) : 0
-          }))
+          .map((r: any) => {
+            const comp = {
+              reagentName: r.name,
+              percentage: r.percentage,
+              ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
+              volume: totalPercentage > 0 ? (totalVolumeA * r.percentage / totalPercentage) : 0
+            }
+            console.log('    - 组分:', comp)
+            return comp
+          })
+        console.log('  ✅ Mobile Phase A组分数:', componentVolumes.mobilePhaseA.components.length)
+      } else {
+        console.log('  ⚠️ Methods没有mobilePhaseA或不是数组')
       }
 
       // 计算 Mobile Phase B 中各试剂的体积
       if (methods.mobilePhaseB && Array.isArray(methods.mobilePhaseB)) {
+        console.log('  ✅ 开始计算Mobile Phase B组分')
         const totalPercentage = methods.mobilePhaseB.reduce((sum: number, r: any) => sum + (r.percentage || 0), 0)
+        console.log('    - totalPercentage:', totalPercentage)
+        console.log('    - totalVolumeB:', totalVolumeB)
+        
         componentVolumes.mobilePhaseB.components = methods.mobilePhaseB
           .filter((r: any) => r.name && r.name.trim())
-          .map((r: any) => ({
-            reagentName: r.name,
-            percentage: r.percentage,
-            ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
-            volume: totalPercentage > 0 ? (totalVolumeB * r.percentage / totalPercentage) : 0
-          }))
+          .map((r: any) => {
+            const comp = {
+              reagentName: r.name,
+              percentage: r.percentage,
+              ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
+              volume: totalPercentage > 0 ? (totalVolumeB * r.percentage / totalPercentage) : 0
+            }
+            console.log('    - 组分:', comp)
+            return comp
+          })
+        console.log('  ✅ Mobile Phase B组分数:', componentVolumes.mobilePhaseB.components.length)
+      } else {
+        console.log('  ⚠️ Methods没有mobilePhaseB或不是数组')
       }
 
       // Sample PreTreatment 的信息(使用直接输入的体积)
@@ -421,7 +460,17 @@ const HPLCGradientPage: React.FC = () => {
       if (methods.sampleCount) {
         componentVolumes.sampleCount = methods.sampleCount
       }
+    } else {
+      console.log('⚠️ localStorage中没有hplc_methods_raw数据')
     }
+
+    console.log('📊 最终componentVolumes:', {
+      totalVolume: componentVolumes.totalVolume,
+      mobilePhaseAVolume: componentVolumes.mobilePhaseA.volume,
+      mobilePhaseAComponents: componentVolumes.mobilePhaseA.components.length,
+      mobilePhaseBVolume: componentVolumes.mobilePhaseB.volume,
+      mobilePhaseBComponents: componentVolumes.mobilePhaseB.components.length
+    })
 
     // 计算所有试剂的总体积(用于绿色化学评估)
     const allReagentVolumes: { [key: string]: number } = {}
@@ -451,33 +500,52 @@ const HPLCGradientPage: React.FC = () => {
 
   // 确认保存
   const handleConfirm = () => {
-    // 验证数据
+    console.log('🚀 HPLC Gradient 确认保存开始')
+    
+    // Validate data
     const hasInvalidData = gradientSteps.some(step => 
-  step.time < 0 || step.phaseA < 0 || step.phaseA > 100 || step.flowRate < 0
+      step.time < 0 || step.phaseA < 0 || step.phaseA > 100 || step.flowRate < 0
     )
     
     if (hasInvalidData) {
-      message.error('请检查输入数据：时间和流速不能为负，Mobile Phase A 必须在 0-100% 之间')
+      message.error('Please check input data: Time and flow rate cannot be negative, Mobile Phase A must be between 0-100%')
       return
     }
 
-    // 验证时间递增
+    // Validate time progression
     for (let i = 1; i < gradientSteps.length; i++) {
       if (gradientSteps[i].time < gradientSteps[i - 1].time) {
-        message.error(`步骤 ${i} 的时间必须大于等于步骤 ${i - 1} 的时间`)
+        message.error(`Time at step ${i} must be greater than or equal to step ${i - 1}`)
         return
       }
     }
     
-    // 验证是否有有效的梯度数据（至少一个步骤的时间>0）
+    // Validate for valid gradient data (at least one step with time>0)
     const totalTime = Math.max(...gradientSteps.map(s => s.time))
     if (totalTime === 0) {
-      message.warning('请至少输入一个步骤的有效时间（大于0）')
+      message.warning('⚠️ Please enter at least one step with valid time (>0)\nHint: Step 1 Time cannot be 0, recommend setting to 10.0 or other positive number')
       return
     }
+    
+    // Validate for valid flow rate (at least one step with flow rate>0)
+    const zeroFlowRateSteps = gradientSteps.filter(s => s.flowRate === 0).map(s => s.stepNo)
+    if (zeroFlowRateSteps.length === gradientSteps.length) {
+      message.warning('⚠️ All steps have flow rate of 0, cannot calculate volume!\nHint: Please set Flow rate to positive value, e.g., 2.00 ml/min')
+      return
+    }
+    
+    // If some steps have zero flow rate, give warning but allow continuation
+    if (zeroFlowRateSteps.length > 0) {
+      message.warning(`⚠️ Steps ${zeroFlowRateSteps.join(', ')} have flow rate of 0, these steps will not produce volume`)
+    }
 
+    console.log('📊 开始计算组分体积，chartData点数:', chartData.length)
+    console.log('📋 gradientSteps:', gradientSteps)
+    
     // chartData 已由 useMemo 在组件作用域中定义
     const componentVolumes = calculateComponentVolumes(chartData)
+    
+    console.log('✅ componentVolumes计算完成:', componentVolumes)
 
     const gradientData = {
       // 基础步骤数据
@@ -513,9 +581,22 @@ const HPLCGradientPage: React.FC = () => {
     }
 
     localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
+    console.log('💾 保存到localStorage完成, 数据大小:', JSON.stringify(gradientData).length, '字符')
+    console.log('📦 保存的gradientData结构:', {
+      hasSteps: !!gradientData.steps,
+      stepsLength: gradientData.steps?.length,
+      hasChartData: !!gradientData.chartData,
+      chartDataLength: gradientData.chartData?.length,
+      hasCalculations: !!gradientData.calculations,
+      hasMobilePhaseA: !!gradientData.calculations?.mobilePhaseA,
+      hasMobilePhaseB: !!gradientData.calculations?.mobilePhaseB,
+      mobilePhaseAComponents: gradientData.calculations?.mobilePhaseA?.components?.length,
+      mobilePhaseBComponents: gradientData.calculations?.mobilePhaseB?.components?.length
+    })
     
     // 触发自定义事件通知其他页面数据已更新
     window.dispatchEvent(new Event('gradientDataUpdated'))
+    console.log('📢 已触发 gradientDataUpdated 事件')
     
     // 打印计算结果到控制台(调试用)
     console.log('=== HPLC Gradient 计算结果 ===')
@@ -524,12 +605,12 @@ const HPLCGradientPage: React.FC = () => {
     console.log('Mobile Phase A 平均百分比:', componentVolumes?.mobilePhaseA.averagePercentage.toFixed(2), '%')
     console.log('Mobile Phase A 体积:', componentVolumes?.mobilePhaseA.volume.toFixed(3), 'ml')
     console.log('Mobile Phase B 平均百分比:', componentVolumes?.mobilePhaseB.averagePercentage.toFixed(2), '%')
-    console.log('Mobile Phase B 体积:', componentVolumes?.mobilePhaseB.volume.toFixed(3), 'ml')
-    console.log('各试剂总体积:', componentVolumes?.allReagentVolumes)
-    console.log('Mobile Phase A 组分:', componentVolumes?.mobilePhaseA.components)
-    console.log('Mobile Phase B 组分:', componentVolumes?.mobilePhaseB.components)
+    console.log('Mobile Phase B Volume:', componentVolumes?.mobilePhaseB.volume.toFixed(3), 'ml')
+    console.log('All Reagent Volumes:', componentVolumes?.allReagentVolumes)
+    console.log('Mobile Phase A Components:', componentVolumes?.mobilePhaseA.components)
+    console.log('Mobile Phase B Components:', componentVolumes?.mobilePhaseB.components)
     
-    message.success('梯度程序已保存，所有计算数据已准备完成')
+    message.success('Gradient program saved, all calculation data prepared')
   }
 
   // 使用 useMemo 确保 curve 改变时图表会更新
@@ -548,6 +629,7 @@ const HPLCGradientPage: React.FC = () => {
                 <th>Step No</th>
                 <th>Time</th>
                 <th>Mobile Phase A (%)</th>
+                <th>Mobile Phase B (%)</th>
                 <th>Flow rate (ml/min)</th>
                 <th>Curve</th>
               </tr>
@@ -590,6 +672,20 @@ const HPLCGradientPage: React.FC = () => {
                       onChange={(value) => updateStep(step.id, 'phaseA', value || 0)}
                       style={{ width: '100%' }}
                     />
+                  </td>
+                  <td>
+                    {/* Mobile Phase B 自动计算，只读显示 */}
+                    <div style={{ 
+                      padding: '4px 11px', 
+                      color: '#1890ff', 
+                      backgroundColor: '#e6f7ff',
+                      border: '1px solid #91d5ff',
+                      borderRadius: '6px',
+                      textAlign: 'center',
+                      fontWeight: 500
+                    }}>
+                      {(100 - step.phaseA).toFixed(1)}
+                    </div>
                   </td>
                   <td>
                     <InputNumber
@@ -659,8 +755,8 @@ const HPLCGradientPage: React.FC = () => {
         </Row>
       </Card>
 
-      {/* 梯度曲线图 */}
-      <Card title="梯度曲线预览">
+      {/* Gradient Curve Chart */}
+      <Card title="Gradient Curve Preview">
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -681,14 +777,13 @@ const HPLCGradientPage: React.FC = () => {
               dot={false}
               strokeWidth={2}
             />
-            {/* B曲线已隐藏，不再展示给用户 */}
-            {/* <Line 
+            <Line 
               type="monotone" 
               dataKey="Mobile Phase B (%)" 
               stroke="#52c41a" 
               dot={false}
               strokeWidth={2}
-            /> */}
+            />
           </LineChart>
         </ResponsiveContainer>
       </Card>
@@ -700,10 +795,10 @@ const HPLCGradientPage: React.FC = () => {
           onClick={() => navigate('/methods')}
           size="large"
         >
-          返回 Methods
+          Back to Methods
         </Button>
         <Button type="primary" size="large" onClick={handleConfirm}>
-          确定
+          Confirm
         </Button>
       </div>
     </div>

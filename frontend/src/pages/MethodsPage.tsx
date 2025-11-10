@@ -107,7 +107,7 @@ const MethodsPage: React.FC = () => {
           // 如果gradient是数组或没有calculations，提示用户需要重新计算
           if (Array.isArray(gradientData) || !gradientData.calculations) {
             console.warn('⚠️ 打开的文件缺少gradient calculations数据')
-            message.warning('此文件缺少梯度计算数据，请前往 HPLC Gradient Prg 页面点击"确定"按钮重新计算', 5)
+            message.warning('This file is missing gradient calculation data. Please go to HPLC Gradient Prg page and click "Confirm" to recalculate', 5)
           }
         } catch (e) {
           console.error('检查gradient数据失败:', e)
@@ -218,7 +218,7 @@ const MethodsPage: React.FC = () => {
   const handleSampleCountChange = (value: number | null) => {
     setSampleCount(value)
     if (value === null || value <= 0 || !Number.isInteger(value)) {
-      setSampleCountError('请输入正整数')
+      setSampleCountError('Please enter a positive integer')
     } else {
       setSampleCountError('')
     }
@@ -413,6 +413,8 @@ const MethodsPage: React.FC = () => {
       
       const mass = reagent.volume * factor.density // 质量 = 体积 × 密度
       
+      // Note: For reagents with density=0 (like CO2, Water), all scores will be 0
+      // They will appear in the chart but with no visible bars
       chartData.push({
         reagent: reagent.name,
         S: Number((mass * factor.safetyScore).toFixed(3)),
@@ -468,6 +470,8 @@ const MethodsPage: React.FC = () => {
         
         const mass = component.volume * factor.density // 质量 = 体积 × 密度
         
+        // Note: For reagents with density=0 (like CO2, Water), all scores will be 0
+        // They will appear in the chart but with no visible bars
         chartData.push({
           reagent: component.reagentName,
           S: Number((mass * factor.safetyScore).toFixed(3)),
@@ -504,8 +508,8 @@ const MethodsPage: React.FC = () => {
   const handleConfirm = () => {
     // 验证样品数
     if (!sampleCount || sampleCount <= 0 || !Number.isInteger(sampleCount)) {
-      message.error('请输入有效的处理样品数（正整数）')
-      setSampleCountError('请输入正整数')
+      message.error('Please enter a valid number of samples (positive integer)')
+      setSampleCountError('Please enter a positive integer')
       return
     }
 
@@ -589,7 +593,7 @@ const MethodsPage: React.FC = () => {
       mobilePhaseB
     }))
 
-    message.success('数据已保存，跳转到 HPLC Gradient Prg')
+    message.success('Data saved, navigating to HPLC Gradient Prg')
     
     // 触发自定义事件，通知其他组件数据已更新
     window.dispatchEvent(new CustomEvent('methodsDataUpdated', { detail: methodsData }))
@@ -610,13 +614,13 @@ const MethodsPage: React.FC = () => {
             <Col span={15}>
               <Select
                 style={{ width: '100%' }}
-                placeholder="选择试剂"
+                placeholder="Select reagent"
                 value={reagent.name || null}
                 onChange={(value) => updateReagent('preTreatment', reagent.id, 'name', value)}
                 showSearch
                 allowClear
                 filterOption={selectFilterOption}
-                notFoundContent="未找到试剂"
+                notFoundContent="No reagent found"
                 optionFilterProp="children"
                 getPopupContainer={(trigger) => trigger.parentElement || document.body}
               >
@@ -664,7 +668,7 @@ const MethodsPage: React.FC = () => {
         </Row>
         
         <div style={{ marginTop: 12, color: '#52c41a', fontWeight: 500, fontSize: 14 }}>
-          总体积: {totalVolume.toFixed(1)} ml
+          Total Volume: {totalVolume.toFixed(1)} ml
         </div>
       </div>
     )
@@ -686,13 +690,13 @@ const MethodsPage: React.FC = () => {
             <Col span={15}>
               <Select
                 style={{ width: '100%' }}
-                placeholder="选择试剂"
+                placeholder="Select reagent"
                 value={reagent.name || null}
                 onChange={(value) => updateReagent(type, reagent.id, 'name', value)}
                 showSearch
                 allowClear
                 filterOption={selectFilterOption}
-                notFoundContent="未找到试剂"
+                notFoundContent="No reagent found"
                 optionFilterProp="children"
                 getPopupContainer={(trigger) => trigger.parentElement || document.body}
               >
@@ -741,10 +745,10 @@ const MethodsPage: React.FC = () => {
         </Row>
         
         <div style={{ marginTop: 12, ...getPercentageStyle(total) }}>
-          当前总计: {total.toFixed(1)}%
+          Current Total: {total.toFixed(1)}%
           {Math.abs(total - 100) >= 0.01 && (
             <span style={{ marginLeft: 8, fontSize: 12 }}>
-              (必须为 100%)
+              (Must be 100%)
             </span>
           )}
         </div>
@@ -760,7 +764,7 @@ const MethodsPage: React.FC = () => {
       <Card style={{ marginBottom: 24 }}>
         <Row align="middle" gutter={16}>
           <Col>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>输入处理样品数：</span>
+            <span style={{ fontSize: 16, fontWeight: 500 }}>Enter Number of Samples to Process:</span>
           </Col>
           <Col>
             <InputNumber
@@ -794,7 +798,7 @@ const MethodsPage: React.FC = () => {
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-                      请输入试剂名称和体积后查看图表
+                      Please enter reagent name and volume to view chart
                     </div>
                   )
                 }
@@ -810,7 +814,7 @@ const MethodsPage: React.FC = () => {
                   <div className="chart-container">
                     {/* Y轴控制区 */}
                     <div className="y-axis-control">
-                      <span>Y轴范围: 0 - {currentMax.toFixed(2)}</span>
+                      <span>Y-axis Range: 0 - {currentMax.toFixed(2)}</span>
                       <input
                         type="range"
                         className="y-axis-slider"
@@ -819,10 +823,10 @@ const MethodsPage: React.FC = () => {
                         step="0.01"
                         value={currentMax}
                         onChange={(e) => setPreTreatmentYMax(parseFloat(e.target.value))}
-                        title="拖动调整Y轴范围"
+                        title="Drag to adjust Y-axis range"
                       />
                       <button className="y-axis-reset-btn" onClick={() => setPreTreatmentYMax(null)}>
-                        自动
+                        Auto
                       </button>
                     </div>
                     
@@ -884,12 +888,12 @@ const MethodsPage: React.FC = () => {
                                 contentStyle={{ fontSize: 12 }}
                                 formatter={(value: any) => value.toFixed(4)}
                               />
-                              <Bar dataKey="S" fill="#8884d8" name="安全性 (S)" />
-                              <Bar dataKey="H" fill="#82ca9d" name="健康危害 (H)" />
-                              <Bar dataKey="E" fill="#ffc658" name="环境影响 (E)" />
-                              <Bar dataKey="R" fill="#ff8042" name="可回收性 (R)" />
-                              <Bar dataKey="D" fill="#a4de6c" name="处置难度 (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="耗能 (P)" />
+                              <Bar dataKey="S" fill="#8884d8" name="Safety (S)" />
+                              <Bar dataKey="H" fill="#82ca9d" name="Health Hazard (H)" />
+                              <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
+                              <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
+                              <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
+                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -935,29 +939,41 @@ const MethodsPage: React.FC = () => {
                     }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#8884d8', display: 'inline-block', borderRadius: 2 }}></span>
-                        安全性 (S)
+                        Safety (S)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#82ca9d', display: 'inline-block', borderRadius: 2 }}></span>
-                        健康危害 (H)
+                        Health Hazard (H)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ffc658', display: 'inline-block', borderRadius: 2 }}></span>
-                        环境影响 (E)
+                        Environmental Impact (E)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ff8042', display: 'inline-block', borderRadius: 2 }}></span>
-                        可回收性 (R)
+                        Recyclability (R)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
-                        处置难度 (D)
+                        Disposal Difficulty (D)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        耗能 (P)
+                        Energy Consumption (P)
                       </span>
                     </div>
+                    {/* Note for zero-impact reagents */}
+                    {chartData.some(d => d.S === 0 && d.H === 0 && d.E === 0 && d.R === 0 && d.D === 0 && d.P === 0) && (
+                      <div style={{ 
+                        fontSize: 11, 
+                        color: '#999', 
+                        textAlign: 'center', 
+                        marginTop: 8,
+                        fontStyle: 'italic'
+                      }}>
+                        Note: Reagents with zero environmental impact (e.g., CO2, Water) appear on X-axis but have no visible bars
+                      </div>
+                    )}
                   </div>
                 )
               })()}
@@ -976,7 +992,7 @@ const MethodsPage: React.FC = () => {
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 20, textAlign: 'center' }}>
-                      请先完成 HPLC Gradient 设置<br/>计算梯度曲线后此处将显示图表
+                      Please complete HPLC Gradient setup first<br/>Chart will be displayed after gradient calculation
                     </div>
                   )
                 }
@@ -992,7 +1008,7 @@ const MethodsPage: React.FC = () => {
                   <div className="chart-container">
                     {/* Y轴控制区 */}
                     <div className="y-axis-control">
-                      <span>Y轴范围: 0 - {currentMax.toFixed(2)}</span>
+                      <span>Y-axis Range: 0 - {currentMax.toFixed(2)}</span>
                       <input
                         type="range"
                         className="y-axis-slider"
@@ -1001,10 +1017,10 @@ const MethodsPage: React.FC = () => {
                         step="0.01"
                         value={currentMax}
                         onChange={(e) => setPhaseAYMax(parseFloat(e.target.value))}
-                        title="拖动调整Y轴范围"
+                        title="Drag to adjust Y-axis range"
                       />
                       <button className="y-axis-reset-btn" onClick={() => setPhaseAYMax(null)}>
-                        自动
+                        Auto
                       </button>
                     </div>
                     
@@ -1066,12 +1082,12 @@ const MethodsPage: React.FC = () => {
                                 contentStyle={{ fontSize: 12 }}
                                 formatter={(value: any) => value.toFixed(4)}
                               />
-                              <Bar dataKey="S" fill="#8884d8" name="安全性 (S)" />
-                              <Bar dataKey="H" fill="#82ca9d" name="健康危害 (H)" />
-                              <Bar dataKey="E" fill="#ffc658" name="环境影响 (E)" />
-                              <Bar dataKey="R" fill="#ff8042" name="可回收性 (R)" />
-                              <Bar dataKey="D" fill="#a4de6c" name="处置难度 (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="耗能 (P)" />
+                              <Bar dataKey="S" fill="#8884d8" name="Safety (S)" />
+                              <Bar dataKey="H" fill="#82ca9d" name="Health Hazard (H)" />
+                              <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
+                              <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
+                              <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
+                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -1117,27 +1133,27 @@ const MethodsPage: React.FC = () => {
                     }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#8884d8', display: 'inline-block', borderRadius: 2 }}></span>
-                        安全性 (S)
+                        Safety (S)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#82ca9d', display: 'inline-block', borderRadius: 2 }}></span>
-                        健康危害 (H)
+                        Health Hazard (H)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ffc658', display: 'inline-block', borderRadius: 2 }}></span>
-                        环境影响 (E)
+                        Environmental Impact (E)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ff8042', display: 'inline-block', borderRadius: 2 }}></span>
-                        可回收性 (R)
+                        Recyclability (R)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
-                        处置难度 (D)
+                        Disposal Difficulty (D)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        耗能 (P)
+                        Energy Consumption (P)
                       </span>
                     </div>
                   </div>
@@ -1158,7 +1174,7 @@ const MethodsPage: React.FC = () => {
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 20, textAlign: 'center' }}>
-                      请先完成 HPLC Gradient 设置<br/>计算梯度曲线后此处将显示图表
+                      Please complete HPLC Gradient setup first<br/>Chart will be displayed after gradient calculation
                     </div>
                   )
                 }
@@ -1174,7 +1190,7 @@ const MethodsPage: React.FC = () => {
                   <div className="chart-container">
                     {/* Y轴控制区 */}
                     <div className="y-axis-control">
-                      <span>Y轴范围: 0 - {currentMax.toFixed(2)}</span>
+                      <span>Y-axis Range: 0 - {currentMax.toFixed(2)}</span>
                       <input
                         type="range"
                         className="y-axis-slider"
@@ -1183,10 +1199,10 @@ const MethodsPage: React.FC = () => {
                         step="0.01"
                         value={currentMax}
                         onChange={(e) => setPhaseBYMax(parseFloat(e.target.value))}
-                        title="拖动调整Y轴范围"
+                        title="Drag to adjust Y-axis range"
                       />
                       <button className="y-axis-reset-btn" onClick={() => setPhaseBYMax(null)}>
-                        自动
+                        Auto
                       </button>
                     </div>
                     
@@ -1248,12 +1264,12 @@ const MethodsPage: React.FC = () => {
                                 contentStyle={{ fontSize: 12 }}
                                 formatter={(value: any) => value.toFixed(4)}
                               />
-                              <Bar dataKey="S" fill="#8884d8" name="安全性 (S)" />
-                              <Bar dataKey="H" fill="#82ca9d" name="健康危害 (H)" />
-                              <Bar dataKey="E" fill="#ffc658" name="环境影响 (E)" />
-                              <Bar dataKey="R" fill="#ff8042" name="可回收性 (R)" />
-                              <Bar dataKey="D" fill="#a4de6c" name="处置难度 (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="耗能 (P)" />
+                              <Bar dataKey="S" fill="#8884d8" name="Safety (S)" />
+                              <Bar dataKey="H" fill="#82ca9d" name="Health Hazard (H)" />
+                              <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
+                              <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
+                              <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
+                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -1299,27 +1315,27 @@ const MethodsPage: React.FC = () => {
                     }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#8884d8', display: 'inline-block', borderRadius: 2 }}></span>
-                        安全性 (S)
+                        Safety (S)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#82ca9d', display: 'inline-block', borderRadius: 2 }}></span>
-                        健康危害 (H)
+                        Health Hazard (H)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ffc658', display: 'inline-block', borderRadius: 2 }}></span>
-                        环境影响 (E)
+                        Environmental Impact (E)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#ff8042', display: 'inline-block', borderRadius: 2 }}></span>
-                        可回收性 (R)
+                        Recyclability (R)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
-                        处置难度 (D)
+                        Disposal Difficulty (D)
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        耗能 (P)
+                        Energy Consumption (P)
                       </span>
                     </div>
                   </div>
@@ -1333,7 +1349,7 @@ const MethodsPage: React.FC = () => {
       {/* 确认按钮 */}
       <div style={{ textAlign: 'right', marginTop: 24 }}>
         <Button type="primary" size="large" onClick={handleConfirm}>
-          确定
+          Confirm
         </Button>
       </div>
     </div>

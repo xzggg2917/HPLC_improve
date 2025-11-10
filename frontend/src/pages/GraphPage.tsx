@@ -50,12 +50,12 @@ const GraphPage: React.FC = () => {
   const renderCustomTick = (props: any) => {
     const { x, y, payload, index } = props
     const positions = [
-      { dx: 0, dy: -25 },      // 安全性 (S) - 上方，远离数值
-      { dx: 30, dy: -10 },     // 健康危害 (H) - 右上
-      { dx: 35, dy: 10 },      // 环境影响 (E) - 右下  
-      { dx: 0, dy: 18 },       // 可回收性 (R) - 下方，往上提避开图例
-      { dx: -35, dy: 10 },     // 处置难度 (D) - 左下
-      { dx: -30, dy: -10 }     // 耗能 (P) - 左上
+      { dx: 0, dy: -35 },      // Safety (S) - 上方，远离数值
+      { dx: 50, dy: -15 },     // Health Hazard (H) - 右上，增加偏移
+      { dx: 55, dy: 15 },      // Environmental Impact (E) - 右下，增加偏移
+      { dx: 0, dy: 30 },       // Recyclability (R) - 下方，增加偏移避开图例
+      { dx: -50, dy: 15 },     // Disposal Difficulty (D) - 左下，增加偏移
+      { dx: -55, dy: -15 }     // Energy Consumption (P) - 左上，增加偏移
     ]
     
     const pos = positions[index] || { dx: 0, dy: 0 }
@@ -66,7 +66,7 @@ const GraphPage: React.FC = () => {
         y={y + pos.dy}
         textAnchor="middle"
         fill="#666"
-        fontSize={15}
+        fontSize={13}
         fontWeight="500"
       >
         {payload.value}
@@ -91,14 +91,14 @@ const GraphPage: React.FC = () => {
       const gradientData = JSON.parse(gradientDataStr)
       const methodsData = JSON.parse(methodsDataStr)
 
-      // 初始化总得分
-      let totalScores = {
-        S: 0,  // 安全性
-        H: 0,  // 健康危害
-        E: 0,  // 环境影响
-        R: 0,  // 可回收性
-        D: 0,  // 处置难度
-        P: 0   // 耗能
+      // Initialize total scores
+      const totalScores = {
+        S: 0,  // Safety
+        H: 0,  // Health Hazard
+        E: 0,  // Environmental Impact
+        R: 0,  // Recyclability
+        D: 0,  // Disposal Difficulty
+        P: 0   // Energy Consumption
       }
 
       // 1. 计算 Sample PreTreatment 的得分
@@ -162,35 +162,35 @@ const GraphPage: React.FC = () => {
         }
       }
 
-      // 3. 构建雷达图数据
+      // 3. Build radar chart data
       const chartData = [
         {
-          subject: '安全性 (S)',
+          subject: 'Safety (S)',
           score: Number(totalScores.S.toFixed(3)),
           fullMark: Math.max(totalScores.S * 1.2, 10)
         },
         {
-          subject: '健康危害 (H)',
+          subject: 'Health Hazard (H)',
           score: Number(totalScores.H.toFixed(3)),
           fullMark: Math.max(totalScores.H * 1.2, 10)
         },
         {
-          subject: '环境影响 (E)',
+          subject: 'Environmental Impact (E)',
           score: Number(totalScores.E.toFixed(3)),
           fullMark: Math.max(totalScores.E * 1.2, 10)
         },
         {
-          subject: '可回收性 (R)',
+          subject: 'Recyclability (R)',
           score: Number(totalScores.R.toFixed(3)),
           fullMark: Math.max(totalScores.R * 1.2, 10)
         },
         {
-          subject: '处置难度 (D)',
+          subject: 'Disposal Difficulty (D)',
           score: Number(totalScores.D.toFixed(3)),
           fullMark: Math.max(totalScores.D * 1.2, 10)
         },
         {
-          subject: '耗能 (P)',
+          subject: 'Energy Consumption (P)',
           score: Number(totalScores.P.toFixed(3)),
           fullMark: Math.max(totalScores.P * 1.2, 10)
         }
@@ -208,12 +208,12 @@ const GraphPage: React.FC = () => {
 
   return (
     <div className="graph-page">
-      <Title level={2}>绿色化学评估雷达图</Title>
+      <Title level={2}>Green Chemistry Assessment Radar Chart</Title>
 
       {!hasData ? (
         <Alert
-          message="暂无数据"
-          description="请先完成 Factors、Methods 和 HPLC Gradient 的配置，然后刷新此页面。"
+          message="No Data Available"
+          description="Please complete Factors, Methods, and HPLC Gradient configuration, then refresh this page."
           type="info"
           showIcon
           style={{ marginBottom: 24 }}
@@ -229,7 +229,7 @@ const GraphPage: React.FC = () => {
               />
               <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
               <Radar
-                name="综合得分"
+                name="Comprehensive Score"
                 dataKey="score"
                 stroke="#8884d8"
                 fill="#8884d8"
@@ -241,7 +241,7 @@ const GraphPage: React.FC = () => {
           </ResponsiveContainer>
 
           <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-            <Title level={4}>得分详情</Title>
+            <Title level={4}>Score Details</Title>
             {radarData.map((item, index) => (
               <div key={index} style={{ marginBottom: 8 }}>
                 <strong>{item.subject}:</strong> {item.score}

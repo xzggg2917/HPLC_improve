@@ -26,13 +26,13 @@ const PasswordVerifyModal: React.FC<PasswordVerifyModalProps> = ({
       const success = await onVerify(values.username, values.password)
       
       if (success) {
-        message.success('验证成功')
+        message.success('Verification successful')
         form.resetFields()
       } else {
-        message.error('用户名或密码错误')
+        message.error('Incorrect username or password')
       }
     } catch (error) {
-      console.error('验证失败:', error)
+      console.error('Verification failed:', error)
     } finally {
       setLoading(false)
     }
@@ -45,42 +45,42 @@ const PasswordVerifyModal: React.FC<PasswordVerifyModalProps> = ({
 
   return (
     <Modal
-      title="文件访问验证"
+      title="File Access Verification"
       open={visible}
       onOk={handleSubmit}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="验证"
-      cancelText="取消"
+      okText="Verify"
+      cancelText="Cancel"
       maskClosable={false}
     >
       <div style={{ marginBottom: 16 }}>
-        <p>此文件属于用户: <strong>{ownerUsername}</strong></p>
-        <p style={{ color: '#ff4d4f' }}>请输入该用户的账号密码以访问此文件</p>
+        <p>This file belongs to user: <strong>{ownerUsername}</strong></p>
+        <p style={{ color: '#ff4d4f' }}>Please enter the user's account password to access this file</p>
       </div>
       
       <Form form={form} layout="vertical">
         <Form.Item
           name="username"
-          label="用户名"
-          rules={[{ required: true, message: '请输入用户名' }]}
+          label="Username"
+          rules={[{ required: true, message: 'Please enter username' }]}
           initialValue={ownerUsername}
         >
           <Input
             prefix={<UserOutlined />}
-            placeholder="用户名"
+            placeholder="Username"
             disabled
           />
         </Form.Item>
         
         <Form.Item
           name="password"
-          label="密码"
-          rules={[{ required: true, message: '请输入密码' }]}
+          label="Password"
+          rules={[{ required: true, message: 'Please enter password' }]}
         >
           <Input.Password
             prefix={<LockOutlined />}
-            placeholder="请输入该用户的密码"
+            placeholder="Please enter the user's password"
             autoFocus
           />
         </Form.Item>

@@ -26,10 +26,10 @@ const PasswordConfirmModal: React.FC<PasswordConfirmModalProps> = ({
       setLoading(true)
       const values = await form.validateFields()
       
-      // 验证密码是否正确
+      // Verify password is correct
       const usersData = localStorage.getItem('hplc_users')
       if (!usersData) {
-        message.error('用户数据不存在')
+        message.error('User data does not exist')
         return
       }
 
@@ -37,21 +37,21 @@ const PasswordConfirmModal: React.FC<PasswordConfirmModalProps> = ({
       const user = users.find((u: any) => u.username === username && u.password === values.password)
 
       if (!user) {
-        message.error('密码错误，请重试')
+        message.error('Incorrect password, please try again')
         form.setFields([
           {
             name: 'password',
-            errors: ['密码错误']
+            errors: ['Incorrect password']
           }
         ])
         return
       }
 
-      // 密码正确，返回密码
+      // Password correct, return password
       form.resetFields()
       onConfirm(values.password)
     } catch (error) {
-      console.error('密码验证失败:', error)
+      console.error('Password verification failed:', error)
     } finally {
       setLoading(false)
     }
@@ -64,27 +64,27 @@ const PasswordConfirmModal: React.FC<PasswordConfirmModalProps> = ({
 
   return (
     <Modal
-      title="确认密码以保存文件"
+      title="Confirm Password to Save File"
       open={visible}
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="确认"
-      cancelText="取消"
+      okText="Confirm"
+      cancelText="Cancel"
       maskClosable={false}
     >
-      <p>为了保护您的数据安全，文件将使用密码加密保存。</p>
-      <p>当前用户：<strong>{username}</strong></p>
+      <p>To protect your data security, the file will be encrypted and saved with a password.</p>
+      <p>Current user: <strong>{username}</strong></p>
       <Form form={form} layout="vertical">
         <Form.Item
-          label="请输入您的密码"
+          label="Please enter your password"
           name="password"
           rules={[
-            { required: true, message: '请输入密码' },
-            { min: 6, message: '密码至少6个字符' }
+            { required: true, message: 'Please enter password' },
+            { min: 6, message: 'Password must be at least 6 characters' }
           ]}
         >
-          <Input.Password placeholder="输入密码以加密文件" autoFocus />
+          <Input.Password placeholder="Enter password to encrypt file" autoFocus />
         </Form.Item>
       </Form>
     </Modal>
