@@ -204,6 +204,21 @@ const AppContent: React.FC = () => {
     localStorage.setItem('hplc_factors_version', '2')
     console.log('✅ App: Created new file with predefined reagents (including CO2 and Water)')
     
+    // 🔥 创建无效的 gradient 数据（流速为0），以便 MethodsPage 显示警告
+    const invalidGradientData = {
+      steps: [
+        { stepNo: 0, time: 0.0, phaseA: 0, phaseB: 100, flowRate: 0, volume: 0, curve: 'initial' },
+        { stepNo: 1, time: 0, phaseA: 0, phaseB: 100, flowRate: 0, volume: 0, curve: 'linear' }
+      ],
+      chartData: [],
+      calculations: null,
+      timestamp: new Date().toISOString(),
+      isValid: false,
+      invalidReason: 'New file - flow rates not configured'
+    }
+    localStorage.setItem('hplc_gradient_data', JSON.stringify(invalidGradientData))
+    console.log('✅ App: Created invalid gradient data for new file (will show warning in MethodsPage)')
+    
     // Clear file handle, set to "Untitled" state
     setFileHandle(null)
         setCurrentFilePath('Untitled Project.json')

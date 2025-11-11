@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { Card, Typography, Alert } from 'antd'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -19,19 +19,19 @@ interface ReagentFactor {
 const GraphPage: React.FC = () => {
   const [radarData, setRadarData] = useState<any[]>([])
   const [hasData, setHasData] = useState(false)
+  const [totalScore, setTotalScore] = useState<number>(0)
+  const [sampleCount, setSampleCount] = useState<number>(0)
 
   useEffect(() => {
     calculateTotalScores()
 
-    // 监听数据更新
     const handleDataUpdate = () => {
-      console.log('🔔 GraphPage: 检测到数据更新，重新计算雷达图...')
+      console.log('GraphPage: Data updated, recalculating...')
       calculateTotalScores()
     }
     
-    // 监听文件数据变更事件
     const handleFileDataChanged = () => {
-      console.log('📢 GraphPage: 接收到 fileDataChanged 事件，立即重新计算')
+      console.log('GraphPage: File data changed event received')
       calculateTotalScores()
     }
 
@@ -46,16 +46,15 @@ const GraphPage: React.FC = () => {
     }
   }, [])
 
-  // 自定义雷达图标签渲染函数
   const renderCustomTick = (props: any) => {
     const { x, y, payload, index } = props
     const positions = [
-      { dx: 0, dy: -35 },      // Safety (S) - 上方，远离数值
-      { dx: 50, dy: -15 },     // Health Hazard (H) - 右上，增加偏移
-      { dx: 55, dy: 15 },      // Environmental Impact (E) - 右下，增加偏移
-      { dx: 0, dy: 30 },       // Recyclability (R) - 下方，增加偏移避开图例
-      { dx: -50, dy: 15 },     // Disposal Difficulty (D) - 左下，增加偏移
-      { dx: -55, dy: -15 }     // Energy Consumption (P) - 左上，增加偏移
+      { dx: 0, dy: -25 },      // Safety (S) - 上方，再往下移一点
+      { dx: 55, dy: -15 },     // Health Hazard (H) - 右上
+      { dx: 60, dy: 15 },      // Environmental Impact (E) - 右下
+      { dx: 0, dy: 28 },       // Recyclability (R) - 下方，再往上移避免与图例重叠
+      { dx: -55, dy: 15 },     // Disposal Difficulty (D) - 左下
+      { dx: -60, dy: -15 }     // Energy Consumption (P) - 左上
     ]
     
     const pos = positions[index] || { dx: 0, dy: 0 }
@@ -74,15 +73,46 @@ const GraphPage: React.FC = () => {
     )
   }
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div style={{
+          background: 'white',
+          border: '1px solid #ccc',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+        }}>
+          <p style={{ margin: 0, fontWeight: 'bold', marginBottom: 8 }}>
+            {data.subject}
+          </p>
+          <p style={{ margin: 0, color: '#1890ff' }}>
+            Score: <strong>{data.score}</strong>
+          </p>
+          {sampleCount > 0 && totalScore > 0 && (
+            <p style={{ margin: '8px 0 0 0', paddingTop: 8, borderTop: '1px solid #eee', color: '#52c41a', fontSize: 12 }}>
+              Total Score: <strong>{totalScore.toFixed(3)}</strong>
+              <br />
+              <span style={{ fontSize: 11, opacity: 0.8 }}>
+                Formula: (S+H+E+R+D+P) / {sampleCount}
+              </span>
+            </p>
+          )}
+        </div>
+      )
+    }
+    return null
+  }
+
   const calculateTotalScores = () => {
     try {
-      // 加载数据
       const factorsDataStr = localStorage.getItem('hplc_factors_data')
       const gradientDataStr = localStorage.getItem('hplc_gradient_data')
       const methodsDataStr = localStorage.getItem('hplc_methods_raw')
 
       if (!factorsDataStr || !gradientDataStr || !methodsDataStr) {
-        console.log('❌ 缺少必要数据')
+        console.log('Missing required data')
         setHasData(false)
         return
       }
@@ -91,17 +121,18 @@ const GraphPage: React.FC = () => {
       const gradientData = JSON.parse(gradientDataStr)
       const methodsData = JSON.parse(methodsDataStr)
 
-      // Initialize total scores
+      const sampleCountValue = methodsData.sampleCount || 0
+      setSampleCount(sampleCountValue)
+
       const totalScores = {
-        S: 0,  // Safety
-        H: 0,  // Health Hazard
-        E: 0,  // Environmental Impact
-        R: 0,  // Recyclability
-        D: 0,  // Disposal Difficulty
-        P: 0   // Energy Consumption
+        S: 0,
+        H: 0,
+        E: 0,
+        R: 0,
+        D: 0,
+        P: 0
       }
 
-      // 1. 计算 Sample PreTreatment 的得分
       if (methodsData.preTreatmentReagents && Array.isArray(methodsData.preTreatmentReagents)) {
         methodsData.preTreatmentReagents.forEach((reagent: any) => {
           if (!reagent.name || reagent.volume <= 0) return
@@ -109,7 +140,7 @@ const GraphPage: React.FC = () => {
           const factor = factorsData.find(f => f.name === reagent.name)
           if (!factor) return
 
-          const mass = reagent.volume * factor.density // 质量 = 体积 × 密度
+          const mass = reagent.volume * factor.density
 
           totalScores.S += mass * factor.safetyScore
           totalScores.H += mass * factor.healthScore
@@ -120,10 +151,8 @@ const GraphPage: React.FC = () => {
         })
       }
 
-      // 2. 计算 Mobile Phase A 和 B 的得分（从梯度数据中获取）
       const calculations = gradientData.calculations
       if (calculations) {
-        // Mobile Phase A
         if (calculations.mobilePhaseA?.components) {
           calculations.mobilePhaseA.components.forEach((component: any) => {
             if (!component.reagentName || component.volume <= 0) return
@@ -142,7 +171,6 @@ const GraphPage: React.FC = () => {
           })
         }
 
-        // Mobile Phase B
         if (calculations.mobilePhaseB?.components) {
           calculations.mobilePhaseB.components.forEach((component: any) => {
             if (!component.reagentName || component.volume <= 0) return
@@ -162,7 +190,11 @@ const GraphPage: React.FC = () => {
         }
       }
 
-      // 3. Build radar chart data
+      const sumOfAllScores = totalScores.S + totalScores.H + totalScores.E + totalScores.R + totalScores.D + totalScores.P
+      const calculatedTotalScore = sampleCountValue > 0 ? sumOfAllScores / sampleCountValue : 0
+      setTotalScore(calculatedTotalScore)
+
+      // 雷达图只显示六个因素，不包含总分
       const chartData = [
         {
           subject: 'Safety (S)',
@@ -196,19 +228,73 @@ const GraphPage: React.FC = () => {
         }
       ]
 
-      console.log('📊 雷达图数据:', chartData)
+      console.log('Radar chart data:', chartData)
+      console.log('Total score:', calculatedTotalScore.toFixed(3), 'Sample count:', sampleCountValue)
       setRadarData(chartData)
       setHasData(true)
 
     } catch (error) {
-      console.error('❌ 计算雷达图数据失败:', error)
+      console.error('Failed to calculate radar chart data:', error)
       setHasData(false)
     }
   }
 
   return (
     <div className="graph-page">
-      <Title level={2}>Green Chemistry Assessment Radar Chart</Title>
+      <Title level={2}>Green Chemistry Assessment Scores</Title>
+
+      {/* 六个因素的分数卡片 */}
+      {hasData && radarData.length > 0 && (
+        <Card style={{ marginBottom: 24 }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-around', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '20px'
+          }}>
+            {radarData.map((item, index) => (
+              <div key={index} style={{ textAlign: 'center', minWidth: '120px' }}>
+                <div style={{ 
+                  fontSize: 13, 
+                  color: '#666', 
+                  marginBottom: 8,
+                  fontWeight: 500 
+                }}>
+                  {item.subject}
+                </div>
+                <div style={{ 
+                  fontSize: 28, 
+                  fontWeight: 'bold',
+                  color: ['#52c41a', '#fa8c16', '#1890ff', '#f5222d', '#722ed1', '#eb2f96'][index]
+                }}>
+                  {item.score}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* 总分卡片 */}
+      {hasData && sampleCount > 0 && totalScore > 0 && (
+        <Card style={{ marginBottom: 24 }}>
+          <div style={{ 
+            padding: '20px', 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 12,
+            color: 'white',
+            textAlign: 'center',
+            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+          }}>
+            <div style={{ fontSize: 16, opacity: 0.9, marginBottom: 8 }}>Overall Total Score</div>
+            <div style={{ fontSize: 48, fontWeight: 'bold', marginBottom: 8 }}>{totalScore.toFixed(3)}</div>
+            <div style={{ fontSize: 14, opacity: 0.85 }}>
+              Formula: (S + H + E + R + D + P) / Sample Count ({sampleCount})
+            </div>
+          </div>
+        </Card>
+      )}
 
       {!hasData ? (
         <Alert
@@ -220,8 +306,8 @@ const GraphPage: React.FC = () => {
         />
       ) : (
         <Card>
-          <ResponsiveContainer width="100%" height={650}>
-            <RadarChart data={radarData} margin={{ top: 80, right: 180, bottom: 100, left: 180 }}>
+          <ResponsiveContainer width="100%" height={700}>
+            <RadarChart data={radarData} margin={{ top: 100, right: 200, bottom: 120, left: 200 }}>
               <PolarGrid />
               <PolarAngleAxis 
                 dataKey="subject" 
@@ -235,8 +321,8 @@ const GraphPage: React.FC = () => {
                 fill="#8884d8"
                 fillOpacity={0.6}
               />
-              <Legend wrapperStyle={{ paddingTop: 20 }} />
-              <Tooltip />
+              <Legend wrapperStyle={{ paddingTop: 40 }} />
+              <Tooltip content={<CustomTooltip />} />
             </RadarChart>
           </ResponsiveContainer>
 

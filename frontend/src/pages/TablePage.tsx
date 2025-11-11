@@ -101,18 +101,24 @@ const TablePage: React.FC = () => {
           if (!factor) return
 
           const mass = reagent.volume * factor.density
+          const S = mass * factor.safetyScore
+          const H = mass * factor.healthScore
+          const E = mass * factor.envScore
+          const R = mass * factor.recycleScore
+          const D = mass * factor.disposal
+          const P = mass * factor.power
 
           preTreatmentDetails.push({
             reagentName: reagent.name,
             volume: reagent.volume,
             density: factor.density,
             mass: mass,
-            S: mass * factor.safetyScore,
-            H: mass * factor.healthScore,
-            E: mass * factor.envScore,
-            R: mass * factor.recycleScore,
-            D: mass * factor.disposal,
-            P: mass * factor.power,
+            S: S,
+            H: H,
+            E: E,
+            R: R,
+            D: D,
+            P: P,
             source: 'Sample PreTreatment'
           })
         })
@@ -128,18 +134,24 @@ const TablePage: React.FC = () => {
           if (!factor) return
 
           const mass = component.volume * factor.density
+          const S = mass * factor.safetyScore
+          const H = mass * factor.healthScore
+          const E = mass * factor.envScore
+          const R = mass * factor.recycleScore
+          const D = mass * factor.disposal
+          const P = mass * factor.power
 
           phaseADetails.push({
             reagentName: component.reagentName,
             volume: component.volume,
             density: factor.density,
             mass: mass,
-            S: mass * factor.safetyScore,
-            H: mass * factor.healthScore,
-            E: mass * factor.envScore,
-            R: mass * factor.recycleScore,
-            D: mass * factor.disposal,
-            P: mass * factor.power,
+            S: S,
+            H: H,
+            E: E,
+            R: R,
+            D: D,
+            P: P,
             source: 'Mobile Phase A'
           })
         })
@@ -155,18 +167,24 @@ const TablePage: React.FC = () => {
           if (!factor) return
 
           const mass = component.volume * factor.density
+          const S = mass * factor.safetyScore
+          const H = mass * factor.healthScore
+          const E = mass * factor.envScore
+          const R = mass * factor.recycleScore
+          const D = mass * factor.disposal
+          const P = mass * factor.power
 
           phaseBDetails.push({
             reagentName: component.reagentName,
             volume: component.volume,
             density: factor.density,
             mass: mass,
-            S: mass * factor.safetyScore,
-            H: mass * factor.healthScore,
-            E: mass * factor.envScore,
-            R: mass * factor.recycleScore,
-            D: mass * factor.disposal,
-            P: mass * factor.power,
+            S: S,
+            H: H,
+            E: E,
+            R: R,
+            D: D,
+            P: P,
             source: 'Mobile Phase B'
           })
         })
@@ -184,11 +202,14 @@ const TablePage: React.FC = () => {
         D: allDetails.reduce((sum, r) => sum + r.D, 0),
         P: allDetails.reduce((sum, r) => sum + r.P, 0)
       }
+      // 计算总分：(S+H+E+R+D+P) / sampleCount
+      const totalSum = totals.S + totals.H + totals.E + totals.R + totals.D + totals.P
+      const totalScore = sampleCount > 0 ? totalSum / sampleCount : 0
 
       setPreTreatmentData(preTreatmentDetails)
       setPhaseAData(phaseADetails)
       setPhaseBData(phaseBDetails)
-      setTotalScores(totals)
+      setTotalScores({ ...totals, totalScore })
       setHasData(true)
 
     } catch (error) {
@@ -287,14 +308,14 @@ const TablePage: React.FC = () => {
     },
     {
       title: 'Mobile Phase A (%)',
-      dataIndex: 'mobilePhaseA',
-      key: 'mobilePhaseA',
+      dataIndex: 'phaseA',
+      key: 'phaseA',
       width: 150
     },
     {
       title: 'Mobile Phase B (%)',
-      dataIndex: 'mobilePhaseB',
-      key: 'mobilePhaseB',
+      dataIndex: 'phaseB',
+      key: 'phaseB',
       width: 150
     },
     {

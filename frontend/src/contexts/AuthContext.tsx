@@ -59,9 +59,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       users.push(newUser)
       localStorage.setItem('hplc_users', JSON.stringify(users))
 
-      return { success: true, message: '注册成功！请登录' }
+      return { success: true, message: 'Registration successful! Please login' }
     } catch (error) {
-      return { success: false, message: '注册失败，请重试' }
+      return { success: false, message: 'Registration failed, please try again' }
     }
   }
 
@@ -70,14 +70,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // 获取用户列表
       const usersData = localStorage.getItem('hplc_users')
       if (!usersData) {
-        return { success: false, message: '用户不存在' }
+        return { success: false, message: 'User does not exist' }
       }
 
       const users = JSON.parse(usersData)
       const user = users.find((u: any) => u.username === username && u.password === password)
 
       if (!user) {
-        return { success: false, message: '用户名或密码错误' }
+        return { success: false, message: 'Incorrect username or password' }
       }
 
       // 保存登录状态
@@ -90,9 +90,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(true)
       localStorage.setItem('hplc_current_user', JSON.stringify(currentUser))
 
-      return { success: true, message: '登录成功' }
+      return { success: true, message: 'Login successful' }
     } catch (error) {
-      return { success: false, message: '登录失败，请重试' }
+      return { success: false, message: 'Login failed, please try again' }
     }
   }
 

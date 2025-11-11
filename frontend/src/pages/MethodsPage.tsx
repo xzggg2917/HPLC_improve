@@ -401,9 +401,10 @@ const MethodsPage: React.FC = () => {
     }
   }
 
-  // 计算柱状图数据 - Sample PreTreatment
+  // 计算柱状图数据 - Sample PreTreatment（需要乘以样品数）
   const calculatePreTreatmentChartData = () => {
     const chartData: any[] = []
+    const currentSampleCount = sampleCount || 1 // 如果没有样品数，默认为1
     
     preTreatmentReagents.forEach(reagent => {
       if (!reagent.name || reagent.volume <= 0) return
@@ -411,7 +412,9 @@ const MethodsPage: React.FC = () => {
       const factor = factorsData.find(f => f.name === reagent.name)
       if (!factor) return
       
-      const mass = reagent.volume * factor.density // 质量 = 体积 × 密度
+      // Individual sample pretreatment: 体积需要乘以样品数
+      const totalVolume = reagent.volume * currentSampleCount
+      const mass = totalVolume * factor.density // 质量 = 总体积 × 密度
       
       // Note: For reagents with density=0 (like CO2, Water), all scores will be 0
       // They will appear in the chart but with no visible bars
@@ -447,6 +450,14 @@ const MethodsPage: React.FC = () => {
       console.log('  - gradient数据类型:', Array.isArray(gradientData) ? '数组' : '对象')
       console.log('  - gradient对象键:', Object.keys(gradientData))
       console.log('  - 是否有calculations:', 'calculations' in gradientData)
+      console.log('  - isValid标记:', gradientData.isValid)
+      console.log('  - invalidReason:', gradientData.invalidReason)
+      
+      // 🔥 检查数据是否被标记为无效（所有流速为0）
+      if (gradientData.isValid === false || gradientData.calculations === null) {
+        console.log('  ⚠️ Gradient数据无效（流速为0），返回特殊标记')
+        return 'INVALID_FLOW_RATE' as any // 特殊标记
+      }
       
       const phaseKey = phaseType === 'A' ? 'mobilePhaseA' : 'mobilePhaseB'
       const phaseData = gradientData.calculations?.[phaseKey]
@@ -608,7 +619,7 @@ const MethodsPage: React.FC = () => {
     
     return (
       <div className="reagent-section">
-        <Title level={4}>Sample PreTreatment</Title>
+        <Title level={4}>Individual Sample PreTreatment</Title>
         {preTreatmentReagents.map((reagent) => (
           <Row gutter={8} key={reagent.id} style={{ marginBottom: 12 }}>
             <Col span={15}>
@@ -989,6 +1000,38 @@ const MethodsPage: React.FC = () => {
               {/* Mobile Phase A 柱状图 - 需要 HPLC Gradient 数据 */}
               {(() => {
                 const chartData = phaseAChartData
+                
+                // 🔥 检查是否是无效流速标记
+                if (chartData === 'INVALID_FLOW_RATE') {
+                  return (
+                    <div style={{ 
+                      height: 300, 
+                      background: 'linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%)', 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: '#ff4d4f',
+                      padding: 20, 
+                      textAlign: 'center',
+                      border: '2px dashed #ff7875',
+                      borderRadius: 8
+                    }}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+                      <div style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                        All Flow Rates are Zero!
+                      </div>
+                      <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>
+                        Cannot calculate volume when all flow rates are 0 ml/min
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        Please go to <strong>HPLC Gradient Prg</strong> page<br/>
+                        and set at least one step with flow rate &gt; 0
+                      </div>
+                    </div>
+                  )
+                }
+                
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 20, textAlign: 'center' }}>
@@ -1171,6 +1214,38 @@ const MethodsPage: React.FC = () => {
               {/* Mobile Phase B 柱状图 - 需要 HPLC Gradient 数据 */}
               {(() => {
                 const chartData = phaseBChartData
+                
+                // 🔥 检查是否是无效流速标记
+                if (chartData === 'INVALID_FLOW_RATE') {
+                  return (
+                    <div style={{ 
+                      height: 300, 
+                      background: 'linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%)', 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: '#ff4d4f',
+                      padding: 20, 
+                      textAlign: 'center',
+                      border: '2px dashed #ff7875',
+                      borderRadius: 8
+                    }}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+                      <div style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                        All Flow Rates are Zero!
+                      </div>
+                      <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>
+                        Cannot calculate volume when all flow rates are 0 ml/min
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        Please go to <strong>HPLC Gradient Prg</strong> page<br/>
+                        and set at least one step with flow rate &gt; 0
+                      </div>
+                    </div>
+                  )
+                }
+                
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', padding: 20, textAlign: 'center' }}>

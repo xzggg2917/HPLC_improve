@@ -122,15 +122,16 @@ const HPLCGradientPage: React.FC = () => {
     }
   }, [data.gradient, updateGradientData])
 
-  // 自动保存数据到 Context 和 localStorage
-  // 使用 ref 来避免初始化时触发 dirty 和避免循环更新
+  // 自动保存数据到 Context（不自动保存到 localStorage，避免覆盖 calculations 数据）
+  // 只在点击 Confirm 时才保存完整的 gradientData 到 localStorage
   const isInitialMount = React.useRef(true)
   const lastLocalData = React.useRef<string>('')
   
   useEffect(() => {
     const currentLocalDataStr = JSON.stringify(gradientSteps)
     
-    localStorage.setItem('hplc_gradient_data', currentLocalDataStr)
+    // ❌ 移除自动保存到 localStorage，避免覆盖包含 calculations 的完整数据
+    // localStorage.setItem('hplc_gradient_data', currentLocalDataStr)
     
     // 跳过初始挂载时的更新
     if (isInitialMount.current) {
@@ -527,10 +528,44 @@ const HPLCGradientPage: React.FC = () => {
       return
     }
     
-    // Validate for valid flow rate (at least one step with flow rate>0)
+    // Check for valid flow rate
     const zeroFlowRateSteps = gradientSteps.filter(s => s.flowRate === 0).map(s => s.stepNo)
-    if (zeroFlowRateSteps.length === gradientSteps.length) {
-      message.warning('⚠️ All steps have flow rate of 0, cannot calculate volume!\nHint: Please set Flow rate to positive value, e.g., 2.00 ml/min')
+    const allFlowRatesZero = zeroFlowRateSteps.length === gradientSteps.length
+    
+    if (allFlowRatesZero) {
+      // ⚠️ 所有流速都是0，保存数据但标记为无效（清除 calculations）
+      message.warning('⚠️ All steps have flow rate of 0, cannot calculate volume!\nData saved but calculations are cleared.', 5)
+      
+      const gradientData = {
+        steps: gradientSteps.map(step => ({
+          stepNo: step.stepNo,
+          time: step.time,
+          phaseA: step.phaseA,
+          phaseB: 100 - step.phaseA,
+          flowRate: step.flowRate,
+          volume: 0,
+          curve: step.curve
+        })),
+        chartData: [],
+        calculations: null, // 🔥 标记为无效
+        timestamp: new Date().toISOString(),
+        isValid: false, // 🔥 添加无效标记
+        invalidReason: 'All flow rates are zero'
+      }
+      
+      localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
+      console.log('💾 保存无效数据到localStorage（所有流速为0）')
+      
+      // 🔥 触发事件通知 MethodsPage 数据已更新（虽然是无效的）
+      window.dispatchEvent(new Event('gradientDataUpdated'))
+      console.log('📢 已触发 gradientDataUpdated 事件（无效数据）')
+      
+      // 导航到 Methods 页面让用户看到警告
+      message.info('Navigating to Methods page...', 2)
+      setTimeout(() => {
+        navigate('/methods')
+      }, 2000)
+      
       return
     }
     

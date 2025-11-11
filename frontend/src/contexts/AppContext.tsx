@@ -120,15 +120,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log('  - factors:', savedFactors ? '存在' : '不存在')
       console.log('  - gradient:', savedGradient ? '存在' : '不存在')
       
+      // 解析 gradient 数据，兼容两种格式：
+      // 1. 数组格式（旧格式，只有 steps）
+      // 2. 对象格式（新格式，包含 steps, chartData, calculations 等）
+      let gradientSteps: GradientStep[] = []
+      if (savedGradient) {
+        const parsedGradient = JSON.parse(savedGradient)
+        if (Array.isArray(parsedGradient)) {
+          // 旧格式：直接是数组
+          gradientSteps = parsedGradient
+          console.log('  ℹ️ gradient 是数组格式（旧格式）')
+        } else if (parsedGradient.steps && Array.isArray(parsedGradient.steps)) {
+          // 新格式：包含 steps 字段的对象
+          gradientSteps = parsedGradient.steps
+          console.log('  ℹ️ gradient 是对象格式（新格式，包含 calculations）')
+        }
+      }
+      
       const loadedData: AppData = {
         version: '1.0.0',
         lastModified: new Date().toISOString(),
         methods: savedMethodsRaw ? JSON.parse(savedMethodsRaw) : getDefaultData().methods,
         factors: savedFactors ? JSON.parse(savedFactors) : [],
-        gradient: savedGradient ? JSON.parse(savedGradient) : []
+        gradient: gradientSteps
       }
       
-      console.log('✅ AppContext初始化: 数据加载完成')
+      console.log('✅ AppContext初始化: 数据加载完成，gradient steps 数量:', gradientSteps.length)
       return loadedData
     } catch (error) {
       console.error('❌ AppContext初始化: 加载数据失败:', error)
@@ -218,8 +235,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     })
     
-    // 同步到localStorage
-    localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
+    // ❌ 不在这里同步到 localStorage！
+    // 原因：这里只有 steps 数组，会覆盖包含 calculations 的完整 gradientData
+    // 只有在 HPLCGradientPage 点击 Confirm 时才应该保存完整的 gradientData
+    // localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
+    console.log('ℹ️ AppContext: gradient Context已更新，但不自动保存到localStorage（避免覆盖calculations）')
   }
 
   const setAllData = (newData: AppData) => {
