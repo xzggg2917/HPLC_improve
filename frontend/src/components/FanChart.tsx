@@ -62,7 +62,7 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
     // === 扇子参数（精确匹配 Picture1.py）===
     const scale = Math.min(canvasWidth, canvasHeight) / 3  // 缩放因子（从 /4 增加到 /3，放大）
     const centerX = canvasWidth / 2
-    const centerY = canvasHeight * 0.5  // 扇子中心位置（与雷达图对齐）
+    const centerY = canvasHeight * 0.88  // 扇子中心位置（与雷达图对齐）
     
     // Picture1.py 的参数
     const fanRadius = 1.5 * scale

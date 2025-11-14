@@ -311,8 +311,8 @@ const GraphPage: React.FC = () => {
           <Row gutter={24} wrap={false} style={{ minWidth: '1200px' }}>
             {/* 左侧：雷达图 */}
             <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
-              <Card title="Radar Chart Analysis">
-                <div style={{ width: '100%', minWidth: 0 }}>
+              <Card title="Radar Chart Analysis" style={{ height: '900px' }}>
+                <div style={{ width: '100%', minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <ResponsiveContainer width="100%" height={800}>
                     <RadarChart data={radarData} margin={{ top: 40, right: 100, bottom: 40, left: 100 }}>
                     <PolarGrid />
@@ -338,19 +338,30 @@ const GraphPage: React.FC = () => {
 
             {/* 右侧：扇子图 */}
             <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
-              <Card title="Fan Chart Visualization">
-                <FanChart
-                  scores={{
-                    S: radarData.find(d => d.subject.includes('Safety'))?.score || 0,
-                    H: radarData.find(d => d.subject.includes('Health'))?.score || 0,
-                    E: radarData.find(d => d.subject.includes('Environmental'))?.score || 0,
-                    R: radarData.find(d => d.subject.includes('Recyclability'))?.score || 0,
-                    D: radarData.find(d => d.subject.includes('Disposal'))?.score || 0,
-                    P: radarData.find(d => d.subject.includes('Energy'))?.score || 0
-                  }}
-                />
-                <div style={{ marginTop: 16, textAlign: 'center', color: '#666', fontSize: 14 }}>
-                  Green Chemistry Assessment Fan - Six Dimensions
+              <Card title="Fan Chart Visualization" style={{ height: '900px' }}>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', maxHeight: '800px' }}>
+                    <FanChart
+                      scores={{
+                        S: radarData.find(d => d.subject.includes('Safety'))?.score || 0,
+                        H: radarData.find(d => d.subject.includes('Health'))?.score || 0,
+                        E: radarData.find(d => d.subject.includes('Environmental'))?.score || 0,
+                        R: radarData.find(d => d.subject.includes('Recyclability'))?.score || 0,
+                        D: radarData.find(d => d.subject.includes('Disposal'))?.score || 0,
+                        P: radarData.find(d => d.subject.includes('Energy'))?.score || 0
+                      }}
+                    />
+                  </div>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    fontSize: 14,
+                    paddingTop: 120,
+                    paddingBottom: 0,
+                    flex: '0 0 auto'
+                  }}>
+                    Green Chemistry Assessment Fan - Six Dimensions
+                  </div>
                 </div>
               </Card>
             </Col>
