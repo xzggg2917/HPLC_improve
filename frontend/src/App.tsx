@@ -622,7 +622,7 @@ const AppContent: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
-        breakpoint="lg"
+        breakpoint={undefined}
         collapsedWidth="0"
         style={{
           overflow: 'auto',
@@ -634,7 +634,7 @@ const AppContent: React.FC = () => {
         }}
       >
         <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 16px' }}>
-          <Title level={4} style={{ color: 'white', margin: 0 }}>
+          <Title level={4} style={{ color: 'white', margin: 0, fontSize: '16px' }}>
             HPLC Analysis
           </Title>
         </div>
@@ -648,14 +648,48 @@ const AppContent: React.FC = () => {
           triggerSubMenuAction="hover"
         />
       </Sider>
-      <Layout style={{ marginLeft: 200 }}>
-        <Header style={{ padding: 0, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Title level={3} style={{ padding: '0 24px', margin: 0 }}>
+      <Layout className="site-layout">
+        <Header style={{ 
+          padding: '0 24px', 
+          background: '#fff', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          height: '64px',
+          lineHeight: '64px',
+          minWidth: 0,
+          overflow: 'hidden'
+        }}>
+          <Title level={3} style={{ 
+            padding: 0, 
+            margin: 0, 
+            fontSize: '20px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flex: '0 0 auto',
+            maxWidth: '600px'
+          }}>
             HPLC Green Chemistry Analysis System
           </Title>
-          <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            flex: '0 0 auto',
+            minWidth: 0,
+            flexShrink: 0
+          }}>
             {currentFilePath && (
-              <span style={{ color: currentFilePath === 'Untitled Project.json' ? '#faad14' : '#666' }}>
+              <span style={{ 
+                color: currentFilePath === 'Untitled Project.json' ? '#faad14' : '#666',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '250px',
+                display: 'inline-block'
+              }}>
                 Current File: {currentFilePath}
                 {currentFilePath === 'Untitled Project.json' && <span style={{ fontSize: 12, marginLeft: 8 }}>(Not saved yet)</span>}
               </span>
@@ -666,19 +700,19 @@ const AppContent: React.FC = () => {
                 danger 
                 icon={<SaveOutlined />}
                 onClick={handleSaveFile}
-                style={{ padding: 0, height: 'auto', fontSize: '14px' }}
+                style={{ padding: 0, height: 'auto', fontSize: '14px', flexShrink: 0 }}
               >
                 Unsaved
               </Button>
             )}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Button type="text" icon={<UserOutlined />} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Button type="text" icon={<UserOutlined />} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 {currentUser?.username}
               </Button>
             </Dropdown>
           </div>
         </Header>
-        <Content style={{ margin: '24px 16px 0', overflow: 'initial' }}>
+        <Content style={{ margin: '24px 16px 0', overflow: 'initial', minWidth: 0 }}>
           <VineBorder>
             <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
               <Routes>

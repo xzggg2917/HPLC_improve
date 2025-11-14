@@ -3,8 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <title>HPLC绿色化学分析系统</title>
+    <style>
+      /* 彻底防止浏览器缩放时布局崩溃 */
+      html {
+        overflow-x: auto;
+        overflow-y: auto;
+        width: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        min-width: 1400px; /* 增加最小宽度,确保即使缩放也有足够空间 */
+        width: 100%;
+        overflow-x: auto;
+      }
+      #root {
+        min-width: 1400px;
+        width: 100%;
+      }
+      
+      /* 强制所有Ant Design组件使用固定尺寸 */
+      .ant-layout {
+        min-width: 1400px !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

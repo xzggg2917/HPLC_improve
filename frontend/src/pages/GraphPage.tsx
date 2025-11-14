@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react'
-import { Card, Typography, Alert } from 'antd'
+import { Card, Typography, Alert, Row, Col } from 'antd'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip, ResponsiveContainer } from 'recharts'
+import FanChart from '../components/FanChart'
 
 const { Title } = Typography
 
@@ -250,11 +251,12 @@ const GraphPage: React.FC = () => {
             display: 'flex', 
             justifyContent: 'space-around', 
             alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '20px'
+            gap: '20px',
+            minWidth: 0,
+            overflowX: 'auto'
           }}>
             {radarData.map((item, index) => (
-              <div key={index} style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div key={index} style={{ textAlign: 'center', minWidth: '120px', flex: '0 0 auto' }}>
                 <div style={{ 
                   fontSize: 13, 
                   color: '#666', 
@@ -305,36 +307,55 @@ const GraphPage: React.FC = () => {
           style={{ marginBottom: 24 }}
         />
       ) : (
-        <Card>
-          <ResponsiveContainer width="100%" height={700}>
-            <RadarChart data={radarData} margin={{ top: 100, right: 200, bottom: 120, left: 200 }}>
-              <PolarGrid />
-              <PolarAngleAxis 
-                dataKey="subject" 
-                tick={renderCustomTick}
-              />
-              <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
-              <Radar
-                name="Comprehensive Score"
-                dataKey="score"
-                stroke="#8884d8"
-                fill="#8884d8"
-                fillOpacity={0.6}
-              />
-              <Legend wrapperStyle={{ paddingTop: 40 }} />
-              <Tooltip content={<CustomTooltip />} />
-            </RadarChart>
-          </ResponsiveContainer>
+        <div style={{ overflowX: 'auto', minWidth: 0 }}>
+          <Row gutter={24} wrap={false} style={{ minWidth: '1200px' }}>
+            {/* 左侧：雷达图 */}
+            <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
+              <Card title="Radar Chart Analysis">
+                <div style={{ width: '100%', minWidth: 0 }}>
+                  <ResponsiveContainer width="100%" height={800}>
+                    <RadarChart data={radarData} margin={{ top: 40, right: 100, bottom: 40, left: 100 }}>
+                    <PolarGrid />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      tick={renderCustomTick}
+                    />
+                    <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
+                    <Radar
+                      name="Comprehensive Score"
+                      dataKey="score"
+                      stroke="#8884d8"
+                      fill="#8884d8"
+                      fillOpacity={0.6}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: 40 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                  </RadarChart>
+                </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
 
-          <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-            <Title level={4}>Score Details</Title>
-            {radarData.map((item, index) => (
-              <div key={index} style={{ marginBottom: 8 }}>
-                <strong>{item.subject}:</strong> {item.score}
-              </div>
-            ))}
-          </div>
-        </Card>
+            {/* 右侧：扇子图 */}
+            <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
+              <Card title="Fan Chart Visualization">
+                <FanChart
+                  scores={{
+                    S: radarData.find(d => d.subject.includes('Safety'))?.score || 0,
+                    H: radarData.find(d => d.subject.includes('Health'))?.score || 0,
+                    E: radarData.find(d => d.subject.includes('Environmental'))?.score || 0,
+                    R: radarData.find(d => d.subject.includes('Recyclability'))?.score || 0,
+                    D: radarData.find(d => d.subject.includes('Disposal'))?.score || 0,
+                    P: radarData.find(d => d.subject.includes('Energy'))?.score || 0
+                  }}
+                />
+                <div style={{ marginTop: 16, textAlign: 'center', color: '#666', fontSize: 14 }}>
+                  Green Chemistry Assessment Fan - Six Dimensions
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </div>
       )}
     </div>
   )
