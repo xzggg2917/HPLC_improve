@@ -2,6 +2,8 @@
 import { Card, Typography, Alert, Row, Col } from 'antd'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 import FanChart from '../components/FanChart'
+import PolarBarChart from '../components/PolarBarChart'
+import NestedPieChart from '../components/NestedPieChart'
 
 const { Title } = Typography
 
@@ -9,6 +11,17 @@ interface ReagentFactor {
   id: string
   name: string
   density: number
+  // Sub-factors
+  releasePotential: number
+  fireExplos: number
+  reactDecom: number
+  acuteToxicity: number
+  irritation: number
+  chronicToxicity: number
+  persistency: number
+  airHazard: number
+  waterHazard: number
+  // Main factors (aggregated scores)
   safetyScore: number
   healthScore: number
   envScore: number
@@ -22,6 +35,25 @@ const GraphPage: React.FC = () => {
   const [hasData, setHasData] = useState(false)
   const [totalScore, setTotalScore] = useState<number>(0)
   const [sampleCount, setSampleCount] = useState<number>(0)
+  const [mainFactorScores, setMainFactorScores] = useState({
+    S: 0,
+    H: 0,
+    E: 0,
+    R: 0,
+    D: 0,
+    P: 0
+  })
+  const [subFactorScores, setSubFactorScores] = useState({
+    releasePotential: 0,
+    fireExplos: 0,
+    reactDecom: 0,
+    acuteToxicity: 0,
+    irritation: 0,
+    chronicToxicity: 0,
+    persistency: 0,
+    airHazard: 0,
+    waterHazard: 0
+  })
 
   useEffect(() => {
     calculateTotalScores()
@@ -49,25 +81,21 @@ const GraphPage: React.FC = () => {
 
   const renderCustomTick = (props: any) => {
     const { x, y, payload, index } = props
-    const positions = [
-      { dx: 0, dy: -25 },      // Safety (S) - 上方，再往下移一点
-      { dx: 55, dy: -15 },     // Health Hazard (H) - 右上
-      { dx: 60, dy: 15 },      // Environmental Impact (E) - 右下
-      { dx: 0, dy: 28 },       // Recyclability (R) - 下方，再往上移避免与图例重叠
-      { dx: -55, dy: 15 },     // Disposal Difficulty (D) - 左下
-      { dx: -60, dy: -15 }     // Energy Consumption (P) - 左上
-    ]
-    
-    const pos = positions[index] || { dx: 0, dy: 0 }
+    // 9个小因子的位置分布（360度均匀分布）
+    const angle = (index * 40) - 90 // 从上方开始，顺时针方向
+    const radius = 30 // 标签距离中心的距离 - 进一步减小以更贴近图表
+    const radian = (angle * Math.PI) / 180
+    const dx = Math.cos(radian) * radius
+    const dy = Math.sin(radian) * radius
     
     return (
       <text
-        x={x + pos.dx}
-        y={y + pos.dy}
+        x={x + dx}
+        y={y + dy}
         textAnchor="middle"
         fill="#666"
-        fontSize={13}
-        fontWeight="500"
+        fontSize={12}
+        fontWeight="700"
       >
         {payload.value}
       </text>
@@ -91,15 +119,6 @@ const GraphPage: React.FC = () => {
           <p style={{ margin: 0, color: '#1890ff' }}>
             Score: <strong>{data.score}</strong>
           </p>
-          {sampleCount > 0 && totalScore > 0 && (
-            <p style={{ margin: '8px 0 0 0', paddingTop: 8, borderTop: '1px solid #eee', color: '#52c41a', fontSize: 12 }}>
-              Total Score: <strong>{totalScore.toFixed(3)}</strong>
-              <br />
-              <span style={{ fontSize: 11, opacity: 0.8 }}>
-                Formula: (S+H+E+R+D+P) / {sampleCount}
-              </span>
-            </p>
-          )}
         </div>
       )
     }
@@ -131,7 +150,17 @@ const GraphPage: React.FC = () => {
         E: 0,
         R: 0,
         D: 0,
-        P: 0
+        P: 0,
+        // Sub-factors for radar chart
+        releasePotential: 0,
+        fireExplos: 0,
+        reactDecom: 0,
+        acuteToxicity: 0,
+        irritation: 0,
+        chronicToxicity: 0,
+        persistency: 0,
+        airHazard: 0,
+        waterHazard: 0
       }
 
       if (methodsData.preTreatmentReagents && Array.isArray(methodsData.preTreatmentReagents)) {
@@ -149,6 +178,17 @@ const GraphPage: React.FC = () => {
           totalScores.R += mass * factor.recycleScore
           totalScores.D += mass * factor.disposal
           totalScores.P += mass * factor.power
+          
+          // Sub-factors
+          totalScores.releasePotential += mass * (factor.releasePotential || 0)
+          totalScores.fireExplos += mass * (factor.fireExplos || 0)
+          totalScores.reactDecom += mass * (factor.reactDecom || 0)
+          totalScores.acuteToxicity += mass * (factor.acuteToxicity || 0)
+          totalScores.irritation += mass * (factor.irritation || 0)
+          totalScores.chronicToxicity += mass * (factor.chronicToxicity || 0)
+          totalScores.persistency += mass * (factor.persistency || 0)
+          totalScores.airHazard += mass * (factor.airHazard || 0)
+          totalScores.waterHazard += mass * (factor.waterHazard || 0)
         })
       }
 
@@ -169,6 +209,17 @@ const GraphPage: React.FC = () => {
             totalScores.R += mass * factor.recycleScore
             totalScores.D += mass * factor.disposal
             totalScores.P += mass * factor.power
+            
+            // Sub-factors
+            totalScores.releasePotential += mass * (factor.releasePotential || 0)
+            totalScores.fireExplos += mass * (factor.fireExplos || 0)
+            totalScores.reactDecom += mass * (factor.reactDecom || 0)
+            totalScores.acuteToxicity += mass * (factor.acuteToxicity || 0)
+            totalScores.irritation += mass * (factor.irritation || 0)
+            totalScores.chronicToxicity += mass * (factor.chronicToxicity || 0)
+            totalScores.persistency += mass * (factor.persistency || 0)
+            totalScores.airHazard += mass * (factor.airHazard || 0)
+            totalScores.waterHazard += mass * (factor.waterHazard || 0)
           })
         }
 
@@ -187,6 +238,17 @@ const GraphPage: React.FC = () => {
             totalScores.R += mass * factor.recycleScore
             totalScores.D += mass * factor.disposal
             totalScores.P += mass * factor.power
+            
+            // Sub-factors
+            totalScores.releasePotential += mass * (factor.releasePotential || 0)
+            totalScores.fireExplos += mass * (factor.fireExplos || 0)
+            totalScores.reactDecom += mass * (factor.reactDecom || 0)
+            totalScores.acuteToxicity += mass * (factor.acuteToxicity || 0)
+            totalScores.irritation += mass * (factor.irritation || 0)
+            totalScores.chronicToxicity += mass * (factor.chronicToxicity || 0)
+            totalScores.persistency += mass * (factor.persistency || 0)
+            totalScores.airHazard += mass * (factor.airHazard || 0)
+            totalScores.waterHazard += mass * (factor.waterHazard || 0)
           })
         }
       }
@@ -194,38 +256,76 @@ const GraphPage: React.FC = () => {
       const sumOfAllScores = totalScores.S + totalScores.H + totalScores.E + totalScores.R + totalScores.D + totalScores.P
       const calculatedTotalScore = sampleCountValue > 0 ? sumOfAllScores / sampleCountValue : 0
       setTotalScore(calculatedTotalScore)
+      
+      // 保存大因子数据供 FanChart 和 PolarBarChart 使用
+      setMainFactorScores({
+        S: totalScores.S,
+        H: totalScores.H,
+        E: totalScores.E,
+        R: totalScores.R,
+        D: totalScores.D,
+        P: totalScores.P
+      })
 
-      // 雷达图只显示六个因素，不包含总分
+      // 保存小因子数据供 NestedPieChart 使用
+      setSubFactorScores({
+        releasePotential: totalScores.releasePotential,
+        fireExplos: totalScores.fireExplos,
+        reactDecom: totalScores.reactDecom,
+        acuteToxicity: totalScores.acuteToxicity,
+        irritation: totalScores.irritation,
+        chronicToxicity: totalScores.chronicToxicity,
+        persistency: totalScores.persistency,
+        airHazard: totalScores.airHazard,
+        waterHazard: totalScores.waterHazard
+      })
+
+      // 雷达图显示9个小因子
       const chartData = [
         {
-          subject: 'Safety (S)',
-          score: Number(totalScores.S.toFixed(3)),
-          fullMark: Math.max(totalScores.S * 1.2, 10)
+          subject: 'Release potential',
+          score: Number(totalScores.releasePotential.toFixed(3)),
+          fullMark: Math.max(totalScores.releasePotential * 1.2, 10)
         },
         {
-          subject: 'Health Hazard (H)',
-          score: Number(totalScores.H.toFixed(3)),
-          fullMark: Math.max(totalScores.H * 1.2, 10)
+          subject: 'Fire/Explos.',
+          score: Number(totalScores.fireExplos.toFixed(3)),
+          fullMark: Math.max(totalScores.fireExplos * 1.2, 10)
         },
         {
-          subject: 'Environmental Impact (E)',
-          score: Number(totalScores.E.toFixed(3)),
-          fullMark: Math.max(totalScores.E * 1.2, 10)
+          subject: 'React./Decom.',
+          score: Number(totalScores.reactDecom.toFixed(3)),
+          fullMark: Math.max(totalScores.reactDecom * 1.2, 10)
         },
         {
-          subject: 'Recyclability (R)',
-          score: Number(totalScores.R.toFixed(3)),
-          fullMark: Math.max(totalScores.R * 1.2, 10)
+          subject: 'Acute toxicity',
+          score: Number(totalScores.acuteToxicity.toFixed(3)),
+          fullMark: Math.max(totalScores.acuteToxicity * 1.2, 10)
         },
         {
-          subject: 'Disposal Difficulty (D)',
-          score: Number(totalScores.D.toFixed(3)),
-          fullMark: Math.max(totalScores.D * 1.2, 10)
+          subject: 'Irritation',
+          score: Number(totalScores.irritation.toFixed(3)),
+          fullMark: Math.max(totalScores.irritation * 1.2, 10)
         },
         {
-          subject: 'Energy Consumption (P)',
-          score: Number(totalScores.P.toFixed(3)),
-          fullMark: Math.max(totalScores.P * 1.2, 10)
+          subject: 'Chronic toxicity',
+          score: Number(totalScores.chronicToxicity.toFixed(3)),
+          fullMark: Math.max(totalScores.chronicToxicity * 1.2, 10)
+        },
+        {
+          subject: 'Persis-tency',
+          score: Number(totalScores.persistency.toFixed(3)),
+          fullMark: Math.max(totalScores.persistency * 1.2, 10)
+        },
+        {
+          subject: 'Air Hazard',
+          score: Number(totalScores.airHazard.toFixed(3)),
+          fullMark: Math.max(totalScores.airHazard * 1.2, 10)
+        },
+        {
+          subject: 'Water Hazard',
+          score: Number(totalScores.waterHazard.toFixed(3)),
+          fullMark: Math.max(totalScores.waterHazard * 1.2, 10)
         }
       ]
 
@@ -244,36 +344,40 @@ const GraphPage: React.FC = () => {
     <div className="graph-page">
       <Title level={2}>Green Chemistry Assessment Scores</Title>
 
-      {/* 六个因素的分数卡片 */}
-      {hasData && radarData.length > 0 && (
+      {/* 6个大因子的分数卡片 */}
+      {hasData && (
         <Card style={{ marginBottom: 24 }}>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-around', 
             alignItems: 'center',
             gap: '20px',
-            minWidth: 0,
-            overflowX: 'auto'
+            flexWrap: 'wrap'
           }}>
-            {radarData.map((item, index) => (
-              <div key={index} style={{ textAlign: 'center', minWidth: '120px', flex: '0 0 auto' }}>
-                <div style={{ 
-                  fontSize: 13, 
-                  color: '#666', 
-                  marginBottom: 8,
-                  fontWeight: 500 
-                }}>
-                  {item.subject}
-                </div>
-                <div style={{ 
-                  fontSize: 28, 
-                  fontWeight: 'bold',
-                  color: ['#52c41a', '#fa8c16', '#1890ff', '#f5222d', '#722ed1', '#eb2f96'][index]
-                }}>
-                  {item.score}
-                </div>
-              </div>
-            ))}
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Safety (S)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>{mainFactorScores.S.toFixed(3)}</div>
+            </div>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Health (H)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>{mainFactorScores.H.toFixed(3)}</div>
+            </div>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Environment (E)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>{mainFactorScores.E.toFixed(3)}</div>
+            </div>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Recycle (R)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f5222d' }}>{mainFactorScores.R.toFixed(3)}</div>
+            </div>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Disposal (D)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>{mainFactorScores.D.toFixed(3)}</div>
+            </div>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Power (P)</div>
+              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#eb2f96' }}>{mainFactorScores.P.toFixed(3)}</div>
+            </div>
           </div>
         </Card>
       )}
@@ -307,66 +411,69 @@ const GraphPage: React.FC = () => {
           style={{ marginBottom: 24 }}
         />
       ) : (
-        <div style={{ overflowX: 'auto', minWidth: 0 }}>
-          <Row gutter={24} wrap={false} style={{ minWidth: '1200px' }}>
-            {/* 左侧：雷达图 */}
-            <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
-              <Card title="Radar Chart Analysis" style={{ height: '900px' }}>
-                <div style={{ width: '100%', minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <ResponsiveContainer width="100%" height={800}>
-                    <RadarChart data={radarData} margin={{ top: 40, right: 100, bottom: 40, left: 100 }}>
-                    <PolarGrid />
-                    <PolarAngleAxis 
-                      dataKey="subject" 
-                      tick={renderCustomTick}
-                    />
-                    <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
-                    <Radar
-                      name="Comprehensive Score"
-                      dataKey="score"
-                      stroke="#8884d8"
-                      fill="#8884d8"
-                      fillOpacity={0.6}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: 40 }} />
-                    <Tooltip content={<CustomTooltip />} />
-                  </RadarChart>
-                </ResponsiveContainer>
+        <>
+          {/* 四等分布局：2行2列 */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+            {/* 第一行 */}
+            {/* 左上：雷达图 */}
+            <Col xs={24} xl={12}>
+              <Card title="Radar Chart Analysis" style={{ height: '550px' }}>
+                <div style={{ width: '100%', height: '500px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData} margin={{ top: 50, right:20, bottom: 30, left: 30 }}>
+                      <PolarGrid />
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={renderCustomTick}
+                      />
+                      <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
+                      <Radar
+                        dataKey="score"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.6}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </div>
               </Card>
             </Col>
 
-            {/* 右侧：扇子图 */}
-            <Col flex="1" style={{ marginBottom: 24, minWidth: '600px' }}>
-              <Card title="Fan Chart Visualization" style={{ height: '900px' }}>
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', maxHeight: '800px' }}>
-                    <FanChart
-                      scores={{
-                        S: radarData.find(d => d.subject.includes('Safety'))?.score || 0,
-                        H: radarData.find(d => d.subject.includes('Health'))?.score || 0,
-                        E: radarData.find(d => d.subject.includes('Environmental'))?.score || 0,
-                        R: radarData.find(d => d.subject.includes('Recyclability'))?.score || 0,
-                        D: radarData.find(d => d.subject.includes('Disposal'))?.score || 0,
-                        P: radarData.find(d => d.subject.includes('Energy'))?.score || 0
-                      }}
-                    />
-                  </div>
-                  <div style={{ 
-                    textAlign: 'center', 
-                    color: '#666', 
-                    fontSize: 14,
-                    paddingTop: 120,
-                    paddingBottom: 0,
-                    flex: '0 0 auto'
-                  }}>
-                    Green Chemistry Assessment Fan - Six Dimensions
-                  </div>
+            {/* 右上：切向极坐标条形图 */}
+            <Col xs={24} xl={12}>
+              <Card title="Tangential Polar Bar Chart" style={{ height: '550px' }}>
+                <div style={{ width: '100%', height: '500px' }}>
+                  <PolarBarChart scores={mainFactorScores} />
                 </div>
               </Card>
             </Col>
           </Row>
-        </div>
+
+          <Row gutter={[16, 16]}>
+            {/* 第二行 */}
+            {/* 左下：扇子图 */}
+            <Col xs={24} xl={12}>
+              <Card title="Fan Chart Visualization" style={{ height: '550px' }}>
+                <div style={{ width: '100%', height: '500px' }}>
+                  <FanChart scores={mainFactorScores} />
+                </div>
+              </Card>
+            </Col>
+
+            {/* 右下：嵌套环形图 - 内圈6个大因子，外圈9个小因子 */}
+            <Col xs={24} xl={12}>
+              <Card title="Nested Pie Chart - Main & Sub Factors" style={{ height: '550px' }}>
+                <div style={{ width: '100%', height: '500px' }}>
+                  <NestedPieChart 
+                    mainFactors={mainFactorScores}
+                    subFactors={subFactorScores}
+                  />
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </>
       )}
     </div>
   )

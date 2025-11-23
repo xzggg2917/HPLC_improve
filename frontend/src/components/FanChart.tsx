@@ -17,14 +17,21 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 })
+  const [tooltip, setTooltip] = useState<{ visible: boolean; x: number; y: number; content: string }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    content: ''
+  })
 
   // 自适应容器大小 - 优化缩放稳定性
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth
-        // 固定大小,不随窗口缩放而变化
-        const size = Math.min(containerWidth, 800)
+        const containerHeight = containerRef.current.offsetHeight
+        // 使用容器的实际尺寸，但不超过 600
+        const size = Math.min(containerWidth, containerHeight, 600)
         setDimensions({ width: size, height: size })
       }
     }
@@ -60,17 +67,17 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     // === 扇子参数（精确匹配 Picture1.py）===
-    const scale = Math.min(canvasWidth, canvasHeight) / 3  // 缩放因子（从 /4 增加到 /3，放大）
+    const scale = Math.min(canvasWidth, canvasHeight) / 3.5  // 缩放因子
     const centerX = canvasWidth / 2
-    const centerY = canvasHeight * 0.88  // 扇子中心位置（与雷达图对齐）
+    const centerY = canvasHeight * 0.77  // 扇子中心位置（与雷达图对齐）
     
     // Picture1.py 的参数
-    const fanRadius = 1.5 * scale
+    const fanRadius = 2 * scale
     const innerRadius = 0.5 * scale
     const totalAngle = 120
     const startAngle = 30
     const anglePerSection = totalAngle / 6
-    const handleLength = 0.7* scale
+    const handleLength = 0.8 * scale
     
     // 关键：扇柄底部半径可以是负数！
     const handleBottomY = innerRadius - handleLength
@@ -224,12 +231,12 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
       const angleMid = startAngle + (i + 0.5) * anglePerSection
       const factor = factorOrder[i]
 
-      // 图标位置（扇面上边缘偏下，25%位置）
-      const iconR = innerRadius + (fanRadius - innerRadius) * 0.25
+      // 图标位置（扇面上边缘偏下，30%位置）
+      const iconR = innerRadius + (fanRadius - innerRadius) * 0.30
       const iconPos = polarToCanvas(iconR, angleMid)
 
-      // 绘制图标（缩小）
-      ctx.font = '35px Arial'
+      // 绘制图标（缩小到24px）
+      ctx.font = '24px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = '#000'
@@ -240,23 +247,154 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
       const textPos = polarToCanvas(textR, angleMid)
 
       // 绘制文字（无背景框）
-      ctx.font = 'bold 16px Arial'
+      ctx.font = 'bold 14px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = '#000'
       ctx.fillText(factorLabels[factor], textPos.x, textPos.y)
+
+      // 不再绘制数值
     }
 
   }, [scores, canvasWidth, canvasHeight])
 
+  // 鼠标悬浮事件处理
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    const scale = Math.min(canvasWidth, canvasHeight) / 3.5  // 与绘制时保持一致
+    const centerX = canvasWidth / 2
+    const centerY = canvasHeight * 0.69
+    const fanRadius = 1.5 * scale
+    const innerRadius = 0.5 * scale
+    const startAngle = 30
+    const anglePerSection = 120 / 6
+
+    // 计算鼠标位置的极坐标
+    const dx = x - centerX
+    const dy = centerY - y  // Y轴反向
+    const r = Math.sqrt(dx * dx + dy * dy)
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI
+
+    // 检查是否在扇子范围内
+    if (r >= innerRadius && r <= fanRadius && angle >= startAngle && angle <= startAngle + 120) {
+      const sectionIndex = Math.floor((angle - startAngle) / anglePerSection)
+      const factorOrder = ['P', 'D', 'R', 'E', 'H', 'S']
+      const factorNames: { [key: string]: string } = {
+        'S': 'Safety',
+        'H': 'Health Hazard',
+        'E': 'Environmental Impact',
+        'R': 'Recyclability',
+        'D': 'Disposal Difficulty',
+        'P': 'Energy Consumption'
+      }
+      const factor = factorOrder[sectionIndex]
+      const scoreValue = scores[factor as keyof typeof scores] || 0
+
+      canvas.style.cursor = 'pointer'
+      
+      // 显示自定义tooltip，包含因子名称和数值
+      setTooltip({
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+        content: `${factorNames[factor]}|${factor}|${scoreValue.toFixed(3)}`  // 用分隔符传递多个信息
+      })
+    } else {
+      canvas.style.cursor = 'default'
+      setTooltip({ visible: false, x: 0, y: 0, content: '' })
+    }
+  }
+
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
       <canvas
         ref={canvasRef}
         width={canvasWidth}
         height={canvasHeight}
-        style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}
+        style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          if (canvasRef.current) {
+            canvasRef.current.style.cursor = 'default'
+          }
+          setTooltip({ visible: false, x: 0, y: 0, content: '' })
+        }}
       />
+      
+      {/* 自定义浮动tooltip */}
+      {tooltip.visible && (() => {
+        const [fullName, shortName, value] = tooltip.content.split('|')
+        const colorMap: { [key: string]: string } = {
+          'S': '#52c41a',
+          'H': '#fa8c16',
+          'E': '#1890ff',
+          'R': '#f5222d',
+          'D': '#722ed1',
+          'P': '#eb2f96'
+        }
+        const color = colorMap[shortName] || '#666'
+        
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              left: tooltip.x + 15,
+              top: tooltip.y + 15,
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              color: '#333',
+              padding: '14px 18px',
+              borderRadius: '10px',
+              fontSize: '13px',
+              pointerEvents: 'none',
+              zIndex: 9999,
+              whiteSpace: 'nowrap',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              backdropFilter: 'blur(4px)',
+              border: `2px solid ${color}20`,
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ 
+              fontWeight: '600', 
+              color: color, 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: color
+              }}></span>
+              {fullName} ({shortName})
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'baseline', 
+              gap: '6px',
+              paddingLeft: '14px'
+            }}>
+              <span style={{ color: '#999', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score</span>
+              <span style={{ 
+                fontWeight: '700', 
+                color: '#333', 
+                fontSize: '18px',
+                fontFamily: 'monospace'
+              }}>{value}</span>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -9,25 +9,25 @@ const { Title } = Typography
 
 // 预定义的试剂数据(基于您提供的表格)
 const PREDEFINED_REAGENTS: ReagentFactor[] = [
-  { id: '1', name: 'Acetone', density: 0.791, safetyScore: 1.995, healthScore: 0.809, envScore: 0.310, recycleScore: 0, disposal: 2, power: 1 },
-  { id: '2', name: 'Acetonitrile', density: 0.786, safetyScore: 2.724, healthScore: 1.056, envScore: 0.772, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '3', name: 'Chloroform', density: 1.483, safetyScore: 1.077, healthScore: 1.425, envScore: 1.435, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '4', name: 'CO2', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
-  { id: '5', name: 'Dichloromethane', density: 1.327, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '6', name: 'Ethanol', density: 0.789, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '7', name: 'Ethyl acetate', density: 0.902, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '8', name: 'Heptane', density: 0.684, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '9', name: 'Hexane (n)', density: 0.659, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '10', name: 'Isooctane', density: 0.692, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '11', name: 'Isopropanol', density: 0.785, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '12', name: 'Methanol', density: 0.791, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
-  { id: '13', name: 'Sulfuric acid 96%', density: 1.84, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '14', name: 't-butyl methyl ether', density: 0.74, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '15', name: 'Tetrahydrofuran', density: 0.889, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 },
-  { id: '16', name: 'Water', density: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
+  { id: '1', name: 'Acetone', density: 0.791, releasePotential: 0.698, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.297, irritation: 0.625, chronicToxicity: 0.184, persistency: 0.126, airHazard: 0.184, waterHazard: 0.000, safetyScore: 1.995, healthScore: 0.809, envScore: 0.310, recycleScore: 0, disposal: 2, power: 1 },
+  { id: '2', name: 'Acetonitrile', density: 0.786, releasePotential: 0.615, fireExplos: 1.000, reactDecom: 0.600, acuteToxicity: 0.510, irritation: 0.625, chronicToxicity: 0.431, persistency: 0.341, airHazard: 0.431, waterHazard: 0.000, safetyScore: 2.724, healthScore: 1.056, envScore: 0.772, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '3', name: 'Chloroform', density: 1.483, releasePotential: 0.684, fireExplos: 0.000, reactDecom: 0.000, acuteToxicity: 0.394, irritation: 0.625, chronicToxicity: 0.800, persistency: 0.457, airHazard: 0.800, waterHazard: 0.178, safetyScore: 1.077, healthScore: 1.425, envScore: 1.435, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '4', name: 'CO2', density: 0, releasePotential: 0, fireExplos: 0, reactDecom: 0, acuteToxicity: 0, irritation: 0, chronicToxicity: 0, persistency: 0, airHazard: 0, waterHazard: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
+  { id: '5', name: 'Dichloromethane', density: 1.327, releasePotential: 0.753, fireExplos: 1.000, reactDecom: 0.600, acuteToxicity: 0.265, irritation: 0.349, chronicToxicity: 0.289, persistency: 0.023, airHazard: 0.289, waterHazard: 0.031, safetyScore: 2.618, healthScore: 0.638, envScore: 0.343, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '6', name: 'Ethanol', density: 0.789, releasePotential: 0.580, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.292, irritation: 0.000, chronicToxicity: 0.204, persistency: 0.282, airHazard: 0.204, waterHazard: 0.000, safetyScore: 1.872, healthScore: 0.204, envScore: 0.485, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '7', name: 'Ethyl acetate', density: 0.902, releasePotential: 0.619, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.276, irritation: 0.625, chronicToxicity: 0.171, persistency: 0.026, airHazard: 0.171, waterHazard: 0.003, safetyScore: 1.895, healthScore: 0.796, envScore: 0.199, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '8', name: 'Heptane', density: 0.684, releasePotential: 0.557, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.368, irritation: 0.625, chronicToxicity: 0.159, persistency: 0.430, airHazard: 0.159, waterHazard: 0.500, safetyScore: 1.925, healthScore: 0.784, envScore: 1.089, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '9', name: 'Hexane (n)', density: 0.659, releasePotential: 0.661, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.343, irritation: 0.625, chronicToxicity: 0.349, persistency: 0.426, airHazard: 0.349, waterHazard: 0.325, safetyScore: 2.004, healthScore: 0.974, envScore: 1.100, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '10', name: 'Isooctane', density: 0.692, releasePotential: 0.630, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.000, irritation: 0.330, chronicToxicity: 0.000, persistency: 0.680, airHazard: 0.000, waterHazard: 0.875, safetyScore: 1.630, healthScore: 0.330, envScore: 1.555, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '11', name: 'Isopropanol', density: 0.785, releasePotential: 0.556, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.318, irritation: 0.625, chronicToxicity: 0.260, persistency: 0.280, airHazard: 0.260, waterHazard: 0.000, safetyScore: 1.874, healthScore: 0.885, envScore: 0.540, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '12', name: 'Methanol', density: 0.791, releasePotential: 0.646, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.267, irritation: 0.113, chronicToxicity: 0.317, persistency: 0.000, airHazard: 0.317, waterHazard: 0.000, safetyScore: 1.912, healthScore: 0.430, envScore: 0.317, recycleScore: 0, disposal: 2, power: 3 },
+  { id: '13', name: 'Sulfuric acid 96%', density: 1.84, releasePotential: 0.000, fireExplos: 0.000, reactDecom: 0.800, acuteToxicity: 0.956, irritation: 1.000, chronicToxicity: 1.000, persistency: 0.485, airHazard: 1.000, waterHazard: 0.500, safetyScore: 1.756, healthScore: 2.000, envScore: 1.985, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '14', name: 't-butyl methyl ether', density: 0.74, releasePotential: 0.720, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.000, irritation: 0.220, chronicToxicity: 0.350, persistency: 0.710, airHazard: 0.350, waterHazard: 0.090, safetyScore: 1.720, healthScore: 0.570, envScore: 1.150, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '15', name: 'Tetrahydrofuran', density: 0.889, releasePotential: 0.667, fireExplos: 1.000, reactDecom: 0.000, acuteToxicity: 0.298, irritation: 0.625, chronicToxicity: 0.365, persistency: 0.535, airHazard: 0.365, waterHazard: 0.000, safetyScore: 1.965, healthScore: 0.990, envScore: 0.900, recycleScore: 0, disposal: 2, power: 2 },
+  { id: '16', name: 'Water', density: 0, releasePotential: 0, fireExplos: 0, reactDecom: 0, acuteToxicity: 0, irritation: 0, chronicToxicity: 0, persistency: 0, airHazard: 0, waterHazard: 0, safetyScore: 0, healthScore: 0, envScore: 0, recycleScore: 0, disposal: 0, power: 0 },
 ]
 
-const FACTORS_DATA_VERSION = 2 // Increment this when PREDEFINED_REAGENTS changes
+const FACTORS_DATA_VERSION = 5 // Increment this when PREDEFINED_REAGENTS changes
 
 const FactorsPage: React.FC = () => {
   const { data, updateFactorsData, setIsDirty } = useAppContext()
@@ -50,6 +50,21 @@ const FactorsPage: React.FC = () => {
     
     if (!hasCO2 || !hasWater) {
       console.log('🔄 FactorsPage: Missing CO2 or Water, updating to complete data')
+      return [...PREDEFINED_REAGENTS]
+    }
+    
+    // Check if data has sub-factor values (not all zeros)
+    // Skip CO2 and Water as they legitimately have all zeros
+    const hasValidSubFactors = existingFactors.some(f => 
+      (f.name !== 'CO2' && f.name !== 'Water') && 
+      (f.releasePotential > 0 || f.fireExplos > 0 || f.reactDecom > 0 || 
+       f.acuteToxicity > 0 || f.irritation > 0 || f.chronicToxicity > 0 ||
+       f.persistency > 0 || f.airHazard > 0 || f.waterHazard > 0)
+    )
+    
+    if (!hasValidSubFactors) {
+      console.log('🔄 FactorsPage: All sub-factors are zero, updating to complete data')
+      localStorage.setItem('hplc_factors_version', currentVersion)
       return [...PREDEFINED_REAGENTS]
     }
     
@@ -162,6 +177,15 @@ const FactorsPage: React.FC = () => {
       id: Date.now().toString(),
       name: '',
       density: 0,
+      releasePotential: 0,
+      fireExplos: 0,
+      reactDecom: 0,
+      acuteToxicity: 0,
+      irritation: 0,
+      chronicToxicity: 0,
+      persistency: 0,
+      airHazard: 0,
+      waterHazard: 0,
       safetyScore: 0,
       healthScore: 0,
       envScore: 0,
@@ -217,18 +241,36 @@ const FactorsPage: React.FC = () => {
       <Title level={2}>Factors</Title>
 
       <Card>
-        <div className="factors-table-container">
+        <div className="factors-table-container" style={{ 
+          overflowX: 'auto',
+          border: '1px solid #f0f0f0',
+          borderRadius: '8px'
+        }}>
           <table className="factors-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>ρ (g/mL)</th>
-                <th>S</th>
-                <th>H</th>
-                <th>E</th>
-                <th>R</th>
-                <th>D</th>
-                <th>P</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>Substance</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>ρ (g/mL)</th>
+                <th colSpan={4} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Safety</th>
+                <th colSpan={2} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Health</th>
+                <th colSpan={3} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Environment</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>S</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>H</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>E</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>R</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>D</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>P</th>
+              </tr>
+              <tr>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Release potential</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Fire/Explos.</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>React./Decom.</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Acute toxicity</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Irritation</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Chronic toxicity</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Persis-tency</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Air Hazard</th>
+                <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Water Hazard</th>
               </tr>
             </thead>
             <tbody>
@@ -258,6 +300,127 @@ const FactorsPage: React.FC = () => {
                       reagent.density.toFixed(3)
                     )}
                   </td>
+                  {/* Safety sub-factors */}
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.releasePotential}
+                        onChange={(value) => updateReagent(reagent.id, 'releasePotential', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.releasePotential || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.fireExplos}
+                        onChange={(value) => updateReagent(reagent.id, 'fireExplos', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.fireExplos || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.reactDecom}
+                        onChange={(value) => updateReagent(reagent.id, 'reactDecom', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.reactDecom || 0).toFixed(3)
+                    )}
+                  </td>
+                  {/* Health sub-factors */}
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.acuteToxicity}
+                        onChange={(value) => updateReagent(reagent.id, 'acuteToxicity', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.acuteToxicity || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.irritation}
+                        onChange={(value) => updateReagent(reagent.id, 'irritation', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.irritation || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.chronicToxicity}
+                        onChange={(value) => updateReagent(reagent.id, 'chronicToxicity', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.chronicToxicity || 0).toFixed(3)
+                    )}
+                  </td>
+                  {/* Environment sub-factors */}
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.persistency}
+                        onChange={(value) => updateReagent(reagent.id, 'persistency', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.persistency || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.airHazard}
+                        onChange={(value) => updateReagent(reagent.id, 'airHazard', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.airHazard || 0).toFixed(3)
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <InputNumber
+                        value={reagent.waterHazard}
+                        onChange={(value) => updateReagent(reagent.id, 'waterHazard', value || 0)}
+                        step={0.001}
+                        precision={3}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      (reagent.waterHazard || 0).toFixed(3)
+                    )}
+                  </td>
+                  {/* Main factors */}
                   <td>
                     {isEditing ? (
                       <InputNumber
@@ -390,14 +553,15 @@ const FactorsPage: React.FC = () => {
           <p><strong>Note:</strong></p>
           <ul>
             <li><strong>ρ</strong>: Density (g/mL)</li>
-            <li><strong>S</strong>: Safety Score</li>
-            <li><strong>H</strong>: Health Hazard Score</li>
-            <li><strong>E</strong>: Environmental Impact Score</li>
+            <li><strong>Safety</strong>: Release potential, Fire/Explosives, Reaction/Decomposition</li>
+            <li><strong>Health</strong>: Acute toxicity, Irritation, Chronic toxicity</li>
+            <li><strong>Environment</strong>: Persistency, Air Hazard, Water Hazard</li>
+            <li><strong>S/H/E</strong>: Aggregated Safety/Health/Environment Scores</li>
             <li><strong>R</strong>: Recyclability Score</li>
             <li><strong>D</strong>: Disposal Difficulty</li>
             <li><strong>P</strong>: Power Consumption</li>
           </ul>
-          <p>These factors will be used for green chemistry assessment calculations in Methods and HPLC Gradient.</p>
+          <p>All 9 sub-factors and 6 main factors will be used for green chemistry assessment calculations in Methods and HPLC Gradient.</p>
         </div>
       </Card>
     </div>
