@@ -20,6 +20,7 @@ import TablePage from './pages/TablePage'
 import AboutPage from './pages/AboutPage'
 import HPLCGradientPage from './pages/HPLCGradientPage'
 import LoginPage from './pages/LoginPage'
+import ComparisonPage from './pages/ComparisonPage'
 import VineBorder from './components/VineBorder'
 import PasswordVerifyModal from './components/PasswordVerifyModal'
 import PasswordConfirmModal from './components/PasswordConfirmModal'
@@ -219,11 +220,13 @@ const AppContent: React.FC = () => {
     localStorage.setItem('hplc_gradient_data', JSON.stringify(invalidGradientData))
     console.log('✅ App: Created invalid gradient data for new file (will show warning in MethodsPage)')
     
+    // 🔥 清空对比数据
+    localStorage.removeItem('hplc_comparison_files')
+    console.log('✅ App: Cleared comparison files from localStorage')
+    
     // Clear file handle, set to "Untitled" state
     setFileHandle(null)
-        setCurrentFilePath('Untitled Project.json')
-    
-    // Load empty data
+    setCurrentFilePath('Untitled Project.json')    // Load empty data
     setAllData(emptyData)
     setIsDirty(false)
     
@@ -231,7 +234,12 @@ const AppContent: React.FC = () => {
     setTimeout(() => {
       window.dispatchEvent(new Event('factorsDataUpdated'))
       console.log('📢 App: Triggered factorsDataUpdated event')
+      window.dispatchEvent(new Event('newFileCreated'))
+      console.log('📢 App: Triggered newFileCreated event')
     }, 50)
+    
+    // 导航到首页
+    navigate('/')
     
     message.success(`New project created (Owner: ${currentUser?.username}), please save after editing`)
   }
@@ -550,6 +558,11 @@ const AppContent: React.FC = () => {
           label: <Link to="/table">Table</Link>,
           disabled: !currentFilePath,
         },
+        {
+          key: '/comparison',
+          label: <Link to="/comparison">Comparison</Link>,
+          disabled: false, // 对比功能独立，不需要当前打开文件
+        },
       ],
     },
     {
@@ -721,6 +734,7 @@ const AppContent: React.FC = () => {
                 <Route path="/factors" element={<FactorsPage />} />
                 <Route path="/graph" element={<GraphPage />} />
                 <Route path="/table" element={<TablePage />} />
+                <Route path="/comparison" element={<ComparisonPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/hplc-gradient" element={<HPLCGradientPage />} />
               </Routes>
