@@ -173,64 +173,56 @@ const AboutPage: React.FC = () => {
           </Col>
           
           <Col span={10}>
-            <Row gutter={[12, 12]}>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="blue">1. Pre-step Curve</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Jumps immediately to final value at start.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="red">2-4. Convex Curve Series</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Rapid change in early stage, slower in later stage.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="orange">5. Super Convex Curve</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Extremely rapid initial change, almost no change in later stage.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="green">6. Linear Curve</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Uniform change, most commonly used gradient type.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="purple">7-9. Concave Curve Series</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Slow change in early stage, accelerates in later stage.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="magenta">10. Super Concave Curve</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Almost no change in early stage, rapid change in later stage.
-                  </Paragraph>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card size="small" type="inner">
-                  <Tag color="gold">11. Post-step Curve</Tag>
-                  <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
-                    Maintains initial value, jumps to final value at last moment.
-                  </Paragraph>
-                </Card>
-              </Col>
-            </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Card size="small" type="inner">
+                <Tag color="blue">1. Pre-step Curve</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Jumps immediately to final value at start.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="red">2-4. Convex Curve Series</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Rapid change in early stage, slower in later stage.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="orange">5. Super Convex Curve</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Extremely rapid initial change, almost no change in later stage.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="green">6. Linear Curve</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Uniform change, most commonly used gradient type.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="purple">7-9. Concave Curve Series</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Slow change in early stage, accelerates in later stage.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="magenta">10. Super Concave Curve</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Almost no change in early stage, rapid change in later stage.
+                </Paragraph>
+              </Card>
+              
+              <Card size="small" type="inner">
+                <Tag color="gold">11. Post-step Curve</Tag>
+                <Paragraph style={{ fontSize: 14, marginTop: 8, marginBottom: 0 }}>
+                  Maintains initial value, jumps to final value at last moment.
+                </Paragraph>
+              </Card>
+            </div>
           </Col>
         </Row>
       </Card>
