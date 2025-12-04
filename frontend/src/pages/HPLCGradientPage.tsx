@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useAppContext } from '../contexts/AppContext'
 import type { GradientStep } from '../contexts/AppContext'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
 import './HPLCGradientPage.css'
 
 const { Title } = Typography
@@ -80,13 +81,29 @@ const HPLCGradientPage: React.FC = () => {
   const [gradientSteps, setGradientSteps] = useState<GradientStep[]>(() => {
     // 如果Context中有数据就使用，否则返回默认的两行
     if (data.gradient.length > 0) {
-      return data.gradient
+      // ✅ 深拷贝避免引用共享
+      const steps = JSON.parse(JSON.stringify(data.gradient))
+      
+      // ✅ 确保每个 step 都有唯一的 id（兼容旧数据）
+      const timestamp = Date.now()
+      steps.forEach((step: GradientStep, index: number) => {
+        if (!step.id || step.id === 'undefined') {
+          step.id = `${timestamp}-step${index}-${Math.random().toString(36).substr(2, 9)}`
+          console.warn(`⚠️ Step ${step.stepNo} 缺少 id，已生成: ${step.id}`)
+        }
+      })
+      
+      console.log('🔍 初始化 gradientSteps (from Context):', steps.map(s => ({ stepNo: s.stepNo, id: s.id })))
+      return steps
     }
     // 默认两行：第一行为Initial状态，第二行为空
-    return [
-      { id: Date.now().toString(), stepNo: 0, time: 0.0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'initial' },
-      { id: (Date.now() + 1).toString(), stepNo: 1, time: 0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'linear' }
+    const timestamp = Date.now()
+    const defaultSteps = [
+      { id: `${timestamp}-init`, stepNo: 0, time: 0.0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'initial' },
+      { id: `${timestamp}-step1`, stepNo: 1, time: 0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'linear' }
     ]
+    console.log('🔍 初始化 gradientSteps (default):', defaultSteps.map(s => ({ stepNo: s.stepNo, id: s.id })))
+    return defaultSteps
   })
 
   // 监听Context数据变化，立即同步更新
@@ -107,31 +124,41 @@ const HPLCGradientPage: React.FC = () => {
       // 只在第一次遇到空数据时初始化（两行）
       hasInitialized.current = true
       console.log('🔄 HPLCGradientPage: 检测到空数据，初始化默认两行')
+      const timestamp = Date.now()
       const defaultSteps = [
-        { id: Date.now().toString(), stepNo: 0, time: 0.0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'initial' },
-        { id: (Date.now() + 1).toString(), stepNo: 1, time: 0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'linear' }
+        { id: `${timestamp}-init`, stepNo: 0, time: 0.0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'initial' },
+        { id: `${timestamp}-step1`, stepNo: 1, time: 0, phaseA: 0, phaseB: 100, flowRate: 0, curve: 'linear' }
       ]
       setGradientSteps(defaultSteps)
       // 立即同步到Context，避免其他页面读取到空数据
-      updateGradientData(defaultSteps)
+      // ✅ 深拷贝避免引用共享
+      updateGradientData(JSON.parse(JSON.stringify(defaultSteps)))
     } else if (data.gradient.length > 0) {
       // 有数据时直接使用
       hasInitialized.current = true
       console.log('🔄 HPLCGradientPage: 立即同步Context数据')
-      setGradientSteps(data.gradient)
+      // ✅ 深拷贝避免引用共享
+      const steps = JSON.parse(JSON.stringify(data.gradient))
+      
+      // ✅ 确保每个 step 都有唯一的 id（兼容旧数据）
+      const timestamp = Date.now()
+      steps.forEach((step: GradientStep, index: number) => {
+        if (!step.id || step.id === 'undefined') {
+          step.id = `${timestamp}-sync${index}-${Math.random().toString(36).substr(2, 9)}`
+          console.warn(`⚠️ Step ${step.stepNo} 缺少 id，已生成: ${step.id}`)
+        }
+      })
+      
+      setGradientSteps(steps)
     }
   }, [data.gradient, updateGradientData])
 
-  // 自动保存数据到 Context（不自动保存到 localStorage，避免覆盖 calculations 数据）
-  // 只在点击 Confirm 时才保存完整的 gradientData 到 localStorage
+  // 自动保存数据到文件（保存 steps，不覆盖 calculations）
   const isInitialMount = React.useRef(true)
   const lastLocalData = React.useRef<string>('')
   
   useEffect(() => {
     const currentLocalDataStr = JSON.stringify(gradientSteps)
-    
-    // ❌ 移除自动保存到 localStorage，避免覆盖包含 calculations 的完整数据
-    // localStorage.setItem('hplc_gradient_data', currentLocalDataStr)
     
     // 跳过初始挂载时的更新
     if (isInitialMount.current) {
@@ -146,7 +173,37 @@ const HPLCGradientPage: React.FC = () => {
     }
     
     lastLocalData.current = currentLocalDataStr
-    updateGradientData(gradientSteps)
+    
+    // ✅ 自动保存 steps 到文件（保留原有的 calculations）
+    const saveSteps = async () => {
+      try {
+        // 先读取现有的完整数据
+        const existingData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT) || {}
+        
+        // 只更新 steps 部分，保留 calculations 和其他数据
+        const updatedData = {
+          ...existingData,
+          steps: gradientSteps.map(step => ({
+            id: step.id,
+            stepNo: step.stepNo,
+            time: step.time,
+            phaseA: step.phaseA,
+            phaseB: step.phaseB,
+            flowRate: step.flowRate,
+            curve: step.curve
+          })),
+          timestamp: new Date().toISOString()
+        }
+        
+        await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, updatedData)
+        console.log('💾 自动保存 steps 到文件（保留 calculations）')
+      } catch (error) {
+        console.error('自动保存失败:', error)
+      }
+    }
+    
+    saveSteps()
+    updateGradientData(JSON.parse(JSON.stringify(gradientSteps)))
     setIsDirty(true)
   }, [gradientSteps, updateGradientData, setIsDirty])
   
@@ -169,7 +226,7 @@ const HPLCGradientPage: React.FC = () => {
   // 添加新步骤
   const addStep = () => {
     const newStep: GradientStep = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // ✅ 确保唯一性
       stepNo: gradientSteps.length,
       time: 0,
   phaseA: 0,
@@ -177,6 +234,7 @@ const HPLCGradientPage: React.FC = () => {
       flowRate: 0,
       curve: 'linear'
     }
+    console.log('➕ Adding new step:', newStep)
     setGradientSteps([...gradientSteps, newStep])
   }
 
@@ -191,16 +249,24 @@ const HPLCGradientPage: React.FC = () => {
 
   // 更新步骤数据
   const updateStep = (id: string, field: keyof GradientStep, value: any) => {
-    setGradientSteps(gradientSteps.map(step => {
-      if (step.id === id) {
-        // 如果修改的是 phaseA，自动更新 phaseB 保持互补关系
-        if (field === 'phaseA') {
-          return { ...step, phaseA: value, phaseB: 100 - value }
+    setGradientSteps(prevSteps => {
+      console.log(`🔧 updateStep: id="${id}", field=${field}, value=${value}`)
+      console.log('📋 All step IDs:', prevSteps.map(s => `Step ${s.stepNo}: id="${s.id}"`))
+      
+      const newSteps = prevSteps.map(step => {
+        if (step.id === id) {
+          console.log(`✅ ID MATCHED! Updating step ${step.stepNo}`)
+          // 如果修改的是 phaseA，自动更新 phaseB 保持互补关系
+          if (field === 'phaseA') {
+            return { ...step, phaseA: value, phaseB: 100 - value }
+          }
+          return { ...step, [field]: value }
         }
-        return { ...step, [field]: value }
-      }
-      return step
-    }))
+        return step
+      })
+      
+      return newSteps
+    })
   }
 
   // 生成图表数据
@@ -214,12 +280,14 @@ const HPLCGradientPage: React.FC = () => {
     if (totalTime === 0) {
       const step = gradientSteps[0]
       chartData.push({
+        key: 'chart-point-0',
         time: '0.00',
         'Mobile Phase A (%)': step.phaseA,
         'Mobile Phase B (%)': step.phaseB
       })
       // 添加一个时间点以便显示折线
       chartData.push({
+        key: 'chart-point-1',
         time: '10.00',
         'Mobile Phase A (%)': step.phaseA,
         'Mobile Phase B (%)': step.phaseB
@@ -271,6 +339,7 @@ const HPLCGradientPage: React.FC = () => {
   const phaseB = 100 - phaseA
       
       chartData.push({
+        key: `chart-point-${i}`,
         time: currentTime.toFixed(2),
   'Mobile Phase A (%)': parseFloat(phaseA.toFixed(2)),
   'Mobile Phase B (%)': parseFloat(phaseB.toFixed(2))
@@ -286,7 +355,7 @@ const HPLCGradientPage: React.FC = () => {
   }
 
   // 计算每个组分的体积
-  const calculateComponentVolumes = (chartData: any[]) => {
+  const calculateComponentVolumes = async (chartData: any[]) => {
     if (chartData.length === 0 || gradientSteps.length === 0) return null
 
     console.log(`🔍 开始计算体积，共 ${gradientSteps.length} 个步骤`)
@@ -367,8 +436,8 @@ const HPLCGradientPage: React.FC = () => {
     console.log(`  Phase B 体积: ${totalVolumeB.toFixed(3)}ml (${avgPercentageB.toFixed(2)}%)`)
 
     // 从 Methods 页面获取组分信息
-    const methodsData = localStorage.getItem('hplc_methods_raw')
-    console.log('📋 读取Methods数据:', methodsData ? `存在(${methodsData.length}字符)` : '不存在')
+    const methodsDataRaw = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
+    console.log('📋 读取Methods数据:', methodsDataRaw ? '存在' : '不存在')
     
     let componentVolumes: any = {
       totalVolume,
@@ -388,8 +457,8 @@ const HPLCGradientPage: React.FC = () => {
       }
     }
 
-    if (methodsData) {
-      const methods = JSON.parse(methodsData)
+    if (methodsDataRaw) {
+      const methods = methodsDataRaw
       console.log('📋 Methods数据解析成功:', {
         hasMobilePhaseA: !!methods.mobilePhaseA,
         mobilePhaseALength: methods.mobilePhaseA?.length,
@@ -402,22 +471,29 @@ const HPLCGradientPage: React.FC = () => {
       // 计算 Mobile Phase A 中各试剂的体积
       if (methods.mobilePhaseA && Array.isArray(methods.mobilePhaseA)) {
         console.log('  ✅ 开始计算Mobile Phase A组分')
+        console.log('    - 原始mobilePhaseA:', methods.mobilePhaseA)
         const totalPercentage = methods.mobilePhaseA.reduce((sum: number, r: any) => sum + (r.percentage || 0), 0)
         console.log('    - totalPercentage:', totalPercentage)
         console.log('    - totalVolumeA:', totalVolumeA)
         
-        componentVolumes.mobilePhaseA.components = methods.mobilePhaseA
-          .filter((r: any) => r.name && r.name.trim())
-          .map((r: any) => {
-            const comp = {
-              reagentName: r.name,
-              percentage: r.percentage,
-              ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
-              volume: totalPercentage > 0 ? (totalVolumeA * r.percentage / totalPercentage) : 0
-            }
-            console.log('    - 组分:', comp)
-            return comp
-          })
+        // 先过滤
+        const filtered = methods.mobilePhaseA.filter((r: any) => {
+          const valid = r.name && r.name.trim() && r.percentage > 0
+          console.log(`    - 检查试剂: ${r.name}, percentage: ${r.percentage}, valid: ${valid}`)
+          return valid
+        })
+        console.log('    - 过滤后数量:', filtered.length)
+        
+        componentVolumes.mobilePhaseA.components = filtered.map((r: any) => {
+          const comp = {
+            reagentName: r.name,
+            percentage: r.percentage,
+            ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
+            volume: totalPercentage > 0 ? (totalVolumeA * r.percentage / totalPercentage) : 0
+          }
+          console.log('    - 生成组分:', comp)
+          return comp
+        })
         console.log('  ✅ Mobile Phase A组分数:', componentVolumes.mobilePhaseA.components.length)
       } else {
         console.log('  ⚠️ Methods没有mobilePhaseA或不是数组')
@@ -426,22 +502,29 @@ const HPLCGradientPage: React.FC = () => {
       // 计算 Mobile Phase B 中各试剂的体积
       if (methods.mobilePhaseB && Array.isArray(methods.mobilePhaseB)) {
         console.log('  ✅ 开始计算Mobile Phase B组分')
+        console.log('    - 原始mobilePhaseB:', methods.mobilePhaseB)
         const totalPercentage = methods.mobilePhaseB.reduce((sum: number, r: any) => sum + (r.percentage || 0), 0)
         console.log('    - totalPercentage:', totalPercentage)
         console.log('    - totalVolumeB:', totalVolumeB)
         
-        componentVolumes.mobilePhaseB.components = methods.mobilePhaseB
-          .filter((r: any) => r.name && r.name.trim())
-          .map((r: any) => {
-            const comp = {
-              reagentName: r.name,
-              percentage: r.percentage,
-              ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
-              volume: totalPercentage > 0 ? (totalVolumeB * r.percentage / totalPercentage) : 0
-            }
-            console.log('    - 组分:', comp)
-            return comp
-          })
+        // 先过滤
+        const filtered = methods.mobilePhaseB.filter((r: any) => {
+          const valid = r.name && r.name.trim() && r.percentage > 0
+          console.log(`    - 检查试剂: ${r.name}, percentage: ${r.percentage}, valid: ${valid}`)
+          return valid
+        })
+        console.log('    - 过滤后数量:', filtered.length)
+        
+        componentVolumes.mobilePhaseB.components = filtered.map((r: any) => {
+          const comp = {
+            reagentName: r.name,
+            percentage: r.percentage,
+            ratio: totalPercentage > 0 ? r.percentage / totalPercentage : 0,
+            volume: totalPercentage > 0 ? (totalVolumeB * r.percentage / totalPercentage) : 0
+          }
+          console.log('    - 生成组分:', comp)
+          return comp
+        })
         console.log('  ✅ Mobile Phase B组分数:', componentVolumes.mobilePhaseB.components.length)
       } else {
         console.log('  ⚠️ Methods没有mobilePhaseB或不是数组')
@@ -500,7 +583,7 @@ const HPLCGradientPage: React.FC = () => {
   }
 
   // 确认保存
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     console.log('🚀 HPLC Gradient 确认保存开始')
     
     // Validate data
@@ -538,6 +621,7 @@ const HPLCGradientPage: React.FC = () => {
       
       const gradientData = {
         steps: gradientSteps.map(step => ({
+          id: step.id, // ✅ 保存 id
           stepNo: step.stepNo,
           time: step.time,
           phaseA: step.phaseA,
@@ -553,8 +637,8 @@ const HPLCGradientPage: React.FC = () => {
         invalidReason: 'All flow rates are zero'
       }
       
-      localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
-      console.log('💾 保存无效数据到localStorage（所有流速为0）')
+      await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, gradientData)
+      console.log('💾 保存无效数据到StorageHelper（所有流速为0）')
       
       // 🔥 触发事件通知 MethodsPage 数据已更新（虽然是无效的）
       window.dispatchEvent(new Event('gradientDataUpdated'))
@@ -578,13 +662,14 @@ const HPLCGradientPage: React.FC = () => {
     console.log('📋 gradientSteps:', gradientSteps)
     
     // chartData 已由 useMemo 在组件作用域中定义
-    const componentVolumes = calculateComponentVolumes(chartData)
+    const componentVolumes = await calculateComponentVolumes(chartData)
     
     console.log('✅ componentVolumes计算完成:', componentVolumes)
 
     const gradientData = {
       // 基础步骤数据
       steps: gradientSteps.map(step => ({
+        id: step.id, // ✅ 保存 id
         stepNo: step.stepNo,
         time: step.time,
   phaseA: step.phaseA,
@@ -615,8 +700,8 @@ const HPLCGradientPage: React.FC = () => {
       }
     }
 
-    localStorage.setItem('hplc_gradient_data', JSON.stringify(gradientData))
-    console.log('💾 保存到localStorage完成, 数据大小:', JSON.stringify(gradientData).length, '字符')
+    await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, gradientData)
+    console.log('💾 保存到StorageHelper完成')
     console.log('📦 保存的gradientData结构:', {
       hasSteps: !!gradientData.steps,
       stepsLength: gradientData.steps?.length,
@@ -806,18 +891,24 @@ const HPLCGradientPage: React.FC = () => {
             <Tooltip />
             <Legend />
             <Line 
-              type="monotone" 
+              type="basis" 
               dataKey="Mobile Phase A (%)" 
               stroke="#1890ff" 
               dot={false}
               strokeWidth={2}
+              animationDuration={2500}
+              animationEasing="ease-in-out"
+              animationBegin={0}
             />
             <Line 
-              type="monotone" 
+              type="basis" 
               dataKey="Mobile Phase B (%)" 
               stroke="#52c41a" 
               dot={false}
               strokeWidth={2}
+              animationDuration={2500}
+              animationEasing="ease-in-out"
+              animationBegin={0}
             />
           </LineChart>
         </ResponsiveContainer>

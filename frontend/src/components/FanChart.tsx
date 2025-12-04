@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from 'react'
+import { getColorHex } from '../utils/colorScale'
 
 interface FanChartProps {
   scores: { S: number; H: number; E: number; R: number; D: number; P: number }
@@ -124,10 +125,15 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
       ctx.stroke()
     }
 
-    // === 2. 绘制6个扇面区域（浅绿色，zorder=3）===
+    // === 2. 绘制6个扇面区域（根据分数着色，zorder=3）===
     for (let i = 0; i < 6; i++) {
       const angleStart = startAngle + i * anglePerSection
       const angleEnd = angleStart + anglePerSection
+      
+      // 获取对应因子的分数和颜色
+      const factor = factorOrder[i]
+      const score = scores[factor as keyof typeof scores] || 0
+      const color = getColorHex(score)
 
       ctx.beginPath()
       
@@ -147,7 +153,7 @@ const FanChart: React.FC<FanChartProps> = ({ scores, width, height }) => {
       
       ctx.closePath()
 
-      ctx.fillStyle = '#90EE90'  // 浅绿色
+      ctx.fillStyle = color  // 根据分数使用渐变色
       ctx.fill()
       ctx.strokeStyle = '#000'
       ctx.lineWidth = 2.5

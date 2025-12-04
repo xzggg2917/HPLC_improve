@@ -4,6 +4,8 @@ import { UploadOutlined, DeleteOutlined, SwapOutlined, LockOutlined } from '@ant
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { decryptData } from '../utils/encryption'
 import { useAppContext } from '../contexts/AppContext'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
+import { getColorHex } from '../utils/colorScale'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -17,9 +19,9 @@ interface FileData {
     R: number
     D: number
     P: number
-    N: number
     totalScore: number
   }
+  color?: string // 基于总分的颜色
 }
 
 interface PendingFile {
@@ -29,44 +31,47 @@ interface PendingFile {
 
 const ComparisonPage: React.FC = () => {
   const { data: allData, currentFilePath } = useAppContext()
-  const [files, setFiles] = useState<FileData[]>(() => {
-    // 从 localStorage 加载已保存的对比数据
-    const saved = localStorage.getItem('hplc_comparison_files')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        console.log('📂 Loaded comparison files from localStorage:', parsed.length)
-        return parsed
-      } catch (e) {
-        console.error('Failed to load comparison data:', e)
+  const [files, setFiles] = useState<FileData[]>([])
+  
+  // 异步加载对比文件数据
+  useEffect(() => {
+    const loadComparisonFiles = async () => {
+      const saved = await StorageHelper.getJSON<FileData[]>('hplc_comparison_files')
+      if (saved && saved.length > 0) {
+        console.log('📂 Loaded comparison files from storage:', saved.length)
+        setFiles(saved)
+      } else {
+        console.log('📂 No saved comparison files found')
       }
     }
-    console.log('📂 No saved comparison files found')
-    return []
-  })
+    loadComparisonFiles()
+  }, [])
   const [loading, setLoading] = useState(false)
   const [pendingFile, setPendingFile] = useState<PendingFile | null>(null)
   const [passwordModalVisible, setPasswordModalVisible] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
-  const [currentFileId, setCurrentFileId] = useState<string | null>(null)
   const [updateTrigger, setUpdateTrigger] = useState(0) // 用于强制更新
   const hasLoadedCurrentFile = useRef(false) // 追踪是否已加载当前文件
 
-  // 保存文件列表到 localStorage
+  // 保存文件列表到存储
   useEffect(() => {
-    localStorage.setItem('hplc_comparison_files', JSON.stringify(files))
+    const saveFiles = async () => {
+      await StorageHelper.setJSON('hplc_comparison_files', files)
+    }
+    if (files.length > 0) {
+      saveFiles()
+    }
   }, [files])
 
   // 监听 New File 事件，清空对比数据
   useEffect(() => {
-    const handleNewFile = () => {
+    const handleNewFile = async () => {
       console.log('🔄 ComparisonPage: New file created event received')
       console.log('Current files before clear:', files.length)
       
       setFiles([])
-      localStorage.removeItem('hplc_comparison_files')
-      setCurrentFileId(null)
+      await StorageHelper.setJSON('hplc_comparison_files', [])
       hasLoadedCurrentFile.current = false // 重置加载标记
       
       console.log('Files cleared, triggering update')
@@ -119,10 +124,111 @@ const ComparisonPage: React.FC = () => {
 
     console.log('📝 Processing current file...')
 
-    try {
+    const loadCurrentFile = async () => {
+      try {
+        // 优先使用后端计算结果
+        const scoreResults = await StorageHelper.getJSON(STORAGE_KEYS.SCORE_RESULTS)
+      const powerScore = await StorageHelper.getJSON<number>(STORAGE_KEYS.POWER_SCORE) || 0
+      
+      if (scoreResults && scoreResults.instrument && scoreResults.preparation) {
+        console.log('✅ Using backend scoreResults')
+        
+        const instMajor = scoreResults.instrument.major_factors
+        const prepMajor = scoreResults.preparation.major_factors
+        const additionalFactors = scoreResults.additional_factors || { P: powerScore, R: 0, D: 0 }
+        
+        const avgS = (instMajor.S + prepMajor.S) / 2
+        const avgH = (instMajor.H + prepMajor.H) / 2
+        const avgE = (instMajor.E + prepMajor.E) / 2
+        
+        // 计算 R 和 D（从 gradientData 获取试剂质量数据）
+        const gradientData: any = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+        const methodsData: any = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
+        const factorsData = await StorageHelper.getJSON(STORAGE_KEYS.FACTORS) || []
+        
+        let totalR = 0
+        let totalD = 0
+        
+        // 获取色谱类型和基准质量
+        const chromatographyType = methodsData?.chromatographyType || 'HPLC_UV'
+        const BASELINE_MASS_MAP: Record<string, number> = {
+          'Nano_LC': 0.05, 'UPCC': 4.0, 'UPLC': 4.0, 'HPLC_MS': 10.0, 'HPLC_UV': 45.0, 'Semi_prep': 250.0
+        }
+        const baselineMass = BASELINE_MASS_MAP[chromatographyType] || 45.0
+        
+        // 计算 R 和 D
+        const calculateNormalized = (mass: number, factorValue: number) => 
+          Math.min(100, (mass * factorValue / baselineMass) * 100)
+        
+        // PreTreatment
+        if (methodsData?.preTreatmentReagents) {
+          methodsData.preTreatmentReagents.forEach((reagent: any) => {
+            if (!reagent.name || reagent.volume <= 0) return
+            const factor = factorsData.find((f: any) => f.name === reagent.name)
+            if (!factor) return
+            const mass = reagent.volume * factor.density
+            totalR += calculateNormalized(mass, factor.regeneration || 0)
+            totalD += calculateNormalized(mass, factor.disposal)
+          })
+        }
+        
+        // Mobile Phase A
+        if (gradientData?.calculations?.mobilePhaseA?.components) {
+          gradientData.calculations.mobilePhaseA.components.forEach((comp: any) => {
+            if (!comp.reagentName || comp.volume <= 0) return
+            const factor = factorsData.find((f: any) => f.name === comp.reagentName)
+            if (!factor) return
+            const mass = comp.volume * factor.density
+            totalR += calculateNormalized(mass, factor.regeneration || 0)
+            totalD += calculateNormalized(mass, factor.disposal)
+          })
+        }
+        
+        // Mobile Phase B
+        if (gradientData?.calculations?.mobilePhaseB?.components) {
+          gradientData.calculations.mobilePhaseB.components.forEach((comp: any) => {
+            if (!comp.reagentName || comp.volume <= 0) return
+            const factor = factorsData.find((f: any) => f.name === comp.reagentName)
+            if (!factor) return
+            const mass = comp.volume * factor.density
+            totalR += calculateNormalized(mass, factor.regeneration || 0)
+            totalD += calculateNormalized(mass, factor.disposal)
+          })
+        }
+        
+        const totalScore = scoreResults.final?.score3 || 0
+        const color = getColorHex(totalScore)
+        
+        const newFileData: FileData = {
+          id: fileId,
+          name: currentFilePath || 'Current Method',
+          data: {
+            S: avgS,
+            H: avgH,
+            E: avgE,
+            R: totalR,
+            D: totalD,
+            P: additionalFactors.P,
+            totalScore
+          },
+          color
+        }
+        
+        setFiles(prev => {
+          const filtered = prev.filter(f => f.id !== fileId)
+          return [...filtered, newFileData]
+        })
+        
+        hasLoadedCurrentFile.current = true
+        console.log('✅ Current file data loaded:', newFileData)
+        return
+      }
+      
+      // Fallback: 使用旧的计算逻辑
+      console.log('⚠️ No backend scoreResults, using fallback calculation')
       const parsedData = allData
       const methodsData = parsedData.methods || { sampleCount: null, preTreatmentReagents: [], mobilePhaseA: [], mobilePhaseB: [] }
-      const gradientData = parsedData.gradient || {}
+      const gradientData: any = parsedData.gradient || {}
       const factorsData = parsedData.factors || []
 
       const sampleCount = methodsData.sampleCount || 0
@@ -147,7 +253,7 @@ const ComparisonPage: React.FC = () => {
       }
 
       // 计算流动相得分
-      const calculations = gradientData.calculations
+      const calculations = gradientData?.calculations
       if (calculations) {
         if (calculations.mobilePhaseA?.components) {
           calculations.mobilePhaseA.components.forEach((component: any) => {
@@ -183,9 +289,12 @@ const ComparisonPage: React.FC = () => {
       const sumOfAllScores = totalScores.S + totalScores.H + totalScores.E + totalScores.R + totalScores.D + totalScores.P
       const totalScore = sampleCount > 0 ? sumOfAllScores / sampleCount : 0
 
+      const color = getColorHex(totalScore)
+      
       const fileData: FileData = {
         id: fileId,
         name: currentFilePath.replace('.hplc', '').replace('.json', '') + ' (Current)',
+        color,
         data: {
           S: totalScores.S,
           H: totalScores.H,
@@ -193,7 +302,6 @@ const ComparisonPage: React.FC = () => {
           R: totalScores.R,
           D: totalScores.D,
           P: totalScores.P,
-          N: sampleCount,
           totalScore: totalScore
         }
       }
@@ -215,11 +323,13 @@ const ComparisonPage: React.FC = () => {
         }
       })
       
-      setCurrentFileId(fileId)
       hasLoadedCurrentFile.current = true // 标记已加载
     } catch (error) {
       console.error('Error loading current file data:', error)
     }
+  }
+  
+  loadCurrentFile()
   }, [currentFilePath, allData, updateTrigger]) // 不添加 files 依赖，避免无限循环
 
   // 处理已解密的数据
@@ -251,7 +361,7 @@ const ComparisonPage: React.FC = () => {
       }
 
       // 计算流动相得分
-      const calculations = gradientData.calculations
+      const calculations = gradientData?.calculations
       if (calculations) {
         if (calculations.mobilePhaseA?.components) {
           calculations.mobilePhaseA.components.forEach((component: any) => {
@@ -290,6 +400,7 @@ const ComparisonPage: React.FC = () => {
       const fileData: FileData = {
         id: Date.now().toString() + Math.random(),
         name: fileName.replace('.hplc', '').replace('.json', ''),
+        color: getColorHex(totalScore),
         data: {
           S: totalScores.S,
           H: totalScores.H,
@@ -297,7 +408,6 @@ const ComparisonPage: React.FC = () => {
           R: totalScores.R,
           D: totalScores.D,
           P: totalScores.P,
-          N: sampleCount,
           totalScore: totalScore
         }
       }
@@ -395,11 +505,11 @@ const ComparisonPage: React.FC = () => {
     message.success('File removed')
   }
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (files.length === 0) return
     if (window.confirm(`Are you sure you want to remove all ${files.length} file(s)?`)) {
       setFiles([])
-      localStorage.removeItem('hplc_comparison_files')
+      await StorageHelper.setJSON('hplc_comparison_files', [])
       message.success('All files cleared')
     }
   }
@@ -433,7 +543,6 @@ const ComparisonPage: React.FC = () => {
     { subject: 'Recycle (R)', ...Object.fromEntries(uniqueFiles.map(f => [f.name, Number(f.data.R.toFixed(2))])) },
     { subject: 'Disposal (D)', ...Object.fromEntries(uniqueFiles.map(f => [f.name, Number(f.data.D.toFixed(2))])) },
     { subject: 'Power (P)', ...Object.fromEntries(uniqueFiles.map(f => [f.name, Number(f.data.P.toFixed(2))])) },
-    { subject: 'Samples (N)', ...Object.fromEntries(uniqueFiles.map(f => [f.name, f.data.N])) },
   ], [uniqueFiles])
 
   // 对数缩放函数（保留原始数值，但用对数刻度显示）
@@ -443,11 +552,6 @@ const ComparisonPage: React.FC = () => {
     return Math.log10(1 + value) * 50 // 乘以50调整显示范围
   }
 
-  // 反对数函数（用于tooltip显示原始值）
-  const inverseLogScale = (scaledValue: number): number => {
-    return Math.pow(10, scaledValue / 50) - 1
-  }
-
   // 应用对数缩放到雷达图数据
   const scaledRadarData = React.useMemo(() => radarData.map(item => {
     const scaled: any = { 
@@ -455,23 +559,10 @@ const ComparisonPage: React.FC = () => {
       _rawData: {} // 存储原始数据用于tooltip
     }
     
-    const isSamplesN = item.subject === 'Samples (N)'
-    
     files.forEach(f => {
-      const rawValue = item[f.name]
+      const rawValue = (item as any)[f.name]
       scaled._rawData[f.name] = rawValue
-      
-      // 对于样品数N，数值越大应该越靠外，所以要反转
-      // 其他因子是越小越好（越靠内），N是越大越好（越靠外）
-      if (isSamplesN && rawValue > 0) {
-        // 找出最大样品数用于归一化
-        const maxN = Math.max(...files.map(file => item[file.name] || 0))
-        // 反转：用最大值减去当前值，这样大的N会显示在外侧
-        const invertedValue = maxN - rawValue + 1 // +1避免为0
-        scaled[f.name] = logScale(invertedValue)
-      } else {
-        scaled[f.name] = logScale(rawValue)
-      }
+      scaled[f.name] = logScale(rawValue)
     })
     
     return scaled
@@ -509,15 +600,15 @@ const ComparisonPage: React.FC = () => {
   const pieData = uniqueFiles.map(f => ({
     name: f.name,
     value: Number(f.data.totalScore.toFixed(2)),
-    // 保存所有7个因子的数据用于tooltip
+    color: f.color, // 使用文件的颜色
+    // 保存所有6个因子的数据用于tooltip
     details: {
       S: f.data.S,
       H: f.data.H,
       E: f.data.E,
       R: f.data.R,
       D: f.data.D,
-      P: f.data.P,
-      N: f.data.N
+      P: f.data.P
     }
   })).filter(item => item.value > 0)
 
@@ -544,7 +635,6 @@ const ComparisonPage: React.FC = () => {
           <p style={{ margin: '3px 0', fontSize: '13px' }}><strong>Recycle (R):</strong> {data.details.R.toFixed(2)}</p>
           <p style={{ margin: '3px 0', fontSize: '13px' }}><strong>Disposal (D):</strong> {data.details.D.toFixed(2)}</p>
           <p style={{ margin: '3px 0', fontSize: '13px' }}><strong>Power (P):</strong> {data.details.P.toFixed(2)}</p>
-          <p style={{ margin: '3px 0', fontSize: '13px' }}><strong>Samples (N):</strong> {data.details.N}</p>
         </div>
       )
     }
@@ -567,12 +657,6 @@ const ComparisonPage: React.FC = () => {
       return `${best.name} has the lowest value (${best.data[factor].toFixed(2)})`
     }
 
-    const getMaxSamples = () => {
-      const sorted = [...uniqueFiles].sort((a, b) => b.data.N - a.data.N)
-      const best = sorted[0]
-      return `${best.name} processes the most samples (${best.data.N})`
-    }
-
     return (
       <Card title="Evaluation" style={{ marginTop: 24 }}>
         <Paragraph>
@@ -591,7 +675,6 @@ const ComparisonPage: React.FC = () => {
           <li><Text strong>Recyclability (R):</Text> {getBestPerformance('R')}</li>
           <li><Text strong>Disposal (D):</Text> {getBestPerformance('D')}</li>
           <li><Text strong>Power (P):</Text> {getBestPerformance('P')}</li>
-          <li><Text strong>Sample Throughput (N):</Text> {getMaxSamples()}</li>
         </ul>
 
         <Paragraph style={{ marginTop: 16 }}>
@@ -652,12 +735,6 @@ const ComparisonPage: React.FC = () => {
       key: 'P',
       render: (val: number) => val.toFixed(2),
       sorter: (a: FileData, b: FileData) => a.data.P - b.data.P,
-    },
-    {
-      title: 'N',
-      dataIndex: ['data', 'N'],
-      key: 'N',
-      sorter: (a: FileData, b: FileData) => a.data.N - b.data.N,
     },
     {
       title: 'Total Score',
@@ -751,8 +828,8 @@ const ComparisonPage: React.FC = () => {
                           key={file.id}
                           name={file.name}
                           dataKey={file.name}
-                          stroke={COLORS[index % COLORS.length]}
-                          fill={COLORS[index % COLORS.length]}
+                          stroke={file.color || COLORS[index % COLORS.length]}
+                          fill={file.color || COLORS[index % COLORS.length]}
                           fillOpacity={0.3}
                         />
                       ))}
@@ -778,7 +855,7 @@ const ComparisonPage: React.FC = () => {
                       dataKey="value"
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />

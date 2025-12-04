@@ -73,3 +73,83 @@ class APIResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Any] = None
+
+
+# ============================================================================
+# 完整评分系统的Pydantic模型
+# ============================================================================
+
+class ReagentFactors(BaseModel):
+    """试剂因子数据"""
+    S1: float = Field(..., ge=0, le=1, description="S1-释放潜力")
+    S2: float = Field(..., ge=0, le=1, description="S2-火灾/爆炸")
+    S3: float = Field(..., ge=0, le=1, description="S3-反应/分解")
+    S4: float = Field(..., ge=0, le=1, description="S4-急性毒性")
+    H1: float = Field(..., ge=0, le=1, description="H1-慢性毒性")
+    H2: float = Field(..., ge=0, le=1, description="H2-刺激性")
+    E1: float = Field(..., ge=0, le=1, description="E1-持久性")
+    E2: float = Field(..., ge=0, le=1, description="E2-排放")
+    E3: float = Field(..., ge=0, le=1, description="E3-水体危害")
+
+
+class InstrumentAnalysisData(BaseModel):
+    """仪器分析阶段数据"""
+    time_points: List[float] = Field(..., description="梯度时间点(分钟)")
+    composition: Dict[str, List[float]] = Field(..., description="试剂组成百分比")
+    flow_rate: float = Field(..., gt=0, description="流速(mL/min)")
+    densities: Dict[str, float] = Field(..., description="试剂密度(g/mL)")
+    factor_matrix: Dict[str, ReagentFactors] = Field(..., description="试剂因子矩阵")
+    curve_types: List[str] = Field(default=None, description="曲线类型列表(可选，默认为linear)")
+
+
+class PreparationData(BaseModel):
+    """样品前处理阶段数据"""
+    volumes: Dict[str, float] = Field(..., description="试剂体积(mL)")
+    densities: Dict[str, float] = Field(..., description="试剂密度(g/mL)")
+    factor_matrix: Dict[str, ReagentFactors] = Field(..., description="试剂因子矩阵")
+
+
+class FullScoreRequest(BaseModel):
+    """完整评分请求"""
+    instrument: InstrumentAnalysisData = Field(..., description="仪器分析数据")
+    preparation: PreparationData = Field(..., description="样品前处理数据")
+    p_factor: float = Field(..., ge=0, description="P因子-能耗(0-100)")
+    r_factor: float = Field(..., ge=0, description="R因子-可回收性(0-100)")
+    d_factor: float = Field(..., ge=0, description="D因子-可降解性(0-100)")
+    
+    # 色谱类型选择（新增）
+    chromatography_type: str = Field("HPLC_UV", description="色谱类型(UPCC/UPLC/HPLC_MS/HPLC_UV/Semi_prep)")
+    
+    # 权重方案选择
+    safety_scheme: str = Field("PBT_Balanced", description="安全因子权重方案")
+    health_scheme: str = Field("Absolute_Balance", description="健康因子权重方案")
+    environment_scheme: str = Field("PBT_Balanced", description="环境因子权重方案")
+    instrument_stage_scheme: str = Field("Balanced", description="仪器分析阶段权重方案")
+    prep_stage_scheme: str = Field("Balanced", description="前处理阶段权重方案")
+    final_scheme: str = Field("Standard", description="最终汇总权重方案")
+
+
+class FullScoreResponse(BaseModel):
+    """完整评分响应"""
+    instrument: Dict[str, Any] = Field(..., description="仪器分析阶段结果")
+    preparation: Dict[str, Any] = Field(..., description="前处理阶段结果")
+    merged: Dict[str, Any] = Field(..., description="合成后的小因子(雷达图用)")
+    final: Dict[str, Any] = Field(..., description="最终总分")
+    schemes: Dict[str, str] = Field(..., description="使用的权重方案")
+
+
+class WeightSchemesResponse(BaseModel):
+    """权重方案列表响应"""
+    safety: List[str]
+    health: List[str]
+    environment: List[str]
+    instrument_stage: List[str]
+    prep_stage: List[str]
+    final: List[str]
+
+
+class WeightDetailsResponse(BaseModel):
+    """权重详情响应"""
+    category: str
+    scheme: str
+    weights: Dict[str, float]

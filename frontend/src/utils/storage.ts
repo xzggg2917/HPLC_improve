@@ -19,17 +19,22 @@ export const STORAGE_KEYS = {
   GRADIENT: 'hplc_gradient_data',
   COMPARISON: 'hplc_comparison_files',
   FACTORS_VERSION: 'hplc_factors_version',
+  SCORE_RESULTS: 'hplc_score_results',
+  POWER_SCORE: 'hplc_power_score',
 } as const
 
 // Electron 文件系统存储
 class ElectronStorage {
   async getItem(key: string): Promise<string | null> {
     try {
+      console.log(`📖 ElectronStorage.getItem: ${key}`)
       if (key === STORAGE_KEYS.USERS) {
         const users = await (window as any).electronAPI.fs.readUsers()
+        console.log(`  ✅ 读取 users: ${users.length} 个`)
         return users.length > 0 ? JSON.stringify(users) : null
       } else {
         const data = await (window as any).electronAPI.fs.readAppData(key)
+        console.log(`  ✅ 读取 ${key}: ${data ? '有数据' : '无数据'}`)
         return data ? JSON.stringify(data) : null
       }
     } catch (error) {
@@ -40,12 +45,15 @@ class ElectronStorage {
 
   async setItem(key: string, value: string): Promise<void> {
     try {
+      console.log(`💾 ElectronStorage.setItem: ${key}, 数据大小: ${value.length} 字节`)
       const data = JSON.parse(value)
       
       if (key === STORAGE_KEYS.USERS) {
         await (window as any).electronAPI.fs.writeUsers(data)
+        console.log(`  ✅ 写入 users 成功`)
       } else {
-        await (window as any).electronAPI.fs.writeAppData(key, data)
+        const result = await (window as any).electronAPI.fs.writeAppData(key, data)
+        console.log(`  ✅ 写入 ${key} 结果:`, result)
       }
     } catch (error) {
       console.error('ElectronStorage setItem error:', error)
@@ -126,7 +134,12 @@ class UnifiedStorage {
   private storage: ElectronStorage | LocalStorage
 
   constructor() {
-    if (isElectron()) {
+    const isElectronEnv = isElectron()
+    console.log('🔍 存储环境检测:')
+    console.log('  - window.electronAPI 存在:', !!(window as any).electronAPI)
+    console.log('  - isElectron():', isElectronEnv)
+    
+    if (isElectronEnv) {
       console.log('🖥️ Using Electron File System Storage')
       this.storage = new ElectronStorage()
     } else {

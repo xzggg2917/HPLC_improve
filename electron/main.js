@@ -126,6 +126,9 @@ ipcMain.handle('fs:writeUsers', async (event, users) => {
   }
 })
 
+// 写入队列，防止并发写入导致数据丢失
+let writeQueue = Promise.resolve()
+
 // 文件系统API - 应用数据管理（methods, factors, gradient等）
 ipcMain.handle('fs:readAppData', async (event, key) => {
   try {
@@ -141,22 +144,26 @@ ipcMain.handle('fs:readAppData', async (event, key) => {
 })
 
 ipcMain.handle('fs:writeAppData', async (event, key, value) => {
-  try {
-    let allData = {}
+  // 使用队列确保写入操作串行执行，避免并发覆盖
+  return writeQueue = writeQueue.then(async () => {
     try {
-      const existing = await fs.readFile(APP_DATA_FILE, 'utf-8')
-      allData = JSON.parse(existing)
+      let allData = {}
+      try {
+        const existing = await fs.readFile(APP_DATA_FILE, 'utf-8')
+        allData = JSON.parse(existing)
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error
+      }
+      
+      allData[key] = value
+      await fs.writeFile(APP_DATA_FILE, JSON.stringify(allData, null, 2), 'utf-8')
+      console.log(`✅ writeAppData成功: ${key}, 数据大小: ${JSON.stringify(value).length}字节`)
+      return { success: true }
     } catch (error) {
-      if (error.code !== 'ENOENT') throw error
+      console.error('Write app data error:', error)
+      return { success: false, error: error.message }
     }
-    
-    allData[key] = value
-    await fs.writeFile(APP_DATA_FILE, JSON.stringify(allData, null, 2), 'utf-8')
-    return { success: true }
-  } catch (error) {
-    console.error('Write app data error:', error)
-    return { success: false, error: error.message }
-  }
+  })
 })
 
 ipcMain.handle('fs:clearAppData', async () => {

@@ -1,4 +1,5 @@
 ﻿import React, { createContext, useContext, useState, ReactNode } from 'react'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
 
 // 预定义的试剂数据(用于新建文件时初始化)
 export const PREDEFINED_REAGENTS: ReagentFactor[] = [
@@ -54,6 +55,8 @@ export interface ReagentFactor {
   disposal: number
   // Custom reagent flag
   isCustom?: boolean
+  // Original data for custom reagents (for reset functionality)
+  originalData?: Omit<ReagentFactor, 'originalData'>
   // Main factors (aggregated scores)
   safetyScore: number
   healthScore: number
@@ -209,8 +212,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     })
     
-    // 同步到localStorage
-    localStorage.setItem('hplc_methods_raw', JSON.stringify(methodsData))
+    // 同步到存储
+    StorageHelper.setJSON(STORAGE_KEYS.METHODS, methodsData)
   }
 
   const updateFactorsData = (factorsData: ReagentFactor[]) => {
@@ -231,8 +234,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     })
     
-    // 同步到localStorage
-    localStorage.setItem('hplc_factors_data', JSON.stringify(factorsData))
+    // 同步到存储
+    StorageHelper.setJSON(STORAGE_KEYS.FACTORS, factorsData)
   }
 
   const updateGradientData = (gradientData: GradientStep[]) => {
@@ -248,7 +251,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log('🔄 AppContext: gradient数据变化，更新Context')
       return {
         ...prev,
-        gradient: gradientData,
+        gradient: JSON.parse(JSON.stringify(gradientData)), // ✅ 深拷贝避免引用共享
         lastModified: new Date().toISOString()
       }
     })
@@ -327,6 +330,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     console.log('✅ setAllData 完成，已更新Context和localStorage')
     
+    // 恢复评分结果（如果文件中包含）
+    if ((newData as any).scoreResults) {
+      console.log('  📊 恢复评分结果数据')
+      localStorage.setItem('hplc_score_results', JSON.stringify((newData as any).scoreResults))
+    } else {
+      console.log('  ℹ️ 文件中不包含评分结果，清除旧的评分结果')
+      localStorage.removeItem('hplc_score_results')
+    }
+    
     // 触发全局事件，通知所有页面数据已更新（用于强制刷新）
     window.dispatchEvent(new CustomEvent('fileDataChanged', { 
       detail: { 
@@ -357,9 +369,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.error('读取localStorage gradient数据失败:', error)
     }
     
+    // 获取评分结果（如果存在）
+    let scoreResultsToSave: any = null
+    try {
+      const scoreResultsStr = localStorage.getItem('hplc_score_results')
+      if (scoreResultsStr) {
+        scoreResultsToSave = JSON.parse(scoreResultsStr)
+        console.log('📦 exportData: 包含评分结果数据')
+      }
+    } catch (error) {
+      console.error('读取localStorage评分结果失败:', error)
+    }
+    
     return {
       ...data,
       gradient: gradientDataToSave as any,
+      scoreResults: scoreResultsToSave, // 添加评分结果
       lastModified: new Date().toISOString()
     }
   }

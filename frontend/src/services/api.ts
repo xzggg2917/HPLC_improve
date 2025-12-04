@@ -32,6 +32,16 @@ export const api = {
   // 溶剂数据库
   listSolvents: () =>
     axiosInstance.get('/solvents/list'),
+
+  // 完整评分系统
+  calculateFullScore: (data: any) =>
+    axiosInstance.post('/scoring/full-score', data),
+
+  getWeightSchemes: () =>
+    axiosInstance.get('/scoring/weight-schemes'),
+
+  getWeightDetails: (category: string, scheme: string) =>
+    axiosInstance.get(`/scoring/weight-details/${category}/${scheme}`),
 }
 
 export default api

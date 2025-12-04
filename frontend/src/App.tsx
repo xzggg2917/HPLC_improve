@@ -26,6 +26,7 @@ import PasswordVerifyModal from './components/PasswordVerifyModal'
 import PasswordConfirmModal from './components/PasswordConfirmModal'
 import { AppProvider, useAppContext, PREDEFINED_REAGENTS } from './contexts/AppContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { StorageHelper, STORAGE_KEYS } from './utils/storage'
 import { encryptData, decryptData } from './utils/encryption'
 import './App.css'
 
@@ -200,9 +201,9 @@ const AppContent: React.FC = () => {
       gradient: []
     }
     
-    // 🔥 Immediately write factors to localStorage to ensure MethodsPage can load them
-    localStorage.setItem('hplc_factors_data', JSON.stringify(PREDEFINED_REAGENTS))
-    localStorage.setItem('hplc_factors_version', '2')
+    // 🔥 Immediately write factors to storage to ensure MethodsPage can load them
+    StorageHelper.setJSON(STORAGE_KEYS.FACTORS, PREDEFINED_REAGENTS)
+    StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, '2')
     console.log('✅ App: Created new file with predefined reagents (including CO2 and Water)')
     
     // 🔥 创建无效的 gradient 数据（流速为0），以便 MethodsPage 显示警告
@@ -217,11 +218,11 @@ const AppContent: React.FC = () => {
       isValid: false,
       invalidReason: 'New file - flow rates not configured'
     }
-    localStorage.setItem('hplc_gradient_data', JSON.stringify(invalidGradientData))
+    StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, invalidGradientData)
     console.log('✅ App: Created invalid gradient data for new file (will show warning in MethodsPage)')
     
     // 🔥 清空对比数据
-    localStorage.removeItem('hplc_comparison_files')
+    StorageHelper.setJSON('hplc_comparison_files', [])
     console.log('✅ App: Cleared comparison files from localStorage')
     
     // Clear file handle, set to "Untitled" state

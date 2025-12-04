@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import { getColorHex } from '../utils/colorScale'
 
 interface PolarBarChartProps {
   scores: {
@@ -127,7 +128,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.S,
             name: 'S',
             itemStyle: { 
-              color: '#52c41a',
+              color: getColorHex(scores.S),
               borderRadius: [0, 8, 8, 0]
             }
           },
@@ -135,7 +136,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.H,
             name: 'H',
             itemStyle: { 
-              color: '#fa8c16',
+              color: getColorHex(scores.H),
               borderRadius: [0, 8, 8, 0]
             }
           },
@@ -143,7 +144,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.E,
             name: 'E',
             itemStyle: { 
-              color: '#1890ff',
+              color: getColorHex(scores.E),
               borderRadius: [0, 8, 8, 0]
             }
           },
@@ -151,7 +152,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.R,
             name: 'R',
             itemStyle: { 
-              color: '#f5222d',
+              color: getColorHex(scores.R),
               borderRadius: [0, 8, 8, 0]
             }
           },
@@ -159,7 +160,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.D,
             name: 'D',
             itemStyle: { 
-              color: '#722ed1',
+              color: getColorHex(scores.D),
               borderRadius: [0, 8, 8, 0]
             }
           },
@@ -167,7 +168,7 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
             value: scores.P,
             name: 'P',
             itemStyle: { 
-              color: '#eb2f96',
+              color: getColorHex(scores.P),
               borderRadius: [0, 8, 8, 0]
             }
           }

@@ -1,9 +1,9 @@
 ﻿import React, { useState } from 'react'
-import { Modal, Form, Input, InputNumber, Select, Row, Col, message, Space, Typography, Divider, Alert } from 'antd'
-import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined } from '@ant-design/icons'
+import { Modal, Form, Input, InputNumber, Select, Row, Col, message, Space, Typography, Divider, Alert, Button } from 'antd'
+import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined, LinkOutlined } from '@ant-design/icons'
 import type { ReagentFactor } from '../contexts/AppContext'
 
-const { Text } = Typography
+const { Text, Link } = Typography
 const { Option } = Select
 
 interface AddReagentModalProps {
@@ -601,7 +601,7 @@ const DISPOSAL_OPTIONS = [
   },
   { 
     value: 0.75, 
-    label: 'L4: 高势垒阻碍级 (High Barrier)',
+    label: 'L4: 高风险阻碍级 (High Barrier)',
     description: '高能耗/高风险。沸点 > 100°C (能耗增加)，或含卤素 (需防腐设备)，或毒性过高/包装难 (需特殊安控)',
     criteria: '如：THF, DCM, DMF, DMSO, 氯水, 乙醇',
     color: '#ff9c6e'
@@ -625,7 +625,16 @@ const DISPOSAL_PERCENTAGE_OPTIONS = [
 ]
 
 const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, onOk }) => {
+  // 只在 Modal 可见时创建 form 实例，避免警告
   const [form] = Form.useForm()
+  
+  // 重置 form 当 Modal 打开时
+  React.useEffect(() => {
+    if (visible) {
+      form.resetFields()
+    }
+  }, [visible, form])
+  
   const [calculatedScores, setCalculatedScores] = useState({
     safetyScore: 0,
     healthScore: 0,
@@ -639,6 +648,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
   // Fire/Explosives 的状态
   const [feStep1, setFeStep1] = useState<string>('') // A/B/C
   const [feStep2, setFeStep2] = useState<string>('') // A/B/C/D
+  const [feStep3, setFeStep3] = useState<string>('') // A/B/C/D (易燃性评估)
   const [feCalculatedValue, setFeCalculatedValue] = useState<number>(0)
   
   // Reaction/Decomposition 的状态
@@ -1081,6 +1091,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
       
       // 第三阶段：易燃性评估
       if (allValues.feStep2 === 'D' && changedValues.feStep3 !== undefined) {
+        setFeStep3(changedValues.feStep3) // 更新feStep3状态
         const fe = calculateFireExplos('C', 'D', changedValues.feStep3)
         setFeCalculatedValue(fe)
         form.setFieldsValue({ fireExplos: fe })
@@ -1532,6 +1543,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
     setRpCalculatedValue(0)
     setFeStep1('')
     setFeStep2('')
+    setFeStep3('') // 添加feStep3的重置
     setFeCalculatedValue(0)
     setRdStep1('')
     setRdNfpaYellow(undefined)
@@ -1580,9 +1592,10 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
       width={1000}
       okText="添加"
       cancelText="取消"
-      destroyOnClose
-      bodyStyle={{ maxHeight: '75vh', overflowY: 'auto', padding: '20px 24px' }}
+      destroyOnHidden
+      styles={{ body: { maxHeight: '75vh', overflowY: 'auto', padding: '20px 24px' } }}
     >
+      {visible && (
       <Form
         form={form}
         layout="vertical"
@@ -1720,13 +1733,24 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {rpStep1 === 'C' && (
           <>
             <Form.Item
-              label={<Text strong>第二步：数据录入 - 物质沸点</Text>}
+              label={
+                <div>
+                  <Text strong>第二步：数据录入 - 物质沸点</Text>
+                  <Link 
+                    href="https://www.chemicalbook.com" 
+                    target="_blank" 
+                    style={{ marginLeft: 12, fontSize: 12 }}
+                  >
+                    <LinkOutlined /> 查询沸点数据库 (ChemicalBook)
+                  </Link>
+                </div>
+              }
               name="rpTbp"
               rules={[
                 { required: true, message: '请输入物质的标准沸点' },
                 { type: 'number', min: 30, max: 200, message: '沸点应在30-200°C之间' }
               ]}
-              tooltip="请查询该物质的标准沸点(Tbp)，并填入此处"
+              tooltip="请查询该物质的标准沸点(Tbp)，并填入此处。参考数据库：ChemicalBook"
             >
               <InputNumber
                 style={{ width: '100%' }}
@@ -1876,7 +1900,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 第三阶段：易燃性风险评估 (仅当feStep2为D时显示) */}
         {feStep1 === 'C' && feStep2 === 'D' && (
           <Form.Item
-            label={<Text strong>第三阶段：易燃性风险评估 (Fuel Hazard)</Text>}
+            label={
+              <div>
+                <Text strong>第三阶段：易燃性风险评估 (Fuel Hazard)</Text>
+                <Link 
+                  href="http://www.basechem.org" 
+                  target="_blank" 
+                  style={{ marginLeft: 12, fontSize: 12 }}
+                >
+                  <LinkOutlined /> 查询闪点/R语句 (BaseChemOrg)
+                </Link>
+              </div>
+            }
             name="feStep3"
             rules={[{ required: true, message: '请选择闪点情况' }]}
             tooltip={
@@ -1886,6 +1921,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B：</strong>闪点 21-60°C，或 R10 - 可燃</div>
                 <div style={{ fontSize: 11, marginBottom: 6 }}><strong>C：</strong>闪点 &gt; 60°C - 低风险</div>
                 <div style={{ fontSize: 11 }}><strong>D：</strong>无闪点，且未被标记为 R11</div>
+                <div style={{ marginTop: 8, fontSize: 11, color: '#1890ff' }}>💡 参考数据库：BaseChemOrg (闪点、R语句、燃烧热)</div>
               </div>
             }
           >
@@ -1923,7 +1959,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                     </Text>
                   </Text>
                 )}
-                {feStep1 === 'C' && feStep2 === 'D' && feCalculatedValue > 0 && (
+                {feStep1 === 'C' && feStep2 === 'D' && feStep3 && (
                   <Text>
                     【结果】易燃性评估 → Fire/Explos. Index = <Text strong style={{ color: feCalculatedValue === 1 ? '#ff4d4f' : feCalculatedValue === 0.5 ? '#fa8c16' : '#52c41a', fontSize: 16 }}>{feCalculatedValue.toFixed(3)}</Text>
                     <br />
@@ -1932,6 +1968,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                       {feCalculatedValue === 0.500 && '(依据：中等风险，闪点 21-60°C 或标记为 R10)'}
                       {feCalculatedValue === 0.000 && '(依据：低风险，闪点 > 60°C 或无闪点且未标记)'}
                     </Text>
+                  </Text>
+                )}
+                {feStep1 === 'C' && feStep2 === 'D' && !feStep3 && (
+                  <Text type="secondary">
+                    ⏳ 请完成第三阶段：易燃性风险评估
                   </Text>
                 )}
               </div>
@@ -1983,10 +2024,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<Text>黄色菱形 (Instability/Reactivity) 的数字</Text>}
+                  label={
+                    <div>
+                      <Text>黄色菱形 (Instability/Reactivity) 的数字</Text>
+                      <Link 
+                        href="https://cameochemicals.noaa.gov/search/simple" 
+                        target="_blank" 
+                        style={{ marginLeft: 8, fontSize: 12 }}
+                      >
+                        <LinkOutlined /> NFPA数据库 (CAMEO)
+                      </Link>
+                    </div>
+                  }
                   name="rdNfpaYellow"
                   rules={[{ required: true, message: '请填写黄色菱形的数字' }]}
-                  tooltip="第二阶段：查找 NFPA 704 数据（核心步骤）- 请在 Google 或化学品数据库（如 ChemicalBook, Cameo Chemicals）中搜索'物质英文名 + NFPA 704'，找到菱形标签。NFPA 704 黄色菱形代表反应性/不稳定性，数值范围 0-4"
+                  tooltip="第二阶段：查找 NFPA 704 数据（核心步骤）- 请在 CAMEO Chemicals 数据库中搜索物质英文名，找到NFPA 704菱形标签。黄色菱形代表反应性/不稳定性，数值范围 0-4"
                 >
                   <Select 
                     placeholder="请选择 0-4"
@@ -2135,10 +2187,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<Text>【填空 1】查找或输入 IDLH (ppm)</Text>}
+                  label={
+                    <div>
+                      <Text>【填空 1】查找或输入 IDLH (ppm)</Text>
+                      <Link 
+                        href="https://www.cdc.gov/niosh/idlh/intridl4.html" 
+                        target="_blank" 
+                        style={{ marginLeft: 8, fontSize: 12 }}
+                      >
+                        <LinkOutlined /> IDLH数据库 (NIOSH)
+                      </Link>
+                    </div>
+                  }
                   name="atIdlh"
                   rules={[{ required: true, message: '请输入 IDLH 值' }]}
-                  tooltip="【路径 A】计算挥发性物质急性毒性（基于 IDLH）- 适用于：甲醇、乙腈、THF 等有机溶剂。请查看下方的常用溶剂标准值，或查询 NIOSH 数据库"
+                  tooltip="【路径 A】计算挥发性物质急性毒性（基于 IDLH）- 适用于：甲醇、乙腈、THF 等有机溶剂。参考数据库：NIOSH IDLH Database"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
@@ -2286,10 +2349,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
         {/* 问题 1：严重腐蚀性 */}
         <Form.Item
-          label={<Text strong>问题 1：是否存在严重腐蚀性代码？</Text>}
+          label={
+            <div>
+              <Text strong>问题 1：是否存在严重腐蚀性代码？</Text>
+              <Link 
+                href="http://www.basechem.org" 
+                target="_blank" 
+                style={{ marginLeft: 8, fontSize: 12 }}
+              >
+                <LinkOutlined /> R语句数据库 (BaseChemOrg)
+              </Link>
+            </div>
+          }
           name="irrQ1"
           rules={[{ required: true, message: '请选择' }]}
-          tooltip="第一阶段：R-codes 快速判定（适用于绝大多数化学品）- 请查看物质的 MSDS 或标签上的 R-codes（风险代码），并回答下列问题。一旦在某个问题中得到'最终结果'，请停止计算。检查该物质是否包含 R35（引起严重灼伤）或 R34（引起灼伤）"
+          tooltip="第一阶段：R-codes 快速判定 - 请查看物质的 MSDS 或标签上的 R-codes（风险代码）。检查该物质是否包含 R35（引起严重灼伤）或 R34（引起灼伤）。参考数据库：BaseChemOrg"
         >
           <Select 
             placeholder="该物质是否包含 R35（引起严重灼伤）或 R34（引起灼伤）？"
@@ -2550,10 +2624,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<Text strong>Q4. [填空] ACGIH TLV-TWA 值</Text>}
+                  label={
+                    <div>
+                      <Text strong>Q4. [填空] ACGIH TLV-TWA 值</Text>
+                      <Link 
+                        href="https://pubchem.ncbi.nlm.nih.gov" 
+                        target="_blank" 
+                        style={{ marginLeft: 8, fontSize: 12 }}
+                      >
+                        <LinkOutlined /> TLV数据库 (PubChem)
+                      </Link>
+                    </div>
+                  }
                   name="ctTlv"
                   rules={[{ required: true, message: '请输入 TLV 值' }]}
-                  tooltip="必须使用 mg/m³ 为单位。如果是 ppm，请根据分子量换算"
+                  tooltip="必须使用 mg/m³ 为单位。如果是 ppm，请根据分子量换算。参考数据库：PubChem"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
@@ -2694,9 +2779,20 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {persQ1 === 'C' && (
           <>
             <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
-                📊 第二阶段：数据提取 (请查看 CompTox 数据库)
-              </Text>
+              <div style={{ marginBottom: 12 }}>
+                <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
+                  📊 第二阶段：数据提取 (请查看 CompTox 数据库)
+                </Text>
+              </div>
+              <Button 
+                type="primary" 
+                icon={<LinkOutlined />}
+                href="https://comptox.epa.gov/dashboard/" 
+                target="_blank"
+                style={{ marginBottom: 8 }}
+              >
+                打开 CompTox Dashboard
+              </Button>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
                 请打开 CompTox 网站查找该物质的 "Env. Fate/Transport" 页面，
@@ -2708,9 +2804,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               message="💡 数据提取提示"
               description={
                 <div style={{ fontSize: 12 }}>
-                  <Text strong>CompTox 网站链接:</Text> <Text code>https://comptox.epa.gov/dashboard</Text>
+                  <Text>1. 在 CompTox 网站中搜索物质名称</Text>
                   <br />
-                  <Text>在网站中搜索物质名称，然后点击 "Env. Fate/Transport" 标签页</Text>
+                  <Text>2. 点击 "Env. Fate/Transport" 标签页</Text>
+                  <br />
+                  <Text>3. 查找并提取下方所需的5个数据项</Text>
                 </div>
               }
               type="info"
@@ -3130,25 +3228,32 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {whQ1 === 'C' && (
           <>
             <Form.Item
-              label={<Text strong>Q2. LC50 范围判断</Text>}
+              label={
+                <div>
+                  <Text strong>Q2. LC50 范围判断</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Link 
+                      href="https://comptox.epa.gov/dashboard/" 
+                      target="_blank" 
+                      style={{ fontSize: 12, marginRight: 12 }}
+                    >
+                      <LinkOutlined /> CompTox数据库
+                    </Link>
+                    <Text type="secondary" style={{ fontSize: 11 }}>（若无数据可通过文献搜索）</Text>
+                  </div>
+                </div>
+              }
               name="whQ2"
               rules={[{ required: true, message: '请选择LC50范围' }]}
-              tooltip="第二步：急性毒性评分 (Toxicity Score) - 请查找物质的 96小时鱼类 LC50 (mg/L)。若数据难找，取平均值；若无鱼类数据，可用 EC50 代替。根据96h鱼类LC50值选择对应范围"
+              tooltip="第二步：急性毒性评分 (Toxicity Score) - 请查找物质的 96小时鱼类 LC50 (mg/L)。参考数据库：CompTox Dashboard，若无数据可通过文献搜索获得。根据96h鱼类LC50值选择对应范围"
             >
               <Select 
                 placeholder="请根据LC50值选择对应范围（单选）"
                 onChange={(value) => setWhQ2(value)}
               >
                 {WH_Q2_OPTIONS.map(opt => (
-                  <Option key={opt.value} value={opt.value}>
-                    <div>
-                      <Text strong>{opt.label}</Text>
-                      <br />
-                      <br />
-                      <Text type="secondary" style={{ marginLeft: 8 }}>
-                        → 第二步得分 S2 = {opt.result.toFixed(3)}
-                      </Text>
-                    </div>
+                  <Option key={opt.value} value={opt.value} title={`第二步得分 S2 = ${opt.result.toFixed(3)}`}>
+                    {opt.label} (得分: {opt.result.toFixed(3)})
                   </Option>
                 ))}
               </Select>
@@ -3195,15 +3300,8 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                     onChange={(value) => setWhQ3_2(value)}
                   >
                     {WH_Q3_2_OPTIONS.map(opt => (
-                      <Option key={opt.value} value={opt.value}>
-                        <div>
-                          <Text strong>{opt.label}</Text>
-                          <br />
-                          <br />
-                          <Text type="secondary" style={{ marginLeft: 8, fontSize: 11 }}>
-                            → 罚分: {opt.penalty.toFixed(3)}
-                          </Text>
-                        </div>
+                      <Option key={opt.value} value={opt.value} title={`罚分: ${opt.penalty.toFixed(3)}`}>
+                        {opt.label} (罚分: {opt.penalty.toFixed(3)})
                       </Option>
                     ))}
                   </Select>
@@ -3451,7 +3549,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                     {disposalDint === 0 && '物质属性：自然回归级 | '}
                     {disposalDint === 0.25 && '物质属性：低熵回收级 | '}
                     {disposalDint === 0.5 && '物质属性：标准工业级 | '}
-                    {disposalDint === 0.75 && '物质属性：高势垒阻碍级 | '}
+                    {disposalDint === 0.75 && '物质属性：高风险阻碍级 | '}
                     {disposalDint === 1.0 && '物质属性：不可逆摧毁级 | '}
                     {disposalPercentage === 0 && '完全废弃/外运焚烧'}
                     {disposalPercentage === 25 && '少量回收用于清洗'}
@@ -3645,6 +3743,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           </Row>
         </div>
       </Form>
+      )}
     </Modal>
   )
 }

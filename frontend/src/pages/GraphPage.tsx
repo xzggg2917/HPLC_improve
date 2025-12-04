@@ -4,6 +4,8 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip,
 import FanChart from '../components/FanChart'
 import PolarBarChart from '../components/PolarBarChart'
 import NestedPieChart from '../components/NestedPieChart'
+import { getColorHex, getAverageColor, getColorRGBA } from '../utils/colorScale'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
 
 const { Title } = Typography
 
@@ -31,6 +33,7 @@ interface ReagentFactor {
 
 const GraphPage: React.FC = () => {
   const [radarData, setRadarData] = useState<any[]>([])
+  const [radarColor, setRadarColor] = useState<string>('#8884d8') // 雷达图颜色，基于平均分
   const [hasData, setHasData] = useState(false)
   const [totalScore, setTotalScore] = useState<number>(0)
   const [sampleCount, setSampleCount] = useState<number>(0)
@@ -66,15 +69,22 @@ const GraphPage: React.FC = () => {
       console.log('GraphPage: File data changed event received')
       calculateTotalScores()
     }
+    
+    const handleScoreDataUpdated = () => {
+      console.log('GraphPage: Score data updated event received')
+      calculateTotalScores()
+    }
 
     window.addEventListener('gradientDataUpdated', handleDataUpdate)
     window.addEventListener('factorsDataUpdated', handleDataUpdate)
     window.addEventListener('fileDataChanged', handleFileDataChanged)
+    window.addEventListener('scoreDataUpdated', handleScoreDataUpdated)
 
     return () => {
       window.removeEventListener('gradientDataUpdated', handleDataUpdate)
       window.removeEventListener('factorsDataUpdated', handleDataUpdate)
       window.removeEventListener('fileDataChanged', handleFileDataChanged)
+      window.removeEventListener('scoreDataUpdated', handleScoreDataUpdated)
     }
   }, [])
 
@@ -124,21 +134,133 @@ const GraphPage: React.FC = () => {
     return null
   }
 
-  const calculateTotalScores = () => {
+  const calculateTotalScores = async () => {
     try {
-      const factorsDataStr = localStorage.getItem('hplc_factors_data')
-      const gradientDataStr = localStorage.getItem('hplc_gradient_data')
-      const methodsDataStr = localStorage.getItem('hplc_methods_raw')
+      // 优先使用新的评分系统数据
+      const scoreResults = await StorageHelper.getJSON(STORAGE_KEYS.SCORE_RESULTS)
+      
+      if (scoreResults) {
+        // 使用新的0-100分制评分系统数据
+        console.log('GraphPage: Using new scoring system data (0-100 scale)')
+        
+        // 从评分结果中提取小因子数据（用于雷达图）
+        const mergedSubFactors = scoreResults.merged?.sub_factors || {}
+        
+        // 构建雷达图数据（9个小因子，0-100分制）
+        // 收集所有小因子分数用于计算平均颜色
+        const subFactorValues = [
+          mergedSubFactors.S1 || 0,
+          mergedSubFactors.S2 || 0,
+          mergedSubFactors.S3 || 0,
+          mergedSubFactors.S4 || 0,
+          mergedSubFactors.H1 || 0,
+          mergedSubFactors.H2 || 0,
+          mergedSubFactors.E1 || 0,
+          mergedSubFactors.E2 || 0,
+          mergedSubFactors.E3 || 0
+        ]
+        
+        const chartData = [
+          {
+            subject: 'S1-Release',
+            score: Number((mergedSubFactors.S1 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'S2-Fire/Explos',
+            score: Number((mergedSubFactors.S2 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'S3-React/Decom',
+            score: Number((mergedSubFactors.S3 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'S4-Acute Tox',
+            score: Number((mergedSubFactors.S4 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'H1-Chronic Tox',
+            score: Number((mergedSubFactors.H1 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'H2-Irritation',
+            score: Number((mergedSubFactors.H2 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'E1-Persistency',
+            score: Number((mergedSubFactors.E1 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'E2-Emission',
+            score: Number((mergedSubFactors.E2 || 0).toFixed(2)),
+            fullMark: 100
+          },
+          {
+            subject: 'E3-Water Haz',
+            score: Number((mergedSubFactors.E3 || 0).toFixed(2)),
+            fullMark: 100
+          }
+        ]
+        
+        // 计算小因子平均分和对应颜色
+        const radarColorData = getAverageColor(subFactorValues)
+        console.log('GraphPage: Radar chart average color:', radarColorData)
+        
+        setRadarData(chartData)
+        setRadarColor(radarColorData.color) // 设置雷达图颜色
+        
+        // 设置大因子得分（取仪器和前处理的平均值）
+        const instMajor = scoreResults.instrument?.major_factors || { S: 0, H: 0, E: 0 }
+        const prepMajor = scoreResults.preparation?.major_factors || { S: 0, H: 0, E: 0 }
+        const additionalFactors = scoreResults.additional_factors || { P: 0, R: 50, D: 50 }
+        
+        setMainFactorScores({
+          S: (instMajor.S + prepMajor.S) / 2,
+          H: (instMajor.H + prepMajor.H) / 2,
+          E: (instMajor.E + prepMajor.E) / 2,
+          R: additionalFactors.R,  // 从后端获取
+          D: additionalFactors.D,  // 从后端获取
+          P: additionalFactors.P   // 从后端获取
+        })
+        
+        // 设置总分（0-100分制）
+        const finalScore = scoreResults.final?.score3 || 0
+        setTotalScore(finalScore)
+        
+        // 设置小因子得分（0-100分制）
+        setSubFactorScores({
+          releasePotential: mergedSubFactors.S1 || 0,
+          fireExplos: mergedSubFactors.S2 || 0,
+          reactDecom: mergedSubFactors.S3 || 0,
+          acuteToxicity: mergedSubFactors.S4 || 0,
+          irritation: mergedSubFactors.H2 || 0,
+          chronicToxicity: mergedSubFactors.H1 || 0,
+          persistency: mergedSubFactors.E1 || 0,
+          airHazard: mergedSubFactors.E2 || 0,
+          waterHazard: mergedSubFactors.E3 || 0
+        })
+        
+        setHasData(true)
+        return
+      }
+      
+      // 回退到旧的计算逻辑（0-1分制）
+      console.log('GraphPage: Falling back to legacy calculation (0-1 scale)')
+      const factorsData = await StorageHelper.getJSON<ReagentFactor[]>(STORAGE_KEYS.FACTORS)
+      const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+      const methodsData = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
 
-      if (!factorsDataStr || !gradientDataStr || !methodsDataStr) {
+      if (!factorsData || !gradientData || !methodsData) {
         console.log('Missing required data')
         setHasData(false)
         return
       }
-
-      const factorsData: ReagentFactor[] = JSON.parse(factorsDataStr)
-      const gradientData = JSON.parse(gradientDataStr)
-      const methodsData = JSON.parse(methodsDataStr)
 
       const sampleCountValue = methodsData.sampleCount || 0
       setSampleCount(sampleCountValue)
@@ -252,8 +374,7 @@ const GraphPage: React.FC = () => {
       }
 
       // 从 Methods 页面获取 P 值
-      const pScoreStr = localStorage.getItem('hplc_power_score')
-      const P = pScoreStr ? parseFloat(pScoreStr) : 0
+      const P = await StorageHelper.getJSON<number>(STORAGE_KEYS.POWER_SCORE) || 0
       
       const sumOfAllScores = totalScores.S + totalScores.H + totalScores.E + totalScores.R + totalScores.D + P
       const calculatedTotalScore = sampleCountValue > 0 ? sumOfAllScores / sampleCountValue : 0
@@ -379,28 +500,47 @@ const GraphPage: React.FC = () => {
             <div style={{ textAlign: 'center', minWidth: '120px' }}>
               <div style={{ fontSize: 14, color: '#666', marginBottom: 8, fontWeight: 500 }}>Power (P)</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', color: '#eb2f96' }}>
-                {(localStorage.getItem('hplc_power_score') ? parseFloat(localStorage.getItem('hplc_power_score')!) : 0).toFixed(3)}
+                {mainFactorScores.P.toFixed(3)}
               </div>
             </div>
           </div>
         </Card>
       )}
 
-      {/* 总分卡片 */}
-      {hasData && sampleCount > 0 && totalScore > 0 && (
+      {/* 总分卡片 - 使用新评分系统 */}
+      {hasData && totalScore > 0 && (
         <Card style={{ marginBottom: 24 }}>
           <div style={{ 
-            padding: '20px', 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            padding: '24px', 
+            background: `linear-gradient(135deg, ${getColorHex(totalScore)} 0%, ${getColorHex(Math.min(totalScore + 15, 100))} 100%)`,
             borderRadius: 12,
             color: 'white',
             textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+            boxShadow: `0 4px 16px ${getColorRGBA(totalScore, 0.3)}`,
+            transition: 'all 0.3s ease'
           }}>
-            <div style={{ fontSize: 16, opacity: 0.9, marginBottom: 8 }}>Overall Total Score</div>
-            <div style={{ fontSize: 48, fontWeight: 'bold', marginBottom: 8 }}>{totalScore.toFixed(3)}</div>
-            <div style={{ fontSize: 14, opacity: 0.85 }}>
-              Formula: ((S + H + E + R + D) + P) / Sample Count ({sampleCount})
+            <div style={{ fontSize: 16, opacity: 0.95, marginBottom: 8, fontWeight: 500 }}>
+              最终绿色化学总分 (Score₃)
+            </div>
+            <div style={{ fontSize: 52, fontWeight: 'bold', marginBottom: 12, textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+              {totalScore.toFixed(2)}
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 6 }}>
+              满分：100分
+            </div>
+            <div style={{ 
+              display: 'inline-block',
+              padding: '4px 16px',
+              background: 'rgba(255, 255, 255, 0.25)',
+              borderRadius: 20,
+              fontSize: 13,
+              fontWeight: 500
+            }}>
+              {totalScore < 20 ? '优秀 - 完全符合绿色化学标准' :
+               totalScore < 40 ? '良好 - 较好符合标准' :
+               totalScore < 60 ? '中等 - 基本合格' :
+               totalScore < 80 ? '较差 - 需要改进' :
+               '很差 - 严重不符合标准'}
             </div>
           </div>
         </Card>
@@ -433,8 +573,8 @@ const GraphPage: React.FC = () => {
                       <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
                       <Radar
                         dataKey="score"
-                        stroke="#8884d8"
-                        fill="#8884d8"
+                        stroke={radarColor}
+                        fill={radarColor}
                         fillOpacity={0.6}
                       />
                       <Tooltip content={<CustomTooltip />} />

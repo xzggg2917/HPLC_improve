@@ -49,7 +49,7 @@ const HomePage: React.FC = () => {
             <Card
               hoverable
               style={{ width: 280, textAlign: 'center', cursor: 'pointer' }}
-              bodyStyle={{ padding: '40px 24px' }}
+              styles={{ body: { padding: '40px 24px' } }}
               onClick={handleNewFileClick}
             >
               <FileAddOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
@@ -65,7 +65,7 @@ const HomePage: React.FC = () => {
             <Card
               hoverable
               style={{ width: 280, textAlign: 'center', cursor: 'pointer' }}
-              bodyStyle={{ padding: '40px 24px' }}
+              styles={{ body: { padding: '40px 24px' } }}
               onClick={handleOpenFileClick}
             >
               <FolderOpenOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />

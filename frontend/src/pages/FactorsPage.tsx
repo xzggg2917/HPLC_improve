@@ -4,6 +4,7 @@ import { PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined } from '@ant-d
 import { useAppContext } from '../contexts/AppContext'
 import type { ReagentFactor } from '../contexts/AppContext'
 import AddReagentModal from '../components/AddReagentModal'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
 import './FactorsPage.css'
 
 const { Title } = Typography
@@ -33,15 +34,13 @@ const FACTORS_DATA_VERSION = 5 // Increment this when PREDEFINED_REAGENTS change
 const FactorsPage: React.FC = () => {
   const { data, updateFactorsData, setIsDirty } = useAppContext()
   
-  // Check if factors data needs update
-  const checkAndUpdateFactorsData = (existingFactors: ReagentFactor[]) => {
-    const storedVersion = localStorage.getItem('hplc_factors_version')
+  // Check if factors data needs update (同步版本)
+  const checkAndUpdateFactorsData = (existingFactors: ReagentFactor[], storedVersion: string | null) => {
     const currentVersion = FACTORS_DATA_VERSION.toString()
     
     // If version doesn't match or missing reagents, update to latest
     if (storedVersion !== currentVersion) {
       console.log('🔄 FactorsPage: Updating factors data to version', currentVersion)
-      localStorage.setItem('hplc_factors_version', currentVersion)
       return [...PREDEFINED_REAGENTS]
     }
     
@@ -65,7 +64,6 @@ const FactorsPage: React.FC = () => {
     
     if (!hasValidSubFactors) {
       console.log('🔄 FactorsPage: All sub-factors are zero, updating to complete data')
-      localStorage.setItem('hplc_factors_version', currentVersion)
       return [...PREDEFINED_REAGENTS]
     }
     
@@ -74,13 +72,17 @@ const FactorsPage: React.FC = () => {
   
   // 使用Context中的数据初始化
   const [reagents, setReagents] = useState<ReagentFactor[]>(() => {
-    // 如果Context中有数据就使用，否则使用预定义数据
+    // 如果Context中有数据就使用,否则使用预定义数据
     if (data.factors.length > 0) {
-      return checkAndUpdateFactorsData(data.factors)
+      // 同步读取版本号（初始化时从localStorage读取）
+      const storedVersion = localStorage.getItem('hplc_factors_version')
+      return checkAndUpdateFactorsData(data.factors, storedVersion)
     }
     return [...PREDEFINED_REAGENTS]
   })
+  const [editSnapshot, setEditSnapshot] = useState<ReagentFactor[]>([]) // 保存进入Edit模式时的快照
   const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isDeletingMode, setIsDeletingMode] = useState<boolean>(false)
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false)
 
   // 监听Context数据变化，立即同步更新
@@ -88,46 +90,51 @@ const FactorsPage: React.FC = () => {
   const hasInitialized = React.useRef(false)
   
   useLayoutEffect(() => {
-    const currentFactorsStr = JSON.stringify(data.factors)
-    
-    // 如果数据没有变化，跳过更新
-    if (lastSyncedFactors.current === currentFactorsStr) {
-      return
-    }
-    
-    lastSyncedFactors.current = currentFactorsStr
-    
-    if (data.factors.length === 0 && !hasInitialized.current) {
-      // 只在第一次遇到空数据时使用预定义数据
-      hasInitialized.current = true
-      console.log('🔄 FactorsPage: 检测到空数据，使用预定义试剂列表')
-      const updatedReagents = [...PREDEFINED_REAGENTS]
-      setReagents(updatedReagents)
-      // 立即同步到Context，避免其他页面读取到空数据
-      updateFactorsData(updatedReagents)
-      // 🔥 立即写入localStorage，避免MethodsPage读取时为空
-      localStorage.setItem('hplc_factors_data', JSON.stringify(updatedReagents))
-      localStorage.setItem('hplc_factors_version', FACTORS_DATA_VERSION.toString())
-      console.log('✅ FactorsPage: 已立即写入localStorage')
-      // 🔥 触发事件通知其他页面factors数据已更新
-      window.dispatchEvent(new Event('factorsDataUpdated'))
-      console.log('📢 FactorsPage: 触发 factorsDataUpdated 事件')
-    } else if (data.factors.length > 0) {
-      // 有数据时检查是否需要更新
-      hasInitialized.current = true
-      const updatedReagents = checkAndUpdateFactorsData(data.factors)
-      console.log('🔄 FactorsPage: 立即同步Context数据')
-      setReagents(updatedReagents)
+    const syncData = async () => {
+      const currentFactorsStr = JSON.stringify(data.factors)
       
-      // If data was updated, sync back
-      if (JSON.stringify(updatedReagents) !== JSON.stringify(data.factors)) {
+      // 如果数据没有变化，跳过更新
+      if (lastSyncedFactors.current === currentFactorsStr) {
+        return
+      }
+      
+      lastSyncedFactors.current = currentFactorsStr
+      
+      if (data.factors.length === 0 && !hasInitialized.current) {
+        // 只在第一次遇到空数据时使用预定义数据
+        hasInitialized.current = true
+        console.log('🔄 FactorsPage: 检测到空数据，使用预定义试剂列表')
+        const updatedReagents = [...PREDEFINED_REAGENTS]
+        setReagents(updatedReagents)
+        // 立即同步到Context，避免其他页面读取到空数据
         updateFactorsData(updatedReagents)
-        localStorage.setItem('hplc_factors_data', JSON.stringify(updatedReagents))
-        localStorage.setItem('hplc_factors_version', FACTORS_DATA_VERSION.toString())
+        // 🔥 立即写入存储，避免MethodsPage读取时为空
+        await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+        await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
+        console.log('✅ FactorsPage: 已立即写入存储')
+        // 🔥 触发事件通知其他页面factors数据已更新
         window.dispatchEvent(new Event('factorsDataUpdated'))
-        console.log('📢 FactorsPage: 数据已更新并同步')
+        console.log('📢 FactorsPage: 触发 factorsDataUpdated 事件')
+      } else if (data.factors.length > 0) {
+        // 有数据时检查是否需要更新
+        hasInitialized.current = true
+        const storedVersion = await StorageHelper.getJSON<string>(STORAGE_KEYS.FACTORS_VERSION)
+        const updatedReagents = checkAndUpdateFactorsData(data.factors, storedVersion)
+        console.log('🔄 FactorsPage: 立即同步Context数据')
+        setReagents(updatedReagents)
+        
+        // If data was updated, sync back
+        if (JSON.stringify(updatedReagents) !== JSON.stringify(data.factors)) {
+          updateFactorsData(updatedReagents)
+          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
+          window.dispatchEvent(new Event('factorsDataUpdated'))
+          console.log('📢 FactorsPage: 数据已更新并同步')
+        }
       }
     }
+    
+    syncData()
   }, [data.factors, updateFactorsData])
 
   // 自动保存数据到 Context 和 localStorage
@@ -136,25 +143,29 @@ const FactorsPage: React.FC = () => {
   const lastLocalData = React.useRef<string>('')
   
   useEffect(() => {
-    const currentLocalDataStr = JSON.stringify(reagents)
+    const saveData = async () => {
+      const currentLocalDataStr = JSON.stringify(reagents)
+      
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, reagents)
+      
+      // 跳过初始挂载时的更新
+      if (isInitialMount.current) {
+        isInitialMount.current = false
+        lastLocalData.current = currentLocalDataStr
+        return
+      }
     
-    localStorage.setItem('hplc_factors_data', currentLocalDataStr)
-    
-    // 跳过初始挂载时的更新
-    if (isInitialMount.current) {
-      isInitialMount.current = false
+      // 如果本地数据没有变化（可能是从Context同步来的），跳过更新
+      if (lastLocalData.current === currentLocalDataStr) {
+        return
+      }
+      
       lastLocalData.current = currentLocalDataStr
-      return
+      updateFactorsData(reagents)
+      setIsDirty(true)
     }
     
-    // 如果本地数据没有变化（可能是从Context同步来的），跳过更新
-    if (lastLocalData.current === currentLocalDataStr) {
-      return
-    }
-    
-    lastLocalData.current = currentLocalDataStr
-    updateFactorsData(reagents)
-    setIsDirty(true)
+    saveData()
   }, [reagents, updateFactorsData, setIsDirty])
   
   // 监听文件数据变更事件
@@ -179,19 +190,71 @@ const FactorsPage: React.FC = () => {
   }
 
   // 处理模态窗口添加试剂
-  const handleAddReagent = (newReagent: ReagentFactor) => {
-    setReagents([...reagents, newReagent])
+  const handleAddReagent = async (newReagent: ReagentFactor) => {
+    // 为自定义试剂保存原始版本（用于Reset功能）
+    const reagentWithOriginal = {
+      ...newReagent,
+      originalData: {
+        id: newReagent.id,
+        name: newReagent.name,
+        density: newReagent.density,
+        releasePotential: newReagent.releasePotential,
+        fireExplos: newReagent.fireExplos,
+        reactDecom: newReagent.reactDecom,
+        acuteToxicity: newReagent.acuteToxicity,
+        irritation: newReagent.irritation,
+        chronicToxicity: newReagent.chronicToxicity,
+        persistency: newReagent.persistency,
+        airHazard: newReagent.airHazard,
+        waterHazard: newReagent.waterHazard,
+        regeneration: newReagent.regeneration,
+        disposal: newReagent.disposal,
+        isCustom: newReagent.isCustom,
+        safetyScore: newReagent.safetyScore,
+        healthScore: newReagent.healthScore,
+        envScore: newReagent.envScore
+      }
+    }
+    const updatedReagents = [...reagents, reagentWithOriginal]
+    setReagents(updatedReagents)
+    
+    // 🔥 立即保存到文件和Context，确保数据持久化
+    await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+    updateFactorsData(updatedReagents)
+    setIsDirty(true)
+    console.log('✅ handleAddReagent: 试剂已添加并立即保存到文件')
+    
     setIsModalVisible(false)
     message.success(`试剂 "${newReagent.name}" 添加成功！`)
   }
 
-  // Delete last reagent
-  const deleteLastReagent = () => {
+  // Delete last reagent (old function, now toggle delete mode)
+  const toggleDeleteMode = () => {
+    setIsDeletingMode(!isDeletingMode)
+    if (!isDeletingMode) {
+      message.info('请点击每行后的垃圾筒图标来删除该试剂')
+    }
+  }
+
+  // Delete specific reagent
+  const deleteReagent = async (id: string) => {
+    const reagentToDelete = reagents.find(r => r.id === id)
     if (reagents.length <= 1) {
-      message.warning('At least one reagent must be kept')
+      message.warning('至少要保留一个试剂')
       return
     }
-    setReagents(reagents.slice(0, -1))
+    if (window.confirm(`确定要删除试剂 "${reagentToDelete?.name}" 吗？`)) {
+      const updatedReagents = reagents.filter(r => r.id !== id)
+      setReagents(updatedReagents)
+      
+      // 🔥 立即保存到文件和Context
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+      updateFactorsData(updatedReagents)
+      setIsDirty(true)
+      console.log('✅ deleteReagent: 试剂已删除并立即保存到文件')
+      
+      message.success(`已删除试剂 "${reagentToDelete?.name}"`)
+    }
   }
 
   // Update reagent data
@@ -202,44 +265,135 @@ const FactorsPage: React.FC = () => {
   }
 
   // Toggle edit mode
-  const toggleEdit = () => {
+  const toggleEdit = async () => {
     if (isEditing) {
-      // Validate data
+      // Save: 验证并保存数据
       const hasEmptyName = reagents.some(r => !r.name.trim())
       if (hasEmptyName) {
         message.error('Reagent name cannot be empty')
         return
       }
-      message.success('Data saved')
+      
+      // 🔥 立即保存到文件和Context
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, reagents)
+      updateFactorsData(reagents)
+      setIsDirty(true)
+      console.log('✅ toggleEdit: 编辑完成，数据已立即保存到文件')
+      
+      message.success('Data saved successfully')
+      setIsEditing(false)
+      setIsDeletingMode(false)
+    } else {
+      // 进入Edit模式，保存当前数据快照
+      setEditSnapshot(JSON.parse(JSON.stringify(reagents))) // 深拷贝
+      setIsEditing(true)
     }
-    setIsEditing(!isEditing)
   }
 
-  // Reset to predefined data (只还原预定义试剂，保留自定义试剂)
-  const resetToDefault = () => {
+  // Cancel edit: 取消编辑，恢复到编辑前的状态
+  const cancelEdit = () => {
+    if (editSnapshot.length > 0) {
+      setReagents(JSON.parse(JSON.stringify(editSnapshot))) // 恢复到编辑前的快照
+      message.info('Edit cancelled')
+    }
+    setIsEditing(false)
+    setIsDeletingMode(false)
+  }
+
+  // Reset to predefined data: 恢复到系统预定义数据
+  const resetToDefault = async () => {
     // 分离自定义试剂和预定义试剂
     const customReagents = reagents.filter(r => r.isCustom === true)
     const hasModifiedData = reagents.some(r => !r.isCustom)
     
     if (!hasModifiedData && customReagents.length === 0) {
-      message.info('没有需要还原的数据')
+      message.info('No data to reset')
       return
     }
     
-    const confirmMessage = customReagents.length > 0
-      ? `确定要还原预定义试剂数据吗？\n\n你添加的 ${customReagents.length} 个自定义试剂将被保留：\n${customReagents.map(r => `  • ${r.name}`).join('\n')}`
-      : '确定要还原为默认数据吗？这将覆盖所有修改。'
+    // 检查自定义试剂是否被修改过
+    const modifiedCustomCount = customReagents.filter(r => {
+      if (!r.originalData) return false
+      // 比较当前数据和原始数据是否有差异
+      return JSON.stringify({
+        density: r.density,
+        releasePotential: r.releasePotential,
+        fireExplos: r.fireExplos,
+        reactDecom: r.reactDecom,
+        acuteToxicity: r.acuteToxicity,
+        irritation: r.irritation,
+        chronicToxicity: r.chronicToxicity,
+        persistency: r.persistency,
+        airHazard: r.airHazard,
+        waterHazard: r.waterHazard,
+        disposal: r.disposal
+      }) !== JSON.stringify({
+        density: r.originalData.density,
+        releasePotential: r.originalData.releasePotential,
+        fireExplos: r.originalData.fireExplos,
+        reactDecom: r.originalData.reactDecom,
+        acuteToxicity: r.originalData.acuteToxicity,
+        irritation: r.originalData.irritation,
+        chronicToxicity: r.originalData.chronicToxicity,
+        persistency: r.originalData.persistency,
+        airHazard: r.originalData.airHazard,
+        waterHazard: r.originalData.waterHazard,
+        disposal: r.originalData.disposal
+      })
+    }).length
+    
+    let confirmMessage = ''
+    if (customReagents.length > 0 && hasModifiedData) {
+      confirmMessage = `Are you sure to reset all reagents to their original values?\n\n`
+      confirmMessage += `- ${PREDEFINED_REAGENTS.length} predefined reagents will be reset\n`
+      if (modifiedCustomCount > 0) {
+        confirmMessage += `- ${modifiedCustomCount} custom reagent(s) will be reset to their original values\n`
+      }
+      if (customReagents.length > modifiedCustomCount) {
+        confirmMessage += `- ${customReagents.length - modifiedCustomCount} custom reagent(s) are unchanged\n`
+      }
+    } else if (customReagents.length > 0) {
+      confirmMessage = `Are you sure to reset custom reagents?\n\n${modifiedCustomCount} custom reagent(s) will be reset to original values.`
+    } else {
+      confirmMessage = 'Are you sure to reset all data to default values? This will override all modifications.'
+    }
     
     if (window.confirm(confirmMessage)) {
-      // 合并预定义试剂和自定义试剂
-      const resetData = [...PREDEFINED_REAGENTS, ...customReagents]
+      // 恢复自定义试剂到原始版本
+      const resetCustomReagents = customReagents.map(r => {
+        if (r.originalData) {
+          // 有原始数据，恢复到原始版本
+          return {
+            ...r.originalData,
+            isCustom: true,
+            originalData: r.originalData // 保留原始数据引用
+          } as ReagentFactor
+        }
+        // 没有原始数据（旧数据），保持不变
+        return r
+      })
+      
+      // 合并预定义试剂和恢复后的自定义试剂
+      const resetData = [...PREDEFINED_REAGENTS, ...resetCustomReagents]
       setReagents(resetData)
+      
+      // 🔥 立即保存到文件和Context
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, resetData)
+      updateFactorsData(resetData)
+      setIsDirty(true)
+      console.log('✅ resetReagent: 数据已重置并立即保存到文件')
+      
       setIsEditing(false)
+      setIsDeletingMode(false)
       
       if (customReagents.length > 0) {
-        message.success(`已还原预定义试剂数据，保留了 ${customReagents.length} 个自定义试剂`)
+        if (modifiedCustomCount > 0) {
+          message.success(`All data reset: predefined reagents + ${modifiedCustomCount} custom reagent(s) restored to original values`)
+        } else {
+          message.success(`Predefined reagents reset, ${customReagents.length} custom reagent(s) unchanged`)
+        }
       } else {
-        message.success('已还原为默认数据')
+        message.success('All data reset to default')
       }
     }
   }
@@ -262,11 +416,11 @@ const FactorsPage: React.FC = () => {
                 <th colSpan={4} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Safety</th>
                 <th colSpan={2} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Health</th>
                 <th colSpan={3} style={{ textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>Environment</th>
-                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>S</th>
-                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>H</th>
-                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>E</th>
-                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>R</th>
-                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>D</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>Regeneration</th>
+                <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>Disposal</th>
+                {isDeletingMode && (
+                  <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center', minWidth: '60px' }}>操作</th>
+                )}
               </tr>
               <tr>
                 <th style={{ fontSize: '11px', padding: '4px', textAlign: 'center' }}>Release potential</th>
@@ -427,46 +581,7 @@ const FactorsPage: React.FC = () => {
                       (reagent.waterHazard || 0).toFixed(3)
                     )}
                   </td>
-                  {/* Main factors */}
-                  <td>
-                    {isEditing ? (
-                      <InputNumber
-                        value={reagent.safetyScore}
-                        onChange={(value) => updateReagent(reagent.id, 'safetyScore', value || 0)}
-                        step={0.001}
-                        precision={3}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      reagent.safetyScore.toFixed(3)
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <InputNumber
-                        value={reagent.healthScore}
-                        onChange={(value) => updateReagent(reagent.id, 'healthScore', value || 0)}
-                        step={0.001}
-                        precision={3}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      reagent.healthScore.toFixed(3)
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <InputNumber
-                        value={reagent.envScore}
-                        onChange={(value) => updateReagent(reagent.id, 'envScore', value || 0)}
-                        step={0.001}
-                        precision={3}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      reagent.envScore.toFixed(3)
-                    )}
-                  </td>
+                  {/* Main factors - R and D only */}
                   <td>
                     {isEditing ? (
                       <InputNumber
@@ -485,14 +600,26 @@ const FactorsPage: React.FC = () => {
                       <InputNumber
                         value={reagent.disposal}
                         onChange={(value) => updateReagent(reagent.id, 'disposal', value || 0)}
-                        step={1}
-                        precision={0}
+                        step={0.25}
+                        precision={2}
                         style={{ width: '100%' }}
                       />
                     ) : (
-                      reagent.disposal
+                      (reagent.disposal || 0).toFixed(2)
                     )}
                   </td>
+                  {isDeletingMode && (
+                    <td style={{ textAlign: 'center' }}>
+                      <Button
+                        danger
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        onClick={() => deleteReagent(reagent.id)}
+                        disabled={reagents.length <= 1}
+                        title="Delete this reagent"
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -500,61 +627,84 @@ const FactorsPage: React.FC = () => {
         </div>
 
         <Row gutter={16} style={{ marginTop: 16 }}>
-          <Col span={6}>
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={addReagent}
-              style={{ width: '100%' }}
-            >
-              Add
-            </Button>
-          </Col>
-          <Col span={6}>
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={deleteLastReagent}
-              disabled={reagents.length <= 1 || !isEditing}
-              style={{ width: '100%' }}
-            >
-              Delete
-            </Button>
-          </Col>
-          <Col span={6}>
-            <Button
-              type={isEditing ? 'primary' : 'default'}
-              icon={isEditing ? <SaveOutlined /> : <EditOutlined />}
-              onClick={toggleEdit}
-              style={{ width: '100%' }}
-            >
-              {isEditing ? 'Save' : 'Edit'}
-            </Button>
-          </Col>
-          <Col span={6}>
-            <Button
-              onClick={resetToDefault}
-              style={{ width: '100%' }}
-              disabled={isEditing}
-            >
-              Reset to Default
-            </Button>
-          </Col>
+          {!isEditing ? (
+            // 非编辑模式：显示Add、Delete、Edit、Reset to Default
+            <>
+              <Col span={6}>
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  onClick={addReagent}
+                  style={{ width: '100%' }}
+                >
+                  Add
+                </Button>
+              </Col>
+              <Col span={6}>
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={() => message.info('Please enter Edit mode first')}
+                  style={{ width: '100%' }}
+                  disabled
+                >
+                  Delete
+                </Button>
+              </Col>
+              <Col span={6}>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={toggleEdit}
+                  style={{ width: '100%' }}
+                >
+                  Edit
+                </Button>
+              </Col>
+              <Col span={6}>
+                <Button
+                  onClick={resetToDefault}
+                  style={{ width: '100%' }}
+                >
+                  Reset to Default
+                </Button>
+              </Col>
+            </>
+          ) : (
+            // 编辑模式：显示Delete、Save、Cancel
+            <>
+              <Col span={8}>
+                <Button
+                  danger={isDeletingMode}
+                  type={isDeletingMode ? 'primary' : 'default'}
+                  icon={<DeleteOutlined />}
+                  onClick={toggleDeleteMode}
+                  style={{ width: '100%' }}
+                >
+                  {isDeletingMode ? 'Cancel Delete' : 'Delete'}
+                </Button>
+              </Col>
+              <Col span={8}>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={toggleEdit}
+                  style={{ width: '100%' }}
+                >
+                  Save
+                </Button>
+              </Col>
+              <Col span={8}>
+                <Button
+                  onClick={cancelEdit}
+                  style={{ width: '100%' }}
+                >
+                  Cancel
+                </Button>
+              </Col>
+            </>
+          )}
         </Row>
 
-        <div style={{ marginTop: 16, color: '#666', fontSize: 12 }}>
-          <p><strong>Note:</strong></p>
-          <ul>
-            <li><strong>ρ</strong>: Density (g/mL)</li>
-            <li><strong>Safety</strong>: Release potential, Fire/Explosives, Reaction/Decomposition</li>
-            <li><strong>Health</strong>: Acute toxicity, Irritation, Chronic toxicity</li>
-            <li><strong>Environment</strong>: Persistency, Air Hazard, Water Hazard</li>
-            <li><strong>S/H/E</strong>: Aggregated Safety/Health/Environment Scores</li>
-            <li><strong>R</strong>: Regeneration Factor (0-1, 0.25 per level)</li>
-            <li><strong>D</strong>: Disposal Factor (0-2)</li>
-          </ul>
-          <p>All 9 sub-factors and 5 main factors (S, H, E, R, D) will be used in green chemistry assessment calculations in Methods and HPLC Gradient.</p>
-        </div>
+  
       </Card>
 
       {/* 添加试剂模态窗口 */}

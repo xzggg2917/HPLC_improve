@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import { getColorHex } from '../utils/colorScale'
 
 interface NestedPieChartProps {
   mainFactors: {
@@ -33,59 +34,59 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
 
     // 过滤掉值为0的数据
     const mainFactorData = [
-      { value: Number(mainFactors.S.toFixed(2)), name: 'S', itemStyle: { color: '#52c41a' } },
-      { value: Number(mainFactors.H.toFixed(2)), name: 'H', itemStyle: { color: '#fa8c16' } },
-      { value: Number(mainFactors.E.toFixed(2)), name: 'E', itemStyle: { color: '#1890ff' } },
-      { value: Number(mainFactors.R.toFixed(2)), name: 'R', itemStyle: { color: '#f5222d' } },
-      { value: Number(mainFactors.D.toFixed(2)), name: 'D', itemStyle: { color: '#722ed1' } },
-      { value: Number(mainFactors.P.toFixed(2)), name: 'P', itemStyle: { color: '#eb2f96' } }
+      { value: Number(mainFactors.S.toFixed(2)), name: 'S', itemStyle: { color: getColorHex(mainFactors.S) } },
+      { value: Number(mainFactors.H.toFixed(2)), name: 'H', itemStyle: { color: getColorHex(mainFactors.H) } },
+      { value: Number(mainFactors.E.toFixed(2)), name: 'E', itemStyle: { color: getColorHex(mainFactors.E) } },
+      { value: Number(mainFactors.R.toFixed(2)), name: 'R', itemStyle: { color: getColorHex(mainFactors.R) } },
+      { value: Number(mainFactors.D.toFixed(2)), name: 'D', itemStyle: { color: getColorHex(mainFactors.D) } },
+      { value: Number(mainFactors.P.toFixed(2)), name: 'P', itemStyle: { color: getColorHex(mainFactors.P) } }
     ].filter(item => item.value > 0)
 
     const subFactorData = [
       { 
         value: Number(subFactors.releasePotential.toFixed(2)), 
         name: 'Release potential',
-        itemStyle: { color: '#95de64' }
+        itemStyle: { color: getColorHex(subFactors.releasePotential) }
       },
       { 
         value: Number(subFactors.fireExplos.toFixed(2)), 
         name: 'Fire/Explos.',
-        itemStyle: { color: '#73d13d' }
+        itemStyle: { color: getColorHex(subFactors.fireExplos) }
       },
       { 
         value: Number(subFactors.reactDecom.toFixed(2)), 
         name: 'React./Decom.',
-        itemStyle: { color: '#52c41a' }
+        itemStyle: { color: getColorHex(subFactors.reactDecom) }
       },
       { 
         value: Number(subFactors.acuteToxicity.toFixed(2)), 
         name: 'Acute toxicity',
-        itemStyle: { color: '#ffd666' }
+        itemStyle: { color: getColorHex(subFactors.acuteToxicity) }
       },
       { 
         value: Number(subFactors.irritation.toFixed(2)), 
         name: 'Irritation',
-        itemStyle: { color: '#ffc53d' }
+        itemStyle: { color: getColorHex(subFactors.irritation) }
       },
       { 
         value: Number(subFactors.chronicToxicity.toFixed(2)), 
         name: 'Chronic toxicity',
-        itemStyle: { color: '#fa8c16' }
+        itemStyle: { color: getColorHex(subFactors.chronicToxicity) }
       },
       { 
         value: Number(subFactors.persistency.toFixed(2)), 
         name: 'Persis-tency',
-        itemStyle: { color: '#69c0ff' }
+        itemStyle: { color: getColorHex(subFactors.persistency) }
       },
       { 
         value: Number(subFactors.airHazard.toFixed(2)), 
         name: 'Air Hazard',
-        itemStyle: { color: '#40a9ff' }
+        itemStyle: { color: getColorHex(subFactors.airHazard) }
       },
       { 
         value: Number(subFactors.waterHazard.toFixed(2)), 
         name: 'Water Hazard',
-        itemStyle: { color: '#1890ff' }
+        itemStyle: { color: getColorHex(subFactors.waterHazard) }
       }
     ].filter(item => item.value > 0)
 
