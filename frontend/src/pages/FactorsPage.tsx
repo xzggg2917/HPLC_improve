@@ -37,158 +37,58 @@ const sortReagentsByName = (reagents: ReagentFactor[]): ReagentFactor[] => {
 }
 
 const FactorsPage: React.FC = () => {
-  const { data, updateFactorsData, setIsDirty } = useAppContext()
+  // 🎯 全局试剂库模式 - 不依赖 Context，直接操作全局存储
+  // 所有用户/所有文件共享同一个试剂库
   
-  // Check if factors data needs update (同步版本)
-  const checkAndUpdateFactorsData = (existingFactors: ReagentFactor[], storedVersion: string | null) => {
-    const currentVersion = FACTORS_DATA_VERSION.toString()
-    
-    // If version doesn't match or missing reagents, update to latest
-    if (storedVersion !== currentVersion) {
-      console.log('🔄 FactorsPage: Updating factors data to version', currentVersion)
-      return [...PREDEFINED_REAGENTS]
-    }
-    
-    // Check if CO2 and Water exist
-    const hasCO2 = existingFactors.some(f => f.name === 'CO2')
-    const hasWater = existingFactors.some(f => f.name === 'Water')
-    
-    if (!hasCO2 || !hasWater) {
-      console.log('🔄 FactorsPage: Missing CO2 or Water, updating to complete data')
-      return [...PREDEFINED_REAGENTS]
-    }
-    
-    // Check if data has sub-factor values (not all zeros)
-    // Skip CO2 and Water as they legitimately have all zeros
-    const hasValidSubFactors = existingFactors.some(f => 
-      (f.name !== 'CO2' && f.name !== 'Water') && 
-      (f.releasePotential > 0 || f.fireExplos > 0 || f.reactDecom > 0 || 
-       f.acuteToxicity > 0 || f.irritation > 0 || f.chronicToxicity > 0 ||
-       f.persistency > 0 || f.airHazard > 0 || f.waterHazard > 0)
-    )
-    
-    if (!hasValidSubFactors) {
-      console.log('🔄 FactorsPage: All sub-factors are zero, updating to complete data')
-      return [...PREDEFINED_REAGENTS]
-    }
-    
-    return existingFactors
-  }
+  // 从全局存储初始化试剂库（⚠️ 必须用空数组初始化，然后在 useEffect 中异步加载）
+  const [reagents, setReagents] = useState<ReagentFactor[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   
-  // 使用Context中的数据初始化
-  const [reagents, setReagents] = useState<ReagentFactor[]>(() => {
-    // 如果Context中有数据就使用,否则使用预定义数据
-    if (data.factors.length > 0) {
-      // 同步读取版本号（初始化时从localStorage读取）
-      const storedVersion = localStorage.getItem('hplc_factors_version')
-      const updatedData = checkAndUpdateFactorsData(data.factors, storedVersion)
-      return sortReagentsByName(updatedData)
+  // 异步加载全局试剂库
+  useEffect(() => {
+    const loadGlobalLibrary = async () => {
+      try {
+        const stored = await StorageHelper.getJSON<ReagentFactor[]>(STORAGE_KEYS.FACTORS)
+        if (stored && stored.length > 0) {
+          console.log('📚 从全局试剂库加载', stored.length, '个试剂')
+          setReagents(sortReagentsByName(stored))
+        } else {
+          // 首次使用：初始化预定义试剂
+          console.log('🆕 首次初始化全局试剂库，使用预定义数据')
+          const initial = sortReagentsByName([...PREDEFINED_REAGENTS])
+          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, initial)
+          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
+          setReagents(initial)
+        }
+      } catch (error) {
+        console.error('❌ 加载全局试剂库失败:', error)
+        message.error('加载试剂库失败')
+        // 失败时使用预定义数据
+        setReagents(sortReagentsByName([...PREDEFINED_REAGENTS]))
+      } finally {
+        setIsLoading(false)
+      }
     }
-    return sortReagentsByName([...PREDEFINED_REAGENTS])
-  })
+    
+    loadGlobalLibrary()
+  }, [])
   const [editSnapshot, setEditSnapshot] = useState<ReagentFactor[]>([]) // 保存进入Edit模式时的快照
   const [isEditing, setIsEditing] = useState<boolean>(false)
   const [isDeletingMode, setIsDeletingMode] = useState<boolean>(false)
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false)
 
-  // 监听Context数据变化，立即同步更新
-  const lastSyncedFactors = React.useRef<string>('')
-  const hasInitialized = React.useRef(false)
-  
-  useLayoutEffect(() => {
-    const syncData = async () => {
-      const currentFactorsStr = JSON.stringify(data.factors)
-      
-      // 如果数据没有变化，跳过更新
-      if (lastSyncedFactors.current === currentFactorsStr) {
-        return
-      }
-      
-      lastSyncedFactors.current = currentFactorsStr
-      
-      if (data.factors.length === 0 && !hasInitialized.current) {
-        // 只在第一次遇到空数据时使用预定义数据
-        hasInitialized.current = true
-        console.log('🔄 FactorsPage: 检测到空数据，使用预定义试剂列表')
-        const updatedReagents = sortReagentsByName([...PREDEFINED_REAGENTS])
-        setReagents(updatedReagents)
-        // 立即同步到Context，避免其他页面读取到空数据
-        updateFactorsData(updatedReagents)
-        // 🔥 立即写入存储，避免MethodsPage读取时为空
-        await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
-        await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
-        console.log('✅ FactorsPage: 已立即写入存储')
-        // 🔥 触发事件通知其他页面factors数据已更新
-        window.dispatchEvent(new Event('factorsDataUpdated'))
-        console.log('📢 FactorsPage: 触发 factorsDataUpdated 事件')
-      } else if (data.factors.length > 0) {
-        // 有数据时检查是否需要更新
-        hasInitialized.current = true
-        const storedVersion = await StorageHelper.getJSON<string>(STORAGE_KEYS.FACTORS_VERSION)
-        const updatedReagents = checkAndUpdateFactorsData(data.factors, storedVersion)
-        console.log('🔄 FactorsPage: 立即同步Context数据')
-        setReagents(sortReagentsByName(updatedReagents))
-        
-        // If data was updated, sync back
-        if (JSON.stringify(updatedReagents) !== JSON.stringify(data.factors)) {
-          updateFactorsData(updatedReagents)
-          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
-          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
-          window.dispatchEvent(new Event('factorsDataUpdated'))
-          console.log('📢 FactorsPage: 数据已更新并同步')
-        }
-      }
+  // 🔄 保存到全局试剂库（所有操作都会触发此函数）
+  const saveToGlobalLibrary = async (updatedReagents: ReagentFactor[]) => {
+    try {
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+      console.log('✅ 已保存到全局试剂库:', updatedReagents.length, '个试剂')
+      // 触发事件通知其他页面刷新数据
+      window.dispatchEvent(new Event('factorsLibraryUpdated'))
+    } catch (error) {
+      console.error('❌ 保存全局试剂库失败:', error)
+      message.error('保存失败')
     }
-    
-    syncData()
-  }, [data.factors, updateFactorsData])
-
-  // 自动保存数据到 Context 和 localStorage
-  // 使用 ref 来避免初始化时触发 dirty 和避免循环更新
-  const isInitialMount = React.useRef(true)
-  const lastLocalData = React.useRef<string>('')
-  
-  useEffect(() => {
-    const saveData = async () => {
-      const currentLocalDataStr = JSON.stringify(reagents)
-      
-      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, reagents)
-      
-      // 跳过初始挂载时的更新
-      if (isInitialMount.current) {
-        isInitialMount.current = false
-        lastLocalData.current = currentLocalDataStr
-        return
-      }
-    
-      // 如果本地数据没有变化（可能是从Context同步来的），跳过更新
-      if (lastLocalData.current === currentLocalDataStr) {
-        return
-      }
-      
-      lastLocalData.current = currentLocalDataStr
-      updateFactorsData(reagents)
-      setIsDirty(true)
-    }
-    
-    saveData()
-  }, [reagents, updateFactorsData, setIsDirty])
-  
-  // 监听文件数据变更事件
-  useEffect(() => {
-    const handleFileDataChanged = () => {
-      console.log('📢 FactorsPage: 接收到 fileDataChanged 事件')
-      // hasInitialized标记会在useLayoutEffect中处理数据更新
-      // 这里只需要重置标记，让下次Context变化时能正确处理
-      hasInitialized.current = false
-      console.log('🔄 FactorsPage: 已重置初始化标记')
-    }
-    
-    window.addEventListener('fileDataChanged', handleFileDataChanged)
-    return () => {
-      window.removeEventListener('fileDataChanged', handleFileDataChanged)
-    }
-  }, [])
+  }
 
   // 打开添加试剂模态窗口
   const addReagent = () => {
@@ -224,14 +124,11 @@ const FactorsPage: React.FC = () => {
     const updatedReagents = sortReagentsByName([...reagents, reagentWithOriginal])
     setReagents(updatedReagents)
     
-    // 🔥 立即保存到文件和Context，确保数据持久化
-    await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
-    updateFactorsData(updatedReagents)
-    setIsDirty(true)
-    console.log('✅ handleAddReagent: 试剂已添加并立即保存到文件')
+    // 📚 保存到全局试剂库
+    await saveToGlobalLibrary(updatedReagents)
     
     setIsModalVisible(false)
-    message.success(`试剂 "${newReagent.name}" 添加成功！`)
+    message.success(`试剂 "${newReagent.name}" 已添加到全局试剂库！`)
   }
 
   // Delete last reagent (old function, now toggle delete mode)
@@ -249,17 +146,14 @@ const FactorsPage: React.FC = () => {
       message.warning('至少要保留一个试剂')
       return
     }
-    if (window.confirm(`确定要删除试剂 "${reagentToDelete?.name}" 吗？`)) {
+    if (window.confirm(`确定要从全局试剂库删除 "${reagentToDelete?.name}" 吗？`)) {
       const updatedReagents = sortReagentsByName(reagents.filter(r => r.id !== id))
       setReagents(updatedReagents)
       
-      // 🔥 立即保存到文件和Context
-      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
-      updateFactorsData(updatedReagents)
-      setIsDirty(true)
-      console.log('✅ deleteReagent: 试剂已删除并立即保存到文件')
+      // 📚 保存到全局试剂库
+      await saveToGlobalLibrary(updatedReagents)
       
-      message.success(`已删除试剂 "${reagentToDelete?.name}"`)
+      message.success(`已从全局试剂库删除 "${reagentToDelete?.name}"`)
     }
   }
 
@@ -309,13 +203,8 @@ const FactorsPage: React.FC = () => {
         return
       }
       
-      // 🔥 立即保存到文件和Context
-      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, reagents)
-      updateFactorsData(reagents)
-      setIsDirty(true)
-      console.log('✅ toggleEdit: 编辑完成，数据已立即保存到文件')
-      
-      message.success('Data saved successfully')
+      await saveToGlobalLibrary(reagents)
+      message.success('Data saved to global library')
       setIsEditing(false)
       setIsDeletingMode(false)
     } else {
@@ -412,32 +301,51 @@ const FactorsPage: React.FC = () => {
       const resetData = sortReagentsByName([...PREDEFINED_REAGENTS, ...resetCustomReagents])
       setReagents(resetData)
       
-      // 🔥 立即保存到文件和Context
-      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, resetData)
-      updateFactorsData(resetData)
-      setIsDirty(true)
-      console.log('✅ resetReagent: 数据已重置并立即保存到文件')
+      // 📚 保存到全局试剂库
+      await saveToGlobalLibrary(resetData)
       
       setIsEditing(false)
       setIsDeletingMode(false)
       
       if (customReagents.length > 0) {
         if (modifiedCustomCount > 0) {
-          message.success(`All data reset: predefined reagents + ${modifiedCustomCount} custom reagent(s) restored to original values`)
+          message.success(`全局试剂库已重置: ${PREDEFINED_REAGENTS.length} 个预定义试剂 + ${modifiedCustomCount} 个自定义试剂恢复原值`)
         } else {
-          message.success(`Predefined reagents reset, ${customReagents.length} custom reagent(s) unchanged`)
+          message.success(`预定义试剂已重置，${customReagents.length} 个自定义试剂未变化`)
         }
       } else {
-        message.success('All data reset to default')
+        message.success('全局试剂库已重置为默认数据')
       }
     }
   }
 
   return (
     <div className="factors-page">
-      <Title level={2}>Factors</Title>
+      <Title level={2}>📚 全局试剂因子库</Title>
+      
+      {/* 添加说明卡片 */}
+      <Card 
+        style={{ 
+          marginBottom: '16px', 
+          background: '#f6ffed', 
+          borderColor: '#b7eb8f' 
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '14px' }}>
+          <strong>🌐 全局共享试剂库：</strong>
+          这是所有文件和所有用户共享的试剂因子数据库。在此处添加、编辑或删除试剂后，
+          所有方法文件和评分计算都会自动使用最新数据。
+        </p>
+      </Card>
 
-      <Card>
+      {isLoading ? (
+        <Card>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>加载全局试剂库中...</p>
+          </div>
+        </Card>
+      ) : (
+        <Card>
         <div className="factors-table-container" style={{ 
           overflowX: 'auto',
           border: '1px solid #f0f0f0',
@@ -741,6 +649,7 @@ const FactorsPage: React.FC = () => {
 
   
       </Card>
+      )}
 
       {/* 添加试剂模态窗口 */}
       <AddReagentModal

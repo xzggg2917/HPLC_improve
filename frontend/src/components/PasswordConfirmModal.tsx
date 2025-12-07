@@ -27,13 +27,11 @@ const PasswordConfirmModal: React.FC<PasswordConfirmModalProps> = ({
       const values = await form.validateFields()
       
       // Verify password is correct
-      const usersData = localStorage.getItem('hplc_users')
-      if (!usersData) {
+      const users = await StorageHelper.getUsers()
+      if (!users || users.length === 0) {
         message.error('User data does not exist')
         return
       }
-
-      const users = JSON.parse(usersData)
       const user = users.find((u: any) => u.username === username && u.password === values.password)
 
       if (!user) {

@@ -1,8 +1,8 @@
 /**
- * 统一存储接口 - 自动适配 Electron 和 Web 环境
+ * 统一存储接口 - 仅支持 Electron 文件系统存储
  * 
- * Electron 环境：使用本地文件系统存储（持久化，不受浏览器影响）
- * Web 环境：使用 localStorage（开发调试用）
+ * ⚠️ 本应用必须在 Electron 环境中运行
+ * 不再支持 localStorage，避免数据不一致和存储错误
  */
 
 // 检查是否在 Electron 环境中
@@ -23,7 +23,7 @@ export const STORAGE_KEYS = {
   POWER_SCORE: 'hplc_power_score',
 } as const
 
-// Electron 文件系统存储
+// Electron 文件系统存储（唯一支持的存储方式）
 class ElectronStorage {
   async getItem(key: string): Promise<string | null> {
     try {
@@ -91,47 +91,9 @@ class ElectronStorage {
   }
 }
 
-// localStorage 存储（Web环境）
-class LocalStorage {
-  async getItem(key: string): Promise<string | null> {
-    return localStorage.getItem(key)
-  }
-
-  async setItem(key: string, value: string): Promise<void> {
-    localStorage.setItem(key, value)
-  }
-
-  async removeItem(key: string): Promise<void> {
-    localStorage.removeItem(key)
-  }
-
-  async clear(): Promise<void> {
-    localStorage.clear()
-  }
-
-  async getUserDataPath(): Promise<string> {
-    return 'Browser localStorage (temporary)'
-  }
-
-  async exportData(filename: string, data: any): Promise<{ success: boolean; path?: string; error?: string }> {
-    try {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      a.click()
-      URL.revokeObjectURL(url)
-      return { success: true, path: `Downloaded: ${filename}` }
-    } catch (error: any) {
-      return { success: false, error: error.message }
-    }
-  }
-}
-
-// 统一存储接口
+// 统一存储接口（仅 Electron）
 class UnifiedStorage {
-  private storage: ElectronStorage | LocalStorage
+  private storage: ElectronStorage
 
   constructor() {
     const isElectronEnv = isElectron()
@@ -139,13 +101,13 @@ class UnifiedStorage {
     console.log('  - window.electronAPI 存在:', !!(window as any).electronAPI)
     console.log('  - isElectron():', isElectronEnv)
     
-    if (isElectronEnv) {
-      console.log('🖥️ Using Electron File System Storage')
-      this.storage = new ElectronStorage()
-    } else {
-      console.log('🌐 Using Browser localStorage (development mode)')
-      this.storage = new LocalStorage()
+    if (!isElectronEnv) {
+      console.error('❌ 错误：应用必须在 Electron 环境中运行！')
+      throw new Error('This application must run in Electron environment. localStorage is not supported.')
     }
+    
+    console.log('🖥️ Using Electron File System Storage')
+    this.storage = new ElectronStorage()
   }
 
   async getItem(key: string): Promise<string | null> {
@@ -173,7 +135,7 @@ class UnifiedStorage {
   }
 
   isElectron(): boolean {
-    return isElectron()
+    return true // 始终返回 true，因为必须在 Electron 环境运行
   }
 }
 
@@ -237,12 +199,6 @@ export const StorageHelper = {
   // 获取存储位置信息
   async getStorageInfo(): Promise<string> {
     const path = await storage.getUserDataPath()
-    const isElectron = storage.isElectron()
-    
-    if (isElectron) {
-      return `File System Storage:\n${path}\nFiles: users.json, app_data.json`
-    } else {
-      return `Browser localStorage (cleared when cache is cleared)`
-    }
+    return `File System Storage:\n${path}\nFiles: users.json, app_data.json`
   }
 }

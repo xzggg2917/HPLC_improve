@@ -19,8 +19,11 @@ export const decryptData = (encryptedData: string, password: string): string => 
     const combined = decodeURIComponent(escape(atob(encryptedData)))
     const separator = '::HPLC_SEPARATOR::'
     
+    // 检查是否包含分隔符（新格式）
     if (!combined.includes(separator)) {
-      throw new Error('数据格式错误')
+      // 旧格式：直接 Base64 编码，没有密码验证
+      console.log('⚠️ 检测到旧格式文件（无密码保护），直接返回数据')
+      return combined
     }
     
     const parts = combined.split(separator)

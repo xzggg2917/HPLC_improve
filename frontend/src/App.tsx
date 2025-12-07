@@ -24,7 +24,7 @@ import ComparisonPage from './pages/ComparisonPage'
 import VineBorder from './components/VineBorder'
 import PasswordVerifyModal from './components/PasswordVerifyModal'
 import PasswordConfirmModal from './components/PasswordConfirmModal'
-import { AppProvider, useAppContext, PREDEFINED_REAGENTS } from './contexts/AppContext'
+import { AppProvider, useAppContext } from './contexts/AppContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { StorageHelper, STORAGE_KEYS } from './utils/storage'
 import { encryptData, decryptData } from './utils/encryption'
@@ -67,25 +67,8 @@ const AppContent: React.FC = () => {
     console.log('🔔 isDirty状态变化:', isDirty, '文件:', currentFilePath)
   }, [isDirty, currentFilePath])
 
-  // 保存当前路由到 localStorage (用于刷新后恢复)
-  useEffect(() => {
-    // 只有在有打开文件时才保存路由
-    if (currentFilePath) {
-      localStorage.setItem('lastRoute', location.pathname)
-      console.log('💾 保存当前路由:', location.pathname)
-    }
-  }, [location.pathname, currentFilePath])
-
-  // 页面加载时恢复上次的路由
-  useEffect(() => {
-    const lastRoute = localStorage.getItem('lastRoute')
-    
-    // 如果有保存的路由且当前在首页，尝试恢复
-    if (lastRoute && lastRoute !== '/' && location.pathname === '/' && currentFilePath) {
-      console.log('🔄 检测到刷新，恢复上次路由:', lastRoute)
-      navigate(lastRoute, { replace: true })
-    }
-  }, []) // 只在初始加载时执行一次
+  // ⚠️ 路由状态在刷新后会重置到首页，这是正常行为
+  // 用户可以通过导航栏重新进入需要的页面
 
   // 添加关闭浏览器前的保存提示
   // 注意: 刷新页面(F5)不会触发此提示,因为数据已自动保存到localStorage
@@ -182,7 +165,7 @@ const AppContent: React.FC = () => {
   // 更新ref，供事件监听器使用
   handleNewFileRef.current = handleNewFile
 
-  const createNewFile = () => {
+  const createNewFile = async () => {
     // Create empty data structure, add owner information
     const emptyData = {
       version: '1.0.0',
@@ -195,16 +178,14 @@ const AppContent: React.FC = () => {
         mobilePhaseA: [{ id: Date.now().toString() + '1', name: '', percentage: 0 }],
         mobilePhaseB: [{ id: Date.now().toString() + '2', name: '', percentage: 0 }]
       },
-      // 🔥 Use predefined reagents including CO2 and Water
-      factors: [...PREDEFINED_REAGENTS],
+      // 🔥 Factors由全局配置管理，新文件为空
+      factors: [],
       // Empty gradient array for new files, let HPLC Gradient page initialize
       gradient: []
     }
     
-    // 🔥 Immediately write factors to storage to ensure MethodsPage can load them
-    StorageHelper.setJSON(STORAGE_KEYS.FACTORS, PREDEFINED_REAGENTS)
-    StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, '2')
-    console.log('✅ App: Created new file with predefined reagents (including CO2 and Water)')
+    // 🔥 不再初始化factors，使用全局Factors配置
+    console.log('✅ App: Created new file (factors managed globally)')
     
     // 🔥 创建无效的 gradient 数据（流速为0），以便 MethodsPage 显示警告
     const invalidGradientData = {
@@ -227,8 +208,8 @@ const AppContent: React.FC = () => {
     
     // Clear file handle, set to "Untitled" state
     setFileHandle(null)
-    setCurrentFilePath('Untitled Project.json')    // Load empty data
-    setAllData(emptyData)
+    await setCurrentFilePath('Untitled Project.json')    // Load empty data
+    await setAllData(emptyData)
     setIsDirty(false)
     
     // 🔥 Trigger event to notify other pages that factors data is ready
@@ -328,9 +309,9 @@ const AppContent: React.FC = () => {
         }
         
         // Load data directly
-        setAllData(parsedContent)
+        await setAllData(parsedContent)
         setFileHandle(handle)
-        setCurrentFilePath(handle.name)
+        await setCurrentFilePath(handle.name)
         setIsDirty(false)
         
         message.warning(`File opened: ${handle.name} (Unencrypted file, recommend re-saving to encrypt)`)
@@ -378,9 +359,9 @@ const AppContent: React.FC = () => {
       }
 
       // Load decrypted data
-      setAllData(decryptedData)
+      await setAllData(decryptedData)
       setFileHandle(pendingFileHandle)
-      setCurrentFilePath(pendingFileHandle.name)
+      await setCurrentFilePath(pendingFileHandle.name)
       setIsDirty(false)
 
       // Clear temporary data
@@ -410,7 +391,7 @@ const AppContent: React.FC = () => {
     console.log('💾 Starting file save, current isDirty:', isDirty)
     
     try {
-      const dataToSave = exportData()
+      const dataToSave = await exportData()
       // Update lastModified timestamp
       dataToSave.lastModified = new Date().toISOString()
       
@@ -468,7 +449,7 @@ const AppContent: React.FC = () => {
         
         console.log('✅ 加密文件已写入，设置fileHandle和currentFilePath')
         setFileHandle(handle)
-        setCurrentFilePath(handle.name)
+        await setCurrentFilePath(handle.name)
         
         // After successful save, only clear dirty flag, don't update Context data (avoid loops)
         console.log('🧹 Clearing isDirty flag')
@@ -581,10 +562,10 @@ const AppContent: React.FC = () => {
       content: (currentFilePath && isDirty) ? 'You have unsaved changes, are you sure you want to logout?' : 'Are you sure you want to logout?',
       okText: 'Logout',
       cancelText: 'Cancel',
-      onOk: () => {
+      onOk: async () => {
         // Clear file-related state
         setFileHandle(null)
-        setCurrentFilePath(null)
+        await setCurrentFilePath(null)
         setIsDirty(false)
         
         // Clear all data, restore to initial state
@@ -600,7 +581,7 @@ const AppContent: React.FC = () => {
           factors: [],
           gradient: []
         }
-        setAllData(emptyData)
+        await setAllData(emptyData)
         
         // Logout
         logout()
