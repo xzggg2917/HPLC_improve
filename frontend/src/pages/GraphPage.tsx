@@ -162,47 +162,47 @@ const GraphPage: React.FC = () => {
         
         const chartData = [
           {
-            subject: 'S1-Release',
+            subject: 'Release',
             score: Number((mergedSubFactors.S1 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'S2-Fire/Explos',
+            subject: 'Fire/Explos',
             score: Number((mergedSubFactors.S2 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'S3-React/Decom',
+            subject: 'React/Decom',
             score: Number((mergedSubFactors.S3 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'S4-Acute Tox',
+            subject: 'Acute Tox',
             score: Number((mergedSubFactors.S4 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'H1-Chronic Tox',
+            subject: 'Chronic Tox',
             score: Number((mergedSubFactors.H1 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'H2-Irritation',
+            subject: 'Irritation',
             score: Number((mergedSubFactors.H2 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'E1-Persistency',
+            subject: 'Persistency',
             score: Number((mergedSubFactors.E1 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'E2-Emission',
+            subject: 'Emission',
             score: Number((mergedSubFactors.E2 || 0).toFixed(2)),
             fullMark: 100
           },
           {
-            subject: 'E3-Water Haz',
+            subject: 'Water Haz',
             score: Number((mergedSubFactors.E3 || 0).toFixed(2)),
             fullMark: 100
           }
@@ -218,15 +218,25 @@ const GraphPage: React.FC = () => {
         // 设置大因子得分（取仪器和前处理的平均值）
         const instMajor = scoreResults.instrument?.major_factors || { S: 0, H: 0, E: 0 }
         const prepMajor = scoreResults.preparation?.major_factors || { S: 0, H: 0, E: 0 }
-        const additionalFactors = scoreResults.additional_factors || { P: 0, R: 50, D: 50 }
+        const additionalFactors = scoreResults.additional_factors || { 
+          P: 0, 
+          instrument_R: 0, 
+          instrument_D: 0,
+          pretreatment_R: 50, 
+          pretreatment_D: 50 
+        }
+        
+        // R和D取仪器和前处理的平均值用于图表显示
+        const avgR = ((additionalFactors.instrument_R || 0) + (additionalFactors.pretreatment_R || 0)) / 2
+        const avgD = ((additionalFactors.instrument_D || 0) + (additionalFactors.pretreatment_D || 0)) / 2
         
         setMainFactorScores({
           S: (instMajor.S + prepMajor.S) / 2,
           H: (instMajor.H + prepMajor.H) / 2,
           E: (instMajor.E + prepMajor.E) / 2,
-          R: additionalFactors.R,  // 从后端获取
-          D: additionalFactors.D,  // 从后端获取
-          P: additionalFactors.P   // 从后端获取
+          R: avgR,  // 仪器和前处理的平均值
+          D: avgD,  // 仪器和前处理的平均值
+          P: additionalFactors.P || 0
         })
         
         // 设置总分（0-100分制）
@@ -520,13 +530,10 @@ const GraphPage: React.FC = () => {
             transition: 'all 0.3s ease'
           }}>
             <div style={{ fontSize: 16, opacity: 0.95, marginBottom: 8, fontWeight: 500 }}>
-              最终绿色化学总分 (Score₃)
+              Final Green Chemistry Score (Score₃)
             </div>
             <div style={{ fontSize: 52, fontWeight: 'bold', marginBottom: 12, textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
               {totalScore.toFixed(2)}
-            </div>
-            <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 6 }}>
-              满分：100分
             </div>
             <div style={{ 
               display: 'inline-block',
@@ -536,11 +543,11 @@ const GraphPage: React.FC = () => {
               fontSize: 13,
               fontWeight: 500
             }}>
-              {totalScore < 20 ? '优秀 - 完全符合绿色化学标准' :
-               totalScore < 40 ? '良好 - 较好符合标准' :
-               totalScore < 60 ? '中等 - 基本合格' :
-               totalScore < 80 ? '较差 - 需要改进' :
-               '很差 - 严重不符合标准'}
+              {totalScore < 20 ? 'Excellent - Fully Compliant' :
+               totalScore < 40 ? 'Good - Well Compliant' :
+               totalScore < 60 ? 'Moderate - Acceptable' :
+               totalScore < 80 ? 'Poor - Needs Improvement' :
+               'Very Poor - Non-Compliant'}
             </div>
           </div>
         </Card>
@@ -570,7 +577,7 @@ const GraphPage: React.FC = () => {
                         dataKey="subject" 
                         tick={renderCustomTick}
                       />
-                      <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
                       <Radar
                         dataKey="score"
                         stroke={radarColor}

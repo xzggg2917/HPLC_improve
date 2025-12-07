@@ -27,9 +27,6 @@ const MethodsPage: React.FC = () => {
   const [instrumentType, setInstrumentType] = useState<'low' | 'standard' | 'high'>(data.methods.instrumentType || 'standard')
   const [weightScheme, setWeightScheme] = useState<string>('balanced')
 
-  // 色谱类型选择状态（新增）
-  const [chromatographyType, setChromatographyType] = useState<string>('HPLC_UV')
-  
   // 权重方案选择状态
   const [safetyScheme, setSafetyScheme] = useState<string>('PBT_Balanced')
   const [healthScheme, setHealthScheme] = useState<string>('Absolute_Balance')
@@ -64,7 +61,7 @@ const MethodsPage: React.FC = () => {
   
   // 功率因子和R/D因子缓存
   const [powerScore, setPowerScore] = useState<number>(0)
-  const [rdFactors, setRdFactors] = useState<{ r_factor: number, d_factor: number }>({ r_factor: 0, d_factor: 0 })
+  const [rdFactors, setRdFactors] = useState<{ instrument_r: number, instrument_d: number, pretreatment_r: number, pretreatment_d: number }>({ instrument_r: 0, instrument_d: 0, pretreatment_r: 0, pretreatment_d: 0 })
 
   // 使用 useMemo 缓存 filterOption 函数，避免每次渲染都创建新函数
   const selectFilterOption = React.useMemo(
@@ -635,7 +632,7 @@ const MethodsPage: React.FC = () => {
       setRdFactors(factors)
     }
     loadRDFactors()
-  }, [factorsData, gradientCalculations, mobilePhaseA, mobilePhaseB, preTreatmentReagents, chromatographyType, sampleCount])
+  }, [factorsData, gradientCalculations, mobilePhaseA, mobilePhaseB, preTreatmentReagents, sampleCount])
   
   // Calculate Power Factor (P) score
   const calculatePowerScore = async (): Promise<number> => {
@@ -682,29 +679,23 @@ const MethodsPage: React.FC = () => {
   }
 
   // Calculate R (Regeneration) and D (Disposal) factors using normalization
-  const calculateRDFactors = async (): Promise<{ r_factor: number, d_factor: number }> => {
+  const calculateRDFactors = async (): Promise<{ instrument_r: number, instrument_d: number, pretreatment_r: number, pretreatment_d: number }> => {
     try {
-      // Get baseline mass based on chromatography type
-      const baselineMassMap: Record<string, number> = {
-        'Nano_LC': 0.05,
-        'UPCC': 4.0,
-        'UPLC': 4.0,
-        'HPLC_UV': 45.0,
-        'HPLC_MS': 10.0,
-        'Semi_prep': 250.0,
-        'PrepHPLC': 250.0,
-        'SFC': 4.0
-      }
-      const baseline_mass = baselineMassMap[chromatographyType] || 45.0
-
       // Get factor data
       const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
-      if (!factors) return { r_factor: 0, d_factor: 0 }
+      if (!factors) return { 
+        instrument_r: 0, 
+        instrument_d: 0,
+        pretreatment_r: 0,
+        pretreatment_d: 0
+      }
 
-      let r_weighted_sum = 0
-      let d_weighted_sum = 0
+      // 阶段1：仪器分析试剂（流动相）
+      let instrument_r_sum = 0
+      let instrument_d_sum = 0
 
-      // 1. Calculate from instrument reagents (Mobile Phase)
+      console.log('🔍 开始计算仪器分析R/D因子...')
+
       const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
       if (gradientData) {
         const calculations = gradientData.calculations
@@ -712,60 +703,93 @@ const MethodsPage: React.FC = () => {
         if (calculations) {
           // Mobile Phase A
           if (calculations.mobilePhaseA?.components) {
+            console.log('  流动相A:', calculations.mobilePhaseA.components)
             calculations.mobilePhaseA.components.forEach((component: any) => {
               const factor = factors.find((f: any) => f.name === component.reagentName)
               if (factor) {
                 const mass = component.volume * factor.density
-                r_weighted_sum += mass * (factor.regeneration || 0)
-                d_weighted_sum += mass * factor.disposal
+                const r_contribution = mass * (factor.regeneration || 0)
+                const d_contribution = mass * factor.disposal
+                console.log(`    ${component.reagentName}: volume=${component.volume}ml, mass=${mass.toFixed(4)}g, R=${factor.regeneration}, D=${factor.disposal}`)
+                console.log(`      → R贡献=${r_contribution.toFixed(6)}, D贡献=${d_contribution.toFixed(6)}`)
+                instrument_r_sum += r_contribution
+                instrument_d_sum += d_contribution
               }
             })
           }
 
           // Mobile Phase B
           if (calculations.mobilePhaseB?.components) {
+            console.log('  流动相B:', calculations.mobilePhaseB.components)
             calculations.mobilePhaseB.components.forEach((component: any) => {
               const factor = factors.find((f: any) => f.name === component.reagentName)
               if (factor) {
                 const mass = component.volume * factor.density
-                r_weighted_sum += mass * (factor.regeneration || 0)
-                d_weighted_sum += mass * factor.disposal
+                const r_contribution = mass * (factor.regeneration || 0)
+                const d_contribution = mass * factor.disposal
+                console.log(`    ${component.reagentName}: volume=${component.volume}ml, mass=${mass.toFixed(4)}g, R=${factor.regeneration}, D=${factor.disposal}`)
+                console.log(`      → R贡献=${r_contribution.toFixed(6)}, D贡献=${d_contribution.toFixed(6)}`)
+                instrument_r_sum += r_contribution
+                instrument_d_sum += d_contribution
               }
             })
           }
         }
       }
+      
+      console.log(`  仪器分析累加结果: R_sum=${instrument_r_sum.toFixed(6)}, D_sum=${instrument_d_sum.toFixed(6)}`)
 
-      // 2. Calculate from pretreatment reagents
+      // 阶段2：前处理试剂
+      let pretreatment_r_sum = 0
+      let pretreatment_d_sum = 0
+
       preTreatmentReagents.forEach(reagent => {
         if (!reagent.name || reagent.volume <= 0) return
         
         const factor = factors.find((f: any) => f.name === reagent.name)
         if (factor) {
-          // Individual sample pretreatment: volume × sample count
           const totalVolume = reagent.volume * (sampleCount || 1)
           const mass = totalVolume * factor.density
-          r_weighted_sum += mass * (factor.regeneration || 0)
-          d_weighted_sum += mass * factor.disposal
+          pretreatment_r_sum += mass * (factor.regeneration || 0)
+          pretreatment_d_sum += mass * factor.disposal
         }
       })
 
-      // 3. Apply normalization formula: min(100, (weighted_sum / baseline_mass) * 100)
-      const r_factor = Math.min(100, (r_weighted_sum / baseline_mass) * 100)
-      const d_factor = Math.min(100, (d_weighted_sum / baseline_mass) * 100)
+      // 分别归一化两个阶段
+      const instrument_r = instrument_r_sum > 0 ? Math.min(100, 33.3 * Math.log10(1 + instrument_r_sum)) : 0
+      const instrument_d = instrument_d_sum > 0 ? Math.min(100, 33.3 * Math.log10(1 + instrument_d_sum)) : 0
+      const pretreatment_r = pretreatment_r_sum > 0 ? Math.min(100, 33.3 * Math.log10(1 + pretreatment_r_sum)) : 0
+      const pretreatment_d = pretreatment_d_sum > 0 ? Math.min(100, 33.3 * Math.log10(1 + pretreatment_d_sum)) : 0
 
-      console.log('📊 R/D因子计算结果:', {
-        baseline_mass,
-        r_weighted_sum: r_weighted_sum.toFixed(3),
-        d_weighted_sum: d_weighted_sum.toFixed(3),
-        r_factor: r_factor.toFixed(2),
-        d_factor: d_factor.toFixed(2)
+      console.log('📊 R/D因子计算结果（分阶段）:', {
+        仪器分析: {
+          r_weighted_sum: instrument_r_sum.toFixed(3),
+          d_weighted_sum: instrument_d_sum.toFixed(3),
+          r_factor: instrument_r.toFixed(2),
+          d_factor: instrument_d.toFixed(2)
+        },
+        前处理: {
+          r_weighted_sum: pretreatment_r_sum.toFixed(3),
+          d_weighted_sum: pretreatment_d_sum.toFixed(3),
+          r_factor: pretreatment_r.toFixed(2),
+          d_factor: pretreatment_d.toFixed(2)
+        }
       })
 
-      return { r_factor, d_factor }
+      return { 
+        instrument_r, 
+        instrument_d,
+        pretreatment_r,
+        pretreatment_d
+      }
     } catch (error) {
       console.error('Error calculating R/D factors:', error)
-      return { r_factor: 0, d_factor: 0 }
+      return { 
+        instrument_r: 0, 
+        instrument_d: 0,
+        pretreatment_r: 0,
+        pretreatment_d: 0
+      }
     }
   }
 
@@ -992,17 +1016,23 @@ const MethodsPage: React.FC = () => {
       // 7. 计算P因子
       const p_factor = cleanNumber(await calculatePowerScore(), 0)
 
-      // 8. 计算R和D因子（使用归一化）
-      const { r_factor: r_raw, d_factor: d_raw } = await calculateRDFactors()
-      const r_factor = cleanNumber(r_raw, 0)
-      const d_factor = cleanNumber(d_raw, 0)
+      // 8. 计算R和D因子（分阶段）
+      const rdFactors = await calculateRDFactors()
+      const instrument_r = cleanNumber(rdFactors.instrument_r, 0)
+      const instrument_d = cleanNumber(rdFactors.instrument_d, 0)
+      const pretreatment_r = cleanNumber(rdFactors.pretreatment_r, 0)
+      const pretreatment_d = cleanNumber(rdFactors.pretreatment_d, 0)
 
-      console.log('🎯 P/R/D因子计算结果:', {
+      console.log('🎯 P/R/D因子计算结果（分阶段）:', {
         P: p_factor,
-        R_raw: r_raw,
-        R_clean: r_factor,
-        D_raw: d_raw,
-        D_clean: d_factor
+        仪器分析: {
+          R: instrument_r,
+          D: instrument_d
+        },
+        前处理: {
+          R: pretreatment_r,
+          D: pretreatment_d
+        }
       })
 
       // 9. 构建完整请求
@@ -1010,9 +1040,10 @@ const MethodsPage: React.FC = () => {
         instrument: instrumentData,
         preparation: prepData,
         p_factor: p_factor,
-        r_factor: r_factor,
-        d_factor: d_factor,
-        chromatography_type: chromatographyType,  // 新增：色谱类型
+        instrument_r_factor: instrument_r,
+        instrument_d_factor: instrument_d,
+        pretreatment_r_factor: pretreatment_r,
+        pretreatment_d_factor: pretreatment_d,
         safety_scheme: safetyScheme,
         health_scheme: healthScheme,
         environment_scheme: environmentScheme,
@@ -1087,6 +1118,76 @@ const MethodsPage: React.FC = () => {
       setIsCalculatingScore(false)
     }
   }
+
+  // 自动计算评分（数据变化时触发）
+  useEffect(() => {
+    // 防抖计时器
+    const debounceTimer = setTimeout(async () => {
+      // 检查是否有必要的数据
+      const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+      const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
+      
+      // 只有当梯度数据和因子数据都存在时才自动计算
+      if (gradientData && factors && factors.length > 0) {
+        console.log('🔄 数据已变化，自动触发评分计算')
+        calculateFullScoreAPI()
+      }
+    }, 1000) // 1秒防抖
+
+    return () => clearTimeout(debounceTimer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    // 监听所有可能影响评分的数据
+    safetyScheme,
+    healthScheme,
+    environmentScheme,
+    instrumentStageScheme,
+    prepStageScheme,
+    finalScheme,
+    mobilePhaseA,
+    mobilePhaseB,
+    preTreatmentReagents,
+    instrumentType,
+    sampleCount,
+    gradientCalculations
+    // 注意：不监听factorsData，而是每次从Storage动态读取最新数据
+  ])
+
+  // 监听Storage变化事件（当Factors页面更新数据时触发）
+  useEffect(() => {
+    const handleStorageChange = async (event: CustomEvent) => {
+      if (event.detail?.key === STORAGE_KEYS.FACTORS) {
+        console.log('📦 检测到Factors数据更新，重新加载并自动计算...')
+        
+        // 重新加载factors数据
+        try {
+          const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
+          if (factors && factors.length > 0) {
+            setFactorsData(factors)
+            
+            // 提取试剂名称
+            const reagentNames = Array.from(
+              new Set(factors.map((f: any) => f.name).filter((n: string) => n && n.trim()))
+            ).sort()
+            setAvailableReagents(reagentNames as string[])
+            
+            // 延迟触发自动计算，确保状态已更新
+            setTimeout(() => {
+              calculateFullScoreAPI()
+            }, 500)
+          }
+        } catch (error) {
+          console.error('❌ 重新加载Factors数据失败:', error)
+        }
+      }
+    }
+
+    window.addEventListener('storageUpdated' as any, handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storageUpdated' as any, handleStorageChange)
+    }
+  }, [])
   
   // 确认提交
   const handleConfirm = async () => {
@@ -2168,73 +2269,181 @@ const MethodsPage: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 新增：权重方案配置和评分结果展示 */}
+      {/* 评分结果展示（顶部） */}
+      {scoreResults && (
+        <Card 
+          title={
+            <span>
+              <TrophyOutlined style={{ marginRight: 8, color: '#faad14' }} />
+              评分结果
+            </span>
+          }
+          style={{ marginTop: 24 }}
+        >
+          {/* 最终总分 */}
+          <Card style={{ marginBottom: 16, background: '#f0f5ff', borderColor: '#1890ff' }}>
+            <Statistic
+              title="最终绿色化学总分 (Score₃)"
+              value={scoreResults.final.score3}
+              precision={2}
+              suffix="/ 100"
+              valueStyle={{ color: '#1890ff', fontSize: 32, fontWeight: 'bold' }}
+            />
+          </Card>
+
+          {/* 阶段得分 */}
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col span={12}>
+              <Card>
+                <Statistic
+                  title="仪器分析阶段 (Score₁)"
+                  value={scoreResults.instrument.score1}
+                  precision={2}
+                  suffix="/ 100"
+                  valueStyle={{ color: '#52c41a', fontSize: 24 }}
+                />
+              </Card>
+            </Col>
+            <Col span={12}>
+              <Card>
+                <Statistic
+                  title="样品前处理阶段 (Score₂)"
+                  value={scoreResults.preparation.score2}
+                  precision={2}
+                  suffix="/ 100"
+                  valueStyle={{ color: '#faad14', fontSize: 24 }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 大因子得分 */}
+          <Card title="大因子得分" size="small" style={{ marginBottom: 16 }}>
+            <Row gutter={8}>
+              <Col span={8}>
+                <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>安全 (S)</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#ff4d4f' }}>
+                    {((scoreResults.instrument.major_factors.S + scoreResults.preparation.major_factors.S) / 2).toFixed(2)}
+                  </div>
+                </div>
+              </Col>
+              <Col span={8}>
+                <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>健康 (H)</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#fa8c16' }}>
+                    {((scoreResults.instrument.major_factors.H + scoreResults.preparation.major_factors.H) / 2).toFixed(2)}
+                  </div>
+                </div>
+              </Col>
+              <Col span={8}>
+                <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>环境 (E)</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
+                    {((scoreResults.instrument.major_factors.E + scoreResults.preparation.major_factors.E) / 2).toFixed(2)}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* P/R/D 附加因子 */}
+          <Card title="附加因子 (P/R/D)" size="small" style={{ marginBottom: 16 }}>
+            <Row gutter={8}>
+              <Col span={24}>
+                <div style={{ textAlign: 'center', padding: '8px 0', marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>能耗 (P)</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#1890ff' }}>
+                    {scoreResults.additional_factors?.P?.toFixed(2) || 'N/A'}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+            <Divider style={{ margin: '8px 0' }}>可回收 (R) / 可降解 (D)</Divider>
+            <Row gutter={8}>
+              <Col span={12}>
+                <div style={{ textAlign: 'center', padding: '8px', background: '#f5f5f5', borderRadius: 4 }}>
+                  <div style={{ fontSize: 11, color: '#999', marginBottom: 4 }}>🔬 仪器分析阶段</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 4 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#666' }}>R</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#722ed1' }}>
+                        {scoreResults.additional_factors?.instrument_R?.toFixed(2) || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#666' }}>D</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#eb2f96' }}>
+                        {scoreResults.additional_factors?.instrument_D?.toFixed(2) || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div style={{ textAlign: 'center', padding: '8px', background: '#f5f5f5', borderRadius: 4 }}>
+                  <div style={{ fontSize: 11, color: '#999', marginBottom: 4 }}>🧪 前处理阶段</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 4 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#666' }}>R</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#722ed1' }}>
+                        {scoreResults.additional_factors?.pretreatment_R?.toFixed(2) || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#666' }}>D</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#eb2f96' }}>
+                        {scoreResults.additional_factors?.pretreatment_D?.toFixed(2) || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* 小因子得分（用于雷达图） */}
+          <Card title="小因子得分（雷达图数据）" size="small" style={{ minHeight: 'auto' }}>
+            <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>
+              这些数据将用于GraphPage的雷达图展示
+            </div>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '8px'
+            }}>
+              {Object.entries(scoreResults.merged.sub_factors).map(([key, value]: [string, any]) => (
+                <div 
+                  key={key}
+                  style={{ 
+                    padding: '6px 8px', 
+                    background: '#fafafa', 
+                    borderRadius: 4,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 500 }}>{key}:</span>
+                  <span style={{ fontSize: 13, color: '#1890ff' }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Card>
+      )}
+
+      {/* 权重方案配置 */}
       <Card 
         title={
           <span>
             <TrophyOutlined style={{ marginRight: 8, color: '#faad14' }} />
-            绿色化学评分系统 (0-100分制)
+            绿色化学评分系统配置 (0-100分制)
           </span>
         }
         style={{ marginTop: 24 }}
       >
-        <Row gutter={24}>
-          {/* 左侧：色谱类型和权重方案选择 */}
-          <Col span={12}>
-            <Title level={4}>评分配置</Title>
-            <Divider style={{ margin: '12px 0' }} />
-            
-            {/* 色谱类型选择（最重要，放在最前面） */}
-            <div style={{ 
-              marginBottom: 24, 
-              padding: 16, 
-              background: '#e6f7ff', 
-              border: '1px solid #91d5ff',
-              borderRadius: 4 
-            }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#0050b3' }}>
-                <ExperimentOutlined style={{ marginRight: 8 }} />
-                色谱类型选择
-                <Tooltip title="不同色谱类型对应不同的废液基准质量，直接影响评分结果">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={chromatographyType}
-                onChange={setChromatographyType}
-              >
-                <Option value="Nano_LC">
-                  <span>纳升液相 (Nano-LC)</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 0.05g</span>
-                </Option>
-                <Option value="UPCC">
-                  <span>合相色谱 (UPCC)</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 4g</span>
-                </Option>
-                <Option value="UPLC">
-                  <span>超高效液相 (UPLC)</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 4g</span>
-                </Option>
-                <Option value="HPLC_MS">
-                  <span>常规HPLC (LC-MS)</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 10g</span>
-                </Option>
-                <Option value="HPLC_UV">
-                  <span>常规HPLC (UV)</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 45g</span>
-                </Option>
-                <Option value="Semi_prep">
-                  <span>半制备HPLC</span>
-                  <span style={{ float: 'right', color: '#999', fontSize: 12 }}>基准: 250g</span>
-                </Option>
-              </Select>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                💡 基准质量越小，相同试剂用量得分越高
-              </div>
-            </div>
-
-            <Title level={5} style={{ marginTop: 24 }}>权重方案配置</Title>
+        <Title level={5}>权重方案配置</Title>
             
             {/* S/H/E因子权重 */}
             <div style={{ marginBottom: 16 }}>
@@ -2309,10 +2518,10 @@ const MethodsPage: React.FC = () => {
                 value={instrumentStageScheme}
                 onChange={setInstrumentStageScheme}
               >
-                <Option value="Balanced">均衡型 (S:0.25 H:0.15 E:0.15 P:0.25 R:0.10 D:0.10)</Option>
-                <Option value="Safety_Priority">安全优先型 (S:0.50 H:0.20 E:0.10 P:0.10 R:0.05 D:0.05)</Option>
-                <Option value="Eco_Priority">环保优先型 (S:0.15 H:0.10 E:0.45 P:0.10 R:0.10 D:0.10)</Option>
-                <Option value="Efficiency_Priority">能效优先型 (S:0.10 H:0.10 E:0.10 P:0.40 R:0.15 D:0.15)</Option>
+                <Option value="Balanced">均衡型 (S:0.15 H:0.15 E:0.15 P:0.25 R:0.15 D:0.15)</Option>
+                <Option value="Safety_First">安全优先型 (S:0.30 H:0.30 E:0.10 P:0.10 R:0.10 D:0.10)</Option>
+                <Option value="Eco_Friendly">环保优先型 (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
+                <Option value="Energy_Efficient">能效优先型 (S:0.10 H:0.10 E:0.15 P:0.40 R:0.15 D:0.10)</Option>
               </Select>
             </div>
 
@@ -2328,10 +2537,10 @@ const MethodsPage: React.FC = () => {
                 value={prepStageScheme}
                 onChange={setPrepStageScheme}
               >
-                <Option value="Balanced">均衡型 (S:0.25 H:0.20 E:0.20 R:0.175 D:0.175)</Option>
-                <Option value="Operation_Protection">操作防护型 (S:0.40 H:0.30 E:0.10 R:0.10 D:0.10)</Option>
-                <Option value="Circular_Economy">循环经济型 (S:0.10 H:0.10 E:0.20 R:0.30 D:0.30)</Option>
-                <Option value="Environmental_Tower">环境白塔型 (S:0.15 H:0.15 E:0.50 R:0.10 D:0.10)</Option>
+                <Option value="Balanced">均衡型 (S:0.20 H:0.20 E:0.20 R:0.20 D:0.20)</Option>
+                <Option value="Operation_Protection">操作防护型 (S:0.35 H:0.35 E:0.10 R:0.10 D:0.10)</Option>
+                <Option value="Circular_Economy">循环经济型 (S:0.10 H:0.10 E:0.10 R:0.40 D:0.30)</Option>
+                <Option value="Environmental_Tower">环境白塔型 (S:0.15 H:0.15 E:0.40 R:0.15 D:0.15)</Option>
               </Select>
             </div>
 
@@ -2353,171 +2562,9 @@ const MethodsPage: React.FC = () => {
                 <Option value="Equal">等权型 (仪器:0.5 前处理:0.5)</Option>
               </Select>
             </div>
+          </Card>
 
-            <Button 
-              type="primary" 
-              block 
-              size="large"
-              onClick={calculateFullScoreAPI}
-              loading={isCalculatingScore}
-              style={{ marginTop: 16 }}
-            >
-              计算完整评分
-            </Button>
-          </Col>
-
-          {/* 右侧：评分结果展示 */}
-          <Col span={12}>
-            <Title level={4}>评分结果</Title>
-            <Divider style={{ margin: '12px 0' }} />
-            
-            {scoreResults ? (
-              <div>
-                {/* 最终总分 */}
-                <Card style={{ marginBottom: 16, background: '#f0f5ff', borderColor: '#1890ff' }}>
-                  <Statistic
-                    title="最终绿色化学总分 (Score₃)"
-                    value={scoreResults.final.score3}
-                    precision={2}
-                    suffix="/ 100"
-                    valueStyle={{ color: '#1890ff', fontSize: 32, fontWeight: 'bold' }}
-                  />
-                </Card>
-
-                {/* 阶段得分 */}
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col span={12}>
-                    <Card>
-                      <Statistic
-                        title="仪器分析阶段 (Score₁)"
-                        value={scoreResults.instrument.score1}
-                        precision={2}
-                        suffix="/ 100"
-                        valueStyle={{ color: '#52c41a', fontSize: 24 }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={12}>
-                    <Card>
-                      <Statistic
-                        title="样品前处理阶段 (Score₂)"
-                        value={scoreResults.preparation.score2}
-                        precision={2}
-                        suffix="/ 100"
-                        valueStyle={{ color: '#faad14', fontSize: 24 }}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* 大因子得分 */}
-                <Card title="大因子得分" size="small" style={{ marginBottom: 16 }}>
-                  <Row gutter={8}>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>安全 (S)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#ff4d4f' }}>
-                          {((scoreResults.instrument.major_factors.S + scoreResults.preparation.major_factors.S) / 2).toFixed(2)}
-                        </div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>健康 (H)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#fa8c16' }}>
-                          {((scoreResults.instrument.major_factors.H + scoreResults.preparation.major_factors.H) / 2).toFixed(2)}
-                        </div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>环境 (E)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
-                          {((scoreResults.instrument.major_factors.E + scoreResults.preparation.major_factors.E) / 2).toFixed(2)}
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* P/R/D 附加因子 */}
-                <Card title="附加因子 (P/R/D)" size="small" style={{ marginBottom: 16 }}>
-                  <Row gutter={8}>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>能耗 (P)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#1890ff' }}>
-                          {scoreResults.additional_factors?.P?.toFixed(2) || 'N/A'}
-                        </div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>可回收 (R)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#722ed1' }}>
-                          {scoreResults.additional_factors?.R?.toFixed(2) || 'N/A'}
-                        </div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>可降解 (D)</div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#eb2f96' }}>
-                          {scoreResults.additional_factors?.D?.toFixed(2) || 'N/A'}
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* 小因子得分（用于雷达图） */}
-                <Card title="小因子得分（雷达图数据）" size="small" style={{ minHeight: 'auto' }}>
-                  <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>
-                    这些数据将用于GraphPage的雷达图展示
-                  </div>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                    gap: '8px'
-                  }}>
-                    {Object.entries(scoreResults.merged.sub_factors).map(([key, value]: [string, any]) => (
-                      <div 
-                        key={key}
-                        style={{ 
-                          padding: '6px 8px', 
-                          background: '#fafafa', 
-                          borderRadius: 4,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <span style={{ fontSize: 12, fontWeight: 500 }}>{key}:</span>
-                        <span style={{ fontSize: 13, color: '#1890ff' }}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '60px 20px',
-                color: '#999',
-                background: '#fafafa',
-                borderRadius: 8,
-                border: '1px dashed #d9d9d9'
-              }}>
-                <TrophyOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
-                <div style={{ fontSize: 16, marginBottom: 8 }}>暂无评分结果</div>
-                <div style={{ fontSize: 13 }}>请配置权重方案后点击"计算完整评分"按钮</div>
-              </div>
-            )}
-          </Col>
-        </Row>
-      </Card>
-
-      {/* 确认按钮 */}
+          {/* 确认按钮 */}
       <div style={{ textAlign: 'right', marginTop: 24 }}>
         <Button type="primary" size="large" onClick={handleConfirm}>
           Confirm

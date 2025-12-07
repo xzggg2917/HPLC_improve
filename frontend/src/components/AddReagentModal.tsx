@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react'
 import { Modal, Form, Input, InputNumber, Select, Row, Col, message, Space, Typography, Divider, Alert, Button } from 'antd'
-import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined, LinkOutlined } from '@ant-design/icons'
+import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons'
 import type { ReagentFactor } from '../contexts/AppContext'
 
 const { Text, Link } = Typography
@@ -625,6 +625,9 @@ const DISPOSAL_PERCENTAGE_OPTIONS = [
 ]
 
 const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, onOk }) => {
+  // 添加输入模式状态：'select' 或 'manual'
+  const [inputMode, setInputMode] = useState<'select' | 'manual'>('select')
+  
   // 只在 Modal 可见时创建 form 实例，避免警告
   const [form] = Form.useForm()
   
@@ -1538,6 +1541,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
   const handleCancel = () => {
     form.resetFields()
+    setInputMode('select') // 重置输入模式
     setCalculatedScores({ safetyScore: 0, healthScore: 0, envScore: 0 })
     setRpStep1('')
     setRpCalculatedValue(0)
@@ -1655,6 +1659,47 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           waterHazard: 0
         }}
       >
+        {/* 输入模式选择 */}
+        <Alert
+          message="📝 请选择添加方式"
+          description={
+            <div>
+              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                <Button
+                  type={inputMode === 'select' ? 'primary' : 'default'}
+                  size="large"
+                  icon={<ExperimentOutlined />}
+                  onClick={() => setInputMode('select')}
+                  style={{ width: '100%', height: 'auto', padding: '12px 16px', textAlign: 'left' }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>智能引导模式（推荐）</div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>
+                      通过决策树和选择题逐步确定各项因子值，系统自动计算
+                    </div>
+                  </div>
+                </Button>
+                <Button
+                  type={inputMode === 'manual' ? 'primary' : 'default'}
+                  size="large"
+                  icon={<EditOutlined />}
+                  onClick={() => setInputMode('manual')}
+                  style={{ width: '100%', height: 'auto', padding: '12px 16px', textAlign: 'left' }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>手动输入模式</div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>
+                      直接输入所有已知的因子数值，适合已有完整数据的情况
+                    </div>
+                  </div>
+                </Button>
+              </Space>
+            </div>
+          }
+          type="info"
+          style={{ marginBottom: 24 }}
+        />
+        
         {/* 基本信息 */}
         <Divider orientation="left" style={{ fontSize: 15, fontWeight: 'bold', color: '#262626', marginTop: 0, marginBottom: 16 }}>基本信息</Divider>
         <Row gutter={16}>
@@ -1687,6 +1732,105 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Form.Item>
           </Col>
         </Row>
+
+        {inputMode === 'manual' ? (
+          // 手动输入模式：直接输入所有因子值
+          <>
+            {/* 安全因子 - 手动输入 */}
+            <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#ff4d4f', borderTopWidth: 2 }}>
+              <Space size={8}>
+                <FireOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
+                <span>安全因子 (Safety Factors)</span>
+              </Space>
+            </Divider>
+            <Row gutter={16}>
+              <Col span={6}>
+                <Form.Item label="Release Potential" name="releasePotential">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item label="Fire/Explos." name="fireExplos">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item label="React./Decom." name="reactDecom">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item label="Acute Toxicity" name="acuteToxicity">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* 健康因子 - 手动输入 */}
+            <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>
+              <Space size={8}>
+                <HeartOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                <span>健康因子 (Health Factors)</span>
+              </Space>
+            </Divider>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Irritation" name="irritation">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Chronic Toxicity" name="chronicToxicity">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* 环境因子 - 手动输入 */}
+            <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#1890ff', borderTopWidth: 2 }}>
+              <Space size={8}>
+                <GlobalOutlined style={{ color: '#1890ff', fontSize: 18 }} />
+                <span>环境因子 (Environment Factors)</span>
+              </Space>
+            </Divider>
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item label="Persistency" name="persistency">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="Air Hazard" name="airHazard">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="Water Hazard" name="waterHazard">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.001} precision={3} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* 再生与处置因子 - 手动输入 */}
+            <Divider orientation="left" style={{ fontSize: 15, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16 }}>
+              再生与处置因子 (Regeneration & Disposal)
+            </Divider>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Regeneration" name="regeneration" tooltip="0-1之间的值，表示再生难度">
+                  <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.01} precision={2} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Disposal" name="disposal" tooltip="0-2之间的值，表示处置难度">
+                  <InputNumber style={{ width: '100%' }} min={0} max={2} step={0.01} precision={2} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </>
+        ) : (
+          // 智能引导模式：原有的决策树UI
+          <>
 
         {/* 安全因子 */}
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#ff4d4f', borderTopWidth: 2 }}>
@@ -3573,7 +3717,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           <InputNumber />
         </Form.Item>
 
-        {/* 显示小因子计算结果 */}
+          </>
+        )}
+        {/* 智能引导模式条件渲染结束 */}
+
+        {/* 显示小因子计算结果 - 仅在智能引导模式下显示 */}
+        {inputMode === 'select' && (
+        <>
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#1890ff', borderTopWidth: 2 }}>📋 小因子计算结果</Divider>
         
         <div style={{ background: '#fafafa', padding: '12px', borderRadius: '8px', marginBottom: 12 }}>
@@ -3674,8 +3824,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Col>
           </Row>
         </div>
+        </>
+        )}
+        {/* 小因子计算结果显示结束 */}
 
-        {/* 计算结果显示 */}
+        {/* 计算结果显示 - 两种模式都显示 */}
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 20, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>🎯 大因子自动累加结果</Divider>
         <div style={{ 
           background: '#f6f8fa', 

@@ -16,42 +16,6 @@ import math
 
 
 # ============================================================================
-# 色谱类型与归一化基准质量
-# ============================================================================
-
-CHROMATOGRAPHY_TYPES = {
-    "UPCC": {
-        "name": "合相色谱 (UPCC)",
-        "baseline_mass": 4.0,  # g
-        "description": "超临界流体色谱"
-    },
-    "UPLC": {
-        "name": "超高效液相 (UPLC)",
-        "baseline_mass": 4.0,  # g
-        "description": "超高效液相色谱"
-    },
-    "HPLC_MS": {
-        "name": "常规HPLC (LC-MS)",
-        "baseline_mass": 10.0,  # g
-        "description": "液质联用色谱"
-    },
-    "HPLC_UV": {
-        "name": "常规HPLC (UV)",
-        "baseline_mass": 45.0,  # g
-        "description": "紫外检测器色谱"
-    },
-    "Semi_prep": {
-        "name": "半制备HPLC",
-        "baseline_mass": 250.0,  # g
-        "description": "半制备级液相色谱"
-    }
-}
-
-# 默认色谱类型
-DEFAULT_CHROMATOGRAPHY_TYPE = "HPLC_UV"
-
-
-# ============================================================================
 # 权重配置常量（12种方案）
 # ============================================================================
 
@@ -89,18 +53,18 @@ ENVIRONMENT_WEIGHTS = {
 
 # 图6：仪器分析阶段权重方案（4种，6因子含P）
 INSTRUMENT_STAGE_WEIGHTS = {
-    "Balanced": {"S": 0.25, "H": 0.15, "E": 0.15, "P": 0.25, "R": 0.10, "D": 0.10},
-    "Safety_Priority": {"S": 0.50, "H": 0.20, "E": 0.10, "P": 0.10, "R": 0.05, "D": 0.05},
-    "Eco_Priority": {"S": 0.15, "H": 0.10, "E": 0.45, "P": 0.10, "R": 0.10, "D": 0.10},
-    "Efficiency_Priority": {"S": 0.10, "H": 0.10, "E": 0.10, "P": 0.40, "R": 0.15, "D": 0.15}
+    "Balanced": {"S": 0.15, "H": 0.15, "E": 0.15, "R": 0.15, "D": 0.15, "P": 0.25},
+    "Safety_First": {"S": 0.30, "H": 0.30, "E": 0.10, "R": 0.10, "D": 0.10, "P": 0.10},
+    "Eco_Friendly": {"S": 0.10, "H": 0.10, "E": 0.30, "R": 0.25, "D": 0.15, "P": 0.10},
+    "Energy_Efficient": {"S": 0.10, "H": 0.10, "E": 0.15, "R": 0.15, "D": 0.10, "P": 0.40}
 }
 
 # 图7：样品前处理阶段权重方案（4种，5因子无P）
 PREPARATION_STAGE_WEIGHTS = {
-    "Balanced": {"S": 0.25, "H": 0.20, "E": 0.20, "R": 0.175, "D": 0.175},
-    "Operation_Protection": {"S": 0.40, "H": 0.30, "E": 0.10, "R": 0.10, "D": 0.10},
-    "Circular_Economy": {"S": 0.10, "H": 0.10, "E": 0.20, "R": 0.30, "D": 0.30},
-    "Environmental_Tower": {"S": 0.15, "H": 0.15, "E": 0.50, "R": 0.10, "D": 0.10}
+    "Balanced": {"S": 0.20, "H": 0.20, "E": 0.20, "R": 0.20, "D": 0.20},
+    "Operation_Protection": {"S": 0.35, "H": 0.35, "E": 0.10, "R": 0.10, "D": 0.10},
+    "Circular_Economy": {"S": 0.10, "H": 0.10, "E": 0.10, "R": 0.40, "D": 0.30},
+    "Environmental_Tower": {"S": 0.15, "H": 0.15, "E": 0.40, "R": 0.15, "D": 0.15}
 }
 
 
@@ -266,19 +230,17 @@ def calculate_prep_masses(
 def normalize_sub_factor(
     reagent_masses: Dict[str, float],
     reagent_factors: Dict[str, float],
-    sub_factor_name: str,
-    baseline_mass: float = 45.0  # 默认使用HPLC_UV的45g
+    sub_factor_name: str
 ) -> float:
     """
     计算单个小因子的归一化得分（0-100分）
     
-    公式：Score_sub = min(100, (Σ(m_i × f_sub) / baseline_mass) × 100)
+    新公式：Score = min(100, 33.3 × log₁₀(1 + Σ(m_mass × F_factor)))
     
     参数：
         reagent_masses: 试剂质量（克），如 {"MeOH": 123.45, "H2O": 234.56}
-        reagent_factors: 试剂的该小因子值（0-1），如 {"MeOH": 0.8, "H2O": 0.2}
+        reagent_factors: 试剂的该小因子值（0.0-1.0），如 {"MeOH": 0.8, "H2O": 0.2}
         sub_factor_name: 小因子名称（用于错误提示）
-        baseline_mass: 归一化基准质量（克），根据色谱类型不同而不同
     
     返回：
         float: 归一化后的小因子得分（0-100）
@@ -297,19 +259,23 @@ def normalize_sub_factor(
         
         weighted_sum += mass * factor_value
     
-    # 使用动态基准质量归一化，上限100分
-    score = min(100.0, (weighted_sum / baseline_mass) * 100.0)
+    # 使用新的归一化公式：Score = min(100, 33.3 × log₁₀(1 + Σ(m × F)))
+    if weighted_sum <= 0:
+        score = 0.0
+    else:
+        score = min(100.0, 33.3 * math.log10(1 + weighted_sum))
     
     return score
 
 
 def calculate_all_sub_factors(
     reagent_masses: Dict[str, float],
-    reagent_factor_matrix: Dict[str, Dict[str, float]],
-    baseline_mass: float = 45.0  # 默认使用HPLC_UV的45g
+    reagent_factor_matrix: Dict[str, Dict[str, float]]
 ) -> Dict[str, float]:
     """
     计算所有9个小因子的归一化得分
+    
+    使用新公式：Score = min(100, 33.3 × log₁₀(1 + Σ(m × F)))
     
     参数：
         reagent_masses: 试剂质量（克）
@@ -318,7 +284,6 @@ def calculate_all_sub_factors(
                 "MeOH": {"S1": 0.8, "S2": 0.6, ..., "E3": 0.5},
                 "H2O": {"S1": 0.2, "S2": 0.1, ..., "E3": 0.1}
             }
-        baseline_mass: 归一化基准质量（克）
     
     返回：
         Dict[str, float]: 9个小因子的得分，如 {"S1": 85.3, "S2": 72.1, ..., "E3": 45.6}
@@ -333,8 +298,8 @@ def calculate_all_sub_factors(
             for reagent, factors in reagent_factor_matrix.items()
         }
         
-        # 计算归一化得分（传递baseline_mass）
-        score = normalize_sub_factor(reagent_masses, reagent_factors, sub_factor, baseline_mass)
+        # 计算归一化得分
+        score = normalize_sub_factor(reagent_masses, reagent_factors, sub_factor)
         sub_factor_scores[sub_factor] = score
     
     return sub_factor_scores
@@ -556,14 +521,15 @@ def calculate_full_scores(
     prep_densities: Dict[str, float],
     prep_factor_matrix: Dict[str, Dict[str, float]],
     
-    # P/R/D因子（通用）
+    # P/R/D因子（分阶段）
     p_factor: float,
-    r_factor: float,  # 0-100分制
-    d_factor: float,  # 0-100分制
+    instrument_r_factor: float,  # 仪器分析阶段R因子 (0-100)
+    instrument_d_factor: float,  # 仪器分析阶段D因子 (0-100)
+    pretreatment_r_factor: float,  # 前处理阶段R因子 (0-100)
+    pretreatment_d_factor: float,  # 前处理阶段D因子 (0-100)
     
     # 可选参数（必须放在最后，都有默认值）
     instrument_curve_types: List[str] = None,  # 曲线类型
-    chromatography_type: str = "HPLC_UV",  # 色谱类型，决定归一化基准
     safety_scheme: str = "PBT_Balanced",
     health_scheme: str = "Absolute_Balance",
     environment_scheme: str = "PBT_Balanced",
@@ -596,17 +562,24 @@ def calculate_full_scores(
         }
     }
     """
-    # 打印接收到的P/R/D因子
+    # 打印接收到的P/R/D因子和权重方案
+    print("\n" + "=" * 80)
+    print("🎯 评分计算开始")
     print(f"⚡ P因子 (能耗): {p_factor:.2f}")
-    print(f"♻️ R因子 (可回收性): {r_factor:.2f}")
-    print(f"🗑️ D因子 (可降解性): {d_factor:.2f}")
-    
-    # 获取色谱类型对应的归一化基准质量
-    if chromatography_type not in CHROMATOGRAPHY_TYPES:
-        raise ValueError(f"未知的色谱类型: {chromatography_type}")
-    
-    baseline_mass = CHROMATOGRAPHY_TYPES[chromatography_type]["baseline_mass"]
-    print(f"📊 色谱类型: {CHROMATOGRAPHY_TYPES[chromatography_type]['name']}, 归一化基准: {baseline_mass}g")
+    print(f"🔬 仪器分析阶段:")
+    print(f"   ♻️ R因子 (可回收性): {instrument_r_factor:.2f}")
+    print(f"   🗑️ D因子 (可降解性): {instrument_d_factor:.2f}")
+    print(f"🧪 前处理阶段:")
+    print(f"   ♻️ R因子 (可回收性): {pretreatment_r_factor:.2f}")
+    print(f"   🗑️ D因子 (可降解性): {pretreatment_d_factor:.2f}")
+    print(f"📋 权重方案:")
+    print(f"  - Safety: {safety_scheme}")
+    print(f"  - Health: {health_scheme}")
+    print(f"  - Environment: {environment_scheme}")
+    print(f"  - Instrument Stage: {instrument_stage_scheme}")
+    print(f"  - Prep Stage: {prep_stage_scheme}")
+    print(f"  - Final: {final_scheme}")
+    print("=" * 80 + "\n")
     
     # ========== 仪器分析阶段 ==========
     
@@ -621,8 +594,8 @@ def calculate_full_scores(
     
     print(f"🔍 仪器分析质量计算结果: {inst_masses}")
     
-    # Layer 1: 小因子归一化（传递基准质量）
-    inst_sub_scores = calculate_all_sub_factors(inst_masses, instrument_factor_matrix, baseline_mass)
+    # Layer 1: 小因子归一化（使用新公式）
+    inst_sub_scores = calculate_all_sub_factors(inst_masses, instrument_factor_matrix)
     
     print(f"🔍 仪器分析小因子得分: {inst_sub_scores}")
     
@@ -632,14 +605,18 @@ def calculate_full_scores(
     inst_major_E = calculate_major_factor(inst_sub_scores, "E", environment_scheme)
     inst_major_factors = {"S": inst_major_S, "H": inst_major_H, "E": inst_major_E}
     
-    # Layer 4: Score₁
+    print(f"🎯 仪器分析大因子得分: S={inst_major_S:.2f}, H={inst_major_H:.2f}, E={inst_major_E:.2f}")
+    
+    # Layer 4: Score₁（使用仪器分析阶段的R/D）
     score1 = calculate_score1(
         inst_major_factors,
         p_factor,
-        r_factor,
-        d_factor,
+        instrument_r_factor,
+        instrument_d_factor,
         instrument_stage_scheme
     )
+    
+    print(f"📊 仪器分析阶段 Score₁ = {score1:.2f} (使用权重方案: {instrument_stage_scheme})")
     
     # ========== 样品前处理阶段 ==========
     
@@ -648,8 +625,8 @@ def calculate_full_scores(
     
     print(f"🔍 前处理质量计算结果: {prep_masses}")
     
-    # Layer 1: 小因子归一化（传递基准质量）
-    prep_sub_scores = calculate_all_sub_factors(prep_masses, prep_factor_matrix, baseline_mass)
+    # Layer 1: 小因子归一化（使用新公式）
+    prep_sub_scores = calculate_all_sub_factors(prep_masses, prep_factor_matrix)
     
     print(f"🔍 前处理小因子得分: {prep_sub_scores}")
     
@@ -659,13 +636,17 @@ def calculate_full_scores(
     prep_major_E = calculate_major_factor(prep_sub_scores, "E", environment_scheme)
     prep_major_factors = {"S": prep_major_S, "H": prep_major_H, "E": prep_major_E}
     
-    # Layer 4: Score₂
+    print(f"🎯 前处理大因子得分: S={prep_major_S:.2f}, H={prep_major_H:.2f}, E={prep_major_E:.2f}")
+    
+    # Layer 4: Score₂（使用前处理阶段的R/D）
     score2 = calculate_score2(
         prep_major_factors,
-        r_factor,
-        d_factor,
+        pretreatment_r_factor,
+        pretreatment_d_factor,
         prep_stage_scheme
     )
+    
+    print(f"📊 前处理阶段 Score₂ = {score2:.2f} (使用权重方案: {prep_stage_scheme})")
     
     # ========== Layer 2: 小因子加权合成（用于雷达图） ==========
     merged_sub_scores = merge_sub_factors(
@@ -676,6 +657,10 @@ def calculate_full_scores(
     
     # ========== Layer 5: 最终总分 ==========
     score3 = calculate_score3(score1, score2, final_scheme)
+    
+    print(f"🏆 最终总分 Score₃ = {score3:.2f} (使用权重方案: {final_scheme})")
+    print(f"   仪器阶段贡献: {score1:.2f}, 前处理阶段贡献: {score2:.2f}")
+    print("=" * 80 + "\n")
     
     # 返回完整结果
     return {
@@ -699,8 +684,10 @@ def calculate_full_scores(
         },
         "additional_factors": {
             "P": round(p_factor, 2),  # 能耗因子
-            "R": round(r_factor, 2),  # 可回收性因子
-            "D": round(d_factor, 2)   # 可降解性因子
+            "instrument_R": round(instrument_r_factor, 2),  # 仪器分析R因子
+            "instrument_D": round(instrument_d_factor, 2),  # 仪器分析D因子
+            "pretreatment_R": round(pretreatment_r_factor, 2),  # 前处理R因子
+            "pretreatment_D": round(pretreatment_d_factor, 2)   # 前处理D因子
         },
         "schemes": {
             "safety": safety_scheme,

@@ -197,6 +197,11 @@ export const StorageHelper = {
   // 写入 JSON 数据
   async setJSON(key: string, value: any): Promise<void> {
     await storage.setItem(key, JSON.stringify(value))
+    
+    // 触发存储更新事件
+    window.dispatchEvent(new CustomEvent('storageUpdated', { 
+      detail: { key, value } 
+    }))
   },
 
   // 获取用户列表

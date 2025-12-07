@@ -620,6 +620,7 @@ const HPLCGradientPage: React.FC = () => {
       message.warning('⚠️ All steps have flow rate of 0, cannot calculate volume!\nData saved but calculations are cleared.', 5)
       
       const gradientData = {
+        flowRate: 0, // 全局流速为0
         steps: gradientSteps.map(step => ({
           id: step.id, // ✅ 保存 id
           stepNo: step.stepNo,
@@ -666,7 +667,22 @@ const HPLCGradientPage: React.FC = () => {
     
     console.log('✅ componentVolumes计算完成:', componentVolumes)
 
+    // 计算平均流速（用于后端评分计算）
+    // 使用加权平均：每段的流速乘以该段时间，然后除以总时间
+    const gradientTotalTime = gradientSteps[gradientSteps.length - 1].time - gradientSteps[0].time
+    let weightedFlowRateSum = 0
+    for (let i = 0; i < gradientSteps.length - 1; i++) {
+      const dt = gradientSteps[i + 1].time - gradientSteps[i].time
+      const flowRate = gradientSteps[i + 1].flowRate || 0
+      weightedFlowRateSum += flowRate * dt
+    }
+    const avgFlowRate = gradientTotalTime > 0 ? weightedFlowRateSum / gradientTotalTime : 0
+    console.log(`📊 计算平均流速: ${avgFlowRate} ml/min (总时间: ${gradientTotalTime} min)`)
+
     const gradientData = {
+      // 全局流速（用于后端评分计算）
+      flowRate: avgFlowRate,
+      
       // 基础步骤数据
       steps: gradientSteps.map(step => ({
         id: step.id, // ✅ 保存 id
@@ -811,7 +827,6 @@ const HPLCGradientPage: React.FC = () => {
                     <InputNumber
                       min={0}
                       step={0.01}
-                      precision={2}
                       value={step.flowRate}
                       onChange={(value) => updateStep(step.id, 'flowRate', value || 0)}
                       style={{ width: '100%' }}

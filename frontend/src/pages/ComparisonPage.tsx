@@ -146,19 +146,9 @@ const ComparisonPage: React.FC = () => {
         const methodsData: any = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
         const factorsData = await StorageHelper.getJSON(STORAGE_KEYS.FACTORS) || []
         
-        let totalR = 0
-        let totalD = 0
-        
-        // 获取色谱类型和基准质量
-        const chromatographyType = methodsData?.chromatographyType || 'HPLC_UV'
-        const BASELINE_MASS_MAP: Record<string, number> = {
-          'Nano_LC': 0.05, 'UPCC': 4.0, 'UPLC': 4.0, 'HPLC_MS': 10.0, 'HPLC_UV': 45.0, 'Semi_prep': 250.0
-        }
-        const baselineMass = BASELINE_MASS_MAP[chromatographyType] || 45.0
-        
-        // 计算 R 和 D
-        const calculateNormalized = (mass: number, factorValue: number) => 
-          Math.min(100, (mass * factorValue / baselineMass) * 100)
+        // 先累加所有的加权值，然后统一归一化
+        let weightedSumR = 0
+        let weightedSumD = 0
         
         // PreTreatment
         if (methodsData?.preTreatmentReagents) {
@@ -167,8 +157,8 @@ const ComparisonPage: React.FC = () => {
             const factor = factorsData.find((f: any) => f.name === reagent.name)
             if (!factor) return
             const mass = reagent.volume * factor.density
-            totalR += calculateNormalized(mass, factor.regeneration || 0)
-            totalD += calculateNormalized(mass, factor.disposal)
+            weightedSumR += mass * (factor.regeneration || 0)
+            weightedSumD += mass * factor.disposal
           })
         }
         
@@ -179,8 +169,8 @@ const ComparisonPage: React.FC = () => {
             const factor = factorsData.find((f: any) => f.name === comp.reagentName)
             if (!factor) return
             const mass = comp.volume * factor.density
-            totalR += calculateNormalized(mass, factor.regeneration || 0)
-            totalD += calculateNormalized(mass, factor.disposal)
+            weightedSumR += mass * (factor.regeneration || 0)
+            weightedSumD += mass * factor.disposal
           })
         }
         
@@ -191,10 +181,14 @@ const ComparisonPage: React.FC = () => {
             const factor = factorsData.find((f: any) => f.name === comp.reagentName)
             if (!factor) return
             const mass = comp.volume * factor.density
-            totalR += calculateNormalized(mass, factor.regeneration || 0)
-            totalD += calculateNormalized(mass, factor.disposal)
+            weightedSumR += mass * (factor.regeneration || 0)
+            weightedSumD += mass * factor.disposal
           })
         }
+        
+        // 对总和进行归一化 - 使用新公式
+        const totalR = weightedSumR > 0 ? Math.min(100, 33.3 * Math.log10(1 + weightedSumR)) : 0
+        const totalD = weightedSumD > 0 ? Math.min(100, 33.3 * Math.log10(1 + weightedSumD)) : 0
         
         const totalScore = scoreResults.final?.score3 || 0
         const color = getColorHex(totalScore)
@@ -822,7 +816,7 @@ const ComparisonPage: React.FC = () => {
                     <RadarChart data={scaledRadarData}>
                       <PolarGrid />
                       <PolarAngleAxis dataKey="subject" />
-                      <PolarRadiusAxis angle={30} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} />
                       {uniqueFiles.map((file, index) => (
                         <Radar
                           key={file.id}

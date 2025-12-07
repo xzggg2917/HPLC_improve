@@ -199,10 +199,14 @@ async def calculate_full_score(request: FullScoreRequest):
     try:
         # 🔥 首先打印接收到的原始数据
         print("\n" + "=" * 80)
-        print("🔍 后端接收到的P/R/D因子（原始值）:")
-        print(f"  p_factor = {request.p_factor} (类型: {type(request.p_factor)})")
-        print(f"  r_factor = {request.r_factor} (类型: {type(request.r_factor)})")
-        print(f"  d_factor = {request.d_factor} (类型: {type(request.d_factor)})")
+        print("🔍 后端接收到的P/R/D因子（分阶段）:")
+        print(f"  p_factor = {request.p_factor}")
+        print(f"  仪器分析阶段:")
+        print(f"    instrument_r_factor = {request.instrument_r_factor}")
+        print(f"    instrument_d_factor = {request.instrument_d_factor}")
+        print(f"  前处理阶段:")
+        print(f"    pretreatment_r_factor = {request.pretreatment_r_factor}")
+        print(f"    pretreatment_d_factor = {request.pretreatment_d_factor}")
         print("=" * 80 + "\n")
         
         # 转换Pydantic模型为字典
@@ -224,9 +228,12 @@ async def calculate_full_score(request: FullScoreRequest):
         print("\n" + "=" * 80)
         print("🔍 后端接收到的数据：")
         print(f"📊 P因子 (能耗): {request.p_factor}")
-        print(f"📊 R因子 (可回收性, 0-1制): {request.r_factor}")
-        print(f"📊 D因子 (可降解性, 0-1制): {request.d_factor}")
-        print(f"📊 色谱类型: {request.chromatography_type}")
+        print(f"📊 仪器分析阶段 R/D因子:")
+        print(f"   R因子 (可回收性): {request.instrument_r_factor}")
+        print(f"   D因子 (可降解性): {request.instrument_d_factor}")
+        print(f"📊 前处理阶段 R/D因子:")
+        print(f"   R因子 (可回收性): {request.pretreatment_r_factor}")
+        print(f"   D因子 (可降解性): {request.pretreatment_d_factor}")
         print("📋 仪器分析试剂:")
         for reagent, factors in inst_factor_matrix.items():
             print(f"  {reagent}: S1={factors.get('S1'):.3f}, S2={factors.get('S2'):.3f}, S3={factors.get('S3'):.3f}, S4={factors.get('S4'):.3f}")
@@ -250,13 +257,12 @@ async def calculate_full_score(request: FullScoreRequest):
             prep_densities=prep_data.densities,
             prep_factor_matrix=prep_factor_matrix,
             
-            # P/R/D因子
+            # P/R/D因子（分阶段）
             p_factor=request.p_factor,
-            r_factor=request.r_factor,
-            d_factor=request.d_factor,
-            
-            # 色谱类型（新增）
-            chromatography_type=request.chromatography_type,
+            instrument_r_factor=request.instrument_r_factor,
+            instrument_d_factor=request.instrument_d_factor,
+            pretreatment_r_factor=request.pretreatment_r_factor,
+            pretreatment_d_factor=request.pretreatment_d_factor,
             
             # 权重方案
             safety_scheme=request.safety_scheme,

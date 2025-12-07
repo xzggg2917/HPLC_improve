@@ -25,10 +25,10 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
       chartInstance.current = echarts.init(chartRef.current)
     }
 
-    // 计算最大值用于设置坐标轴范围
+    // 使用固定的百分制范围（0-100）
     const values = [scores.S, scores.H, scores.E, scores.R, scores.D, scores.P]
     const maxValue = Math.max(...values)
-    const axisMax = maxValue > 0 ? Math.ceil(maxValue * 1.15) : 100 // 留15%余量
+    const axisMax = 100 // 固定为百分制最大值
 
     const option: echarts.EChartsOption = {
       polar: {

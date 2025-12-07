@@ -114,11 +114,12 @@ class FullScoreRequest(BaseModel):
     instrument: InstrumentAnalysisData = Field(..., description="仪器分析数据")
     preparation: PreparationData = Field(..., description="样品前处理数据")
     p_factor: float = Field(..., ge=0, description="P因子-能耗(0-100)")
-    r_factor: float = Field(..., ge=0, description="R因子-可回收性(0-100)")
-    d_factor: float = Field(..., ge=0, description="D因子-可降解性(0-100)")
     
-    # 色谱类型选择（新增）
-    chromatography_type: str = Field("HPLC_UV", description="色谱类型(UPCC/UPLC/HPLC_MS/HPLC_UV/Semi_prep)")
+    # R/D因子分阶段
+    instrument_r_factor: float = Field(..., ge=0, description="仪器分析阶段R因子(0-100)")
+    instrument_d_factor: float = Field(..., ge=0, description="仪器分析阶段D因子(0-100)")
+    pretreatment_r_factor: float = Field(..., ge=0, description="前处理阶段R因子(0-100)")
+    pretreatment_d_factor: float = Field(..., ge=0, description="前处理阶段D因子(0-100)")
     
     # 权重方案选择
     safety_scheme: str = Field("PBT_Balanced", description="安全因子权重方案")

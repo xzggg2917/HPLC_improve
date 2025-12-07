@@ -31,6 +31,11 @@ const PREDEFINED_REAGENTS: ReagentFactor[] = [
 
 const FACTORS_DATA_VERSION = 5 // Increment this when PREDEFINED_REAGENTS changes
 
+// 自动按首字母排序函数
+const sortReagentsByName = (reagents: ReagentFactor[]): ReagentFactor[] => {
+  return [...reagents].sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
+}
+
 const FactorsPage: React.FC = () => {
   const { data, updateFactorsData, setIsDirty } = useAppContext()
   
@@ -76,9 +81,10 @@ const FactorsPage: React.FC = () => {
     if (data.factors.length > 0) {
       // 同步读取版本号（初始化时从localStorage读取）
       const storedVersion = localStorage.getItem('hplc_factors_version')
-      return checkAndUpdateFactorsData(data.factors, storedVersion)
+      const updatedData = checkAndUpdateFactorsData(data.factors, storedVersion)
+      return sortReagentsByName(updatedData)
     }
-    return [...PREDEFINED_REAGENTS]
+    return sortReagentsByName([...PREDEFINED_REAGENTS])
   })
   const [editSnapshot, setEditSnapshot] = useState<ReagentFactor[]>([]) // 保存进入Edit模式时的快照
   const [isEditing, setIsEditing] = useState<boolean>(false)
@@ -104,7 +110,7 @@ const FactorsPage: React.FC = () => {
         // 只在第一次遇到空数据时使用预定义数据
         hasInitialized.current = true
         console.log('🔄 FactorsPage: 检测到空数据，使用预定义试剂列表')
-        const updatedReagents = [...PREDEFINED_REAGENTS]
+        const updatedReagents = sortReagentsByName([...PREDEFINED_REAGENTS])
         setReagents(updatedReagents)
         // 立即同步到Context，避免其他页面读取到空数据
         updateFactorsData(updatedReagents)
@@ -121,7 +127,7 @@ const FactorsPage: React.FC = () => {
         const storedVersion = await StorageHelper.getJSON<string>(STORAGE_KEYS.FACTORS_VERSION)
         const updatedReagents = checkAndUpdateFactorsData(data.factors, storedVersion)
         console.log('🔄 FactorsPage: 立即同步Context数据')
-        setReagents(updatedReagents)
+        setReagents(sortReagentsByName(updatedReagents))
         
         // If data was updated, sync back
         if (JSON.stringify(updatedReagents) !== JSON.stringify(data.factors)) {
@@ -215,7 +221,7 @@ const FactorsPage: React.FC = () => {
         envScore: newReagent.envScore
       }
     }
-    const updatedReagents = [...reagents, reagentWithOriginal]
+    const updatedReagents = sortReagentsByName([...reagents, reagentWithOriginal])
     setReagents(updatedReagents)
     
     // 🔥 立即保存到文件和Context，确保数据持久化
@@ -244,7 +250,7 @@ const FactorsPage: React.FC = () => {
       return
     }
     if (window.confirm(`确定要删除试剂 "${reagentToDelete?.name}" 吗？`)) {
-      const updatedReagents = reagents.filter(r => r.id !== id)
+      const updatedReagents = sortReagentsByName(reagents.filter(r => r.id !== id))
       setReagents(updatedReagents)
       
       // 🔥 立即保存到文件和Context
@@ -259,9 +265,38 @@ const FactorsPage: React.FC = () => {
 
   // Update reagent data
   const updateReagent = (id: string, field: keyof ReagentFactor, value: string | number) => {
-    setReagents(reagents.map(r => 
-      r.id === id ? { ...r, [field]: value } : r
-    ))
+    setReagents(reagents.map(r => {
+      if (r.id !== id) return r
+      
+      // 更新指定字段
+      const updatedReagent = { ...r, [field]: value }
+      
+      // 🔥 自动重新计算 S、H、E 分数
+      // Safety Score (S) = Release Potential + Fire/Explos + React/Decom + Acute Toxicity
+      updatedReagent.safetyScore = Number((
+        (updatedReagent.releasePotential || 0) +
+        (updatedReagent.fireExplos || 0) +
+        (updatedReagent.reactDecom || 0) +
+        (updatedReagent.acuteToxicity || 0)
+      ).toFixed(3))
+      
+      // Health Score (H) = Irritation + Chronic Toxicity
+      updatedReagent.healthScore = Number((
+        (updatedReagent.irritation || 0) +
+        (updatedReagent.chronicToxicity || 0)
+      ).toFixed(3))
+      
+      // Environment Score (E) = Persistency + Air Hazard + Water Hazard
+      updatedReagent.envScore = Number((
+        (updatedReagent.persistency || 0) +
+        (updatedReagent.airHazard || 0) +
+        (updatedReagent.waterHazard || 0)
+      ).toFixed(3))
+      
+      console.log(`✅ updateReagent: ${updatedReagent.name} 更新后 S=${updatedReagent.safetyScore}, H=${updatedReagent.healthScore}, E=${updatedReagent.envScore}`)
+      
+      return updatedReagent
+    }))
   }
 
   // Toggle edit mode
@@ -374,7 +409,7 @@ const FactorsPage: React.FC = () => {
       })
       
       // 合并预定义试剂和恢复后的自定义试剂
-      const resetData = [...PREDEFINED_REAGENTS, ...resetCustomReagents]
+      const resetData = sortReagentsByName([...PREDEFINED_REAGENTS, ...resetCustomReagents])
       setReagents(resetData)
       
       // 🔥 立即保存到文件和Context
