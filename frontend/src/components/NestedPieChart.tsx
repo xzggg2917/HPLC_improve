@@ -32,68 +32,112 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
 
     const chart = echarts.init(chartRef.current)
 
-    // 过滤掉值为0的数据
+    // 定义大因子权重（使用 Balanced 方案作为默认）
+    // 前处理阶段：5因子各20%；仪器阶段：6因子，P占25%，其他各15%
+    const getMainFactorWeights = () => {
+      if (mainFactors.P === 0) {
+        // 前处理阶段（无P）
+        return { S: 0.20, H: 0.20, E: 0.20, R: 0.20, D: 0.20, P: 0 }
+      } else {
+        // 仪器分析阶段（含P）
+        return { S: 0.15, H: 0.15, E: 0.15, R: 0.15, D: 0.15, P: 0.25 }
+      }
+    }
+
+    // 定义小因子权重（均衡方案）
+    const subFactorWeights = {
+      releasePotential: 0.25,    // S1
+      fireExplos: 0.25,          // S2
+      reactDecom: 0.25,          // S3
+      acuteToxicity: 0.25,       // S4
+      chronicToxicity: 0.50,     // H1
+      irritation: 0.50,          // H2
+      persistency: 0.334,        // E1
+      airHazard: 0.333,          // E2
+      waterHazard: 0.333         // E3
+    }
+
+    const weights = getMainFactorWeights()
+
+    // 使用权重作为占比，保留原始分数用于显示
     const mainFactorData = [
-      { value: Number(mainFactors.S.toFixed(2)), name: 'S', itemStyle: { color: getColorHex(mainFactors.S) } },
-      { value: Number(mainFactors.H.toFixed(2)), name: 'H', itemStyle: { color: getColorHex(mainFactors.H) } },
-      { value: Number(mainFactors.E.toFixed(2)), name: 'E', itemStyle: { color: getColorHex(mainFactors.E) } },
-      { value: Number(mainFactors.R.toFixed(2)), name: 'R', itemStyle: { color: getColorHex(mainFactors.R) } },
-      { value: Number(mainFactors.D.toFixed(2)), name: 'D', itemStyle: { color: getColorHex(mainFactors.D) } },
-      { value: Number(mainFactors.P.toFixed(2)), name: 'P', itemStyle: { color: getColorHex(mainFactors.P) } }
+      { value: weights.S * 100, originalValue: mainFactors.S, name: 'S', itemStyle: { color: getColorHex(mainFactors.S) } },
+      { value: weights.H * 100, originalValue: mainFactors.H, name: 'H', itemStyle: { color: getColorHex(mainFactors.H) } },
+      { value: weights.E * 100, originalValue: mainFactors.E, name: 'E', itemStyle: { color: getColorHex(mainFactors.E) } },
+      { value: weights.R * 100, originalValue: mainFactors.R, name: 'R', itemStyle: { color: getColorHex(mainFactors.R) } },
+      { value: weights.D * 100, originalValue: mainFactors.D, name: 'D', itemStyle: { color: getColorHex(mainFactors.D) } },
+      { value: weights.P * 100, originalValue: mainFactors.P, name: 'P', itemStyle: { color: getColorHex(mainFactors.P) } }
     ].filter(item => item.value > 0)
 
     const subFactorData = [
       { 
-        value: Number(subFactors.releasePotential.toFixed(2)), 
+        value: subFactorWeights.releasePotential * 100,
+        originalValue: subFactors.releasePotential,
         name: 'Release potential',
         itemStyle: { color: getColorHex(subFactors.releasePotential) }
       },
       { 
-        value: Number(subFactors.fireExplos.toFixed(2)), 
+        value: subFactorWeights.fireExplos * 100,
+        originalValue: subFactors.fireExplos,
         name: 'Fire/Explos.',
         itemStyle: { color: getColorHex(subFactors.fireExplos) }
       },
       { 
-        value: Number(subFactors.reactDecom.toFixed(2)), 
+        value: subFactorWeights.reactDecom * 100,
+        originalValue: subFactors.reactDecom,
         name: 'React./Decom.',
         itemStyle: { color: getColorHex(subFactors.reactDecom) }
       },
       { 
-        value: Number(subFactors.acuteToxicity.toFixed(2)), 
+        value: subFactorWeights.acuteToxicity * 100,
+        originalValue: subFactors.acuteToxicity,
         name: 'Acute toxicity',
         itemStyle: { color: getColorHex(subFactors.acuteToxicity) }
       },
       { 
-        value: Number(subFactors.irritation.toFixed(2)), 
+        value: subFactorWeights.irritation * 100,
+        originalValue: subFactors.irritation,
         name: 'Irritation',
         itemStyle: { color: getColorHex(subFactors.irritation) }
       },
       { 
-        value: Number(subFactors.chronicToxicity.toFixed(2)), 
+        value: subFactorWeights.chronicToxicity * 100,
+        originalValue: subFactors.chronicToxicity,
         name: 'Chronic toxicity',
         itemStyle: { color: getColorHex(subFactors.chronicToxicity) }
       },
       { 
-        value: Number(subFactors.persistency.toFixed(2)), 
+        value: subFactorWeights.persistency * 100,
+        originalValue: subFactors.persistency,
         name: 'Persis-tency',
         itemStyle: { color: getColorHex(subFactors.persistency) }
       },
       { 
-        value: Number(subFactors.airHazard.toFixed(2)), 
+        value: subFactorWeights.airHazard * 100,
+        originalValue: subFactors.airHazard,
         name: 'Air Hazard',
         itemStyle: { color: getColorHex(subFactors.airHazard) }
       },
       { 
-        value: Number(subFactors.waterHazard.toFixed(2)), 
+        value: subFactorWeights.waterHazard * 100,
+        originalValue: subFactors.waterHazard,
         name: 'Water Hazard',
         itemStyle: { color: getColorHex(subFactors.waterHazard) }
       }
-    ].filter(item => item.value > 0)
+    ].filter(item => item.originalValue > 0)
 
     const option = {
       tooltip: {
         trigger: 'item',
-        formatter: '{b}: {c} ({d}%)'
+        formatter: (params: any) => {
+          // 显示实际评分值和权重占比
+          const originalValue = params.data.originalValue
+          const weight = params.percent
+          if (originalValue !== undefined) {
+            return `${params.name}<br/>Score: ${originalValue.toFixed(2)}<br/>Weight: ${weight.toFixed(1)}%`
+          }
+          return `${params.name}: ${params.value.toFixed(2)} (${weight.toFixed(1)}%)`
+        }
       },
       legend: {
         show: false
@@ -204,7 +248,11 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
           },
           label: {
             formatter: (params: any) => {
-              return `{name|${params.name}}\n{value|${params.value}} {percent|(${params.percent}%)}`
+              const originalValue = params.data.originalValue
+              if (originalValue !== undefined) {
+                return `{name|${params.name}}\n{value|${originalValue.toFixed(2)}} {percent|(${params.percent.toFixed(2)}%)}`
+              }
+              return `{name|${params.name}}\n{value|${params.value.toFixed(2)}} {percent|(${params.percent.toFixed(2)}%)}`
             },
             rich: {
               name: {

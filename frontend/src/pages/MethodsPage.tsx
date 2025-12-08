@@ -190,6 +190,15 @@ const MethodsPage: React.FC = () => {
         loadScoreResults() // 同时重新加载评分结果
       }, 100)
       
+      // 🔄 自动重新计算评分（因为全局试剂库可能已更新）
+      setTimeout(() => {
+        console.log('🎯 MethodsPage: 自动重新计算评分（静默模式）')
+        calculateFullScoreAPI({ silent: true }).catch(err => {
+          console.warn('⚠️ 自动重新计算评分失败:', err)
+          // 静默失败，不显示错误提示
+        })
+      }, 800) // 延迟执行，等待数据加载完成
+      
       console.log('🔄 MethodsPage: 已强制刷新页面数据')
     }
     
@@ -794,20 +803,21 @@ const MethodsPage: React.FC = () => {
   }
 
   // 计算完整评分（调用后端API）
-  const calculateFullScoreAPI = async () => {
+  const calculateFullScoreAPI = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent || false
     setIsCalculatingScore(true)
     try {
       // 1. 获取梯度数据
       const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
       if (!gradientData) {
-        message.error('请先在 HPLC Gradient 页面配置梯度程序')
+        if (!silent) message.error('请先在 HPLC Gradient 页面配置梯度程序')
         return
       }
       
       // 2. 获取因子数据
       const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
       if (!factors) {
-        message.error('请先在 Factors 页面配置试剂因子')
+        if (!silent) message.error('请先在 Factors 页面配置试剂因子')
         return
       }
       
@@ -1064,7 +1074,7 @@ const MethodsPage: React.FC = () => {
       )
       
       if (hasInvalidData) {
-        message.error('数据验证失败：检测到无效数值，请检查梯度和试剂配置')
+        if (!silent) message.error('数据验证失败：检测到无效数值，请检查梯度和试剂配置')
         console.error('❌ 数据验证失败，请求数据:', requestData)
         return
       }
@@ -1074,7 +1084,7 @@ const MethodsPage: React.FC = () => {
       
       if (response.data.success) {
         setScoreResults(response.data.data)
-        message.success('评分计算成功！')
+        if (!silent) message.success('评分计算成功！')
         
         // 详细日志输出
         console.log('✅ 评分计算成功！完整结果:', response.data.data)
@@ -1089,7 +1099,7 @@ const MethodsPage: React.FC = () => {
         // 触发GraphPage更新
         window.dispatchEvent(new CustomEvent('scoreDataUpdated'))
       } else {
-        message.error('评分计算失败: ' + response.data.message)
+        if (!silent) message.error('评分计算失败: ' + response.data.message)
       }
     } catch (error: any) {
       console.error('评分计算错误:', error)
@@ -1113,7 +1123,7 @@ const MethodsPage: React.FC = () => {
         errorMessage += ': ' + error.message
       }
       
-      message.error(errorMessage, 8) // 显示8秒
+      if (!silent) message.error(errorMessage, 8) // 显示8秒
     } finally {
       setIsCalculatingScore(false)
     }

@@ -16,6 +16,9 @@ import HomePage from './pages/HomePage'
 import MethodsPage from './pages/MethodsPage'
 import FactorsPage from './pages/FactorsPage'
 import GraphPage from './pages/GraphPage'
+import PretreatmentAnalysisPage from './pages/PretreatmentAnalysisPage'
+import InstrumentAnalysisPage from './pages/InstrumentAnalysisPage'
+import MethodEvaluationPage from './pages/MethodEvaluationPage'
 import TablePage from './pages/TablePage'
 import AboutPage from './pages/AboutPage'
 import HPLCGradientPage from './pages/HPLCGradientPage'
@@ -94,7 +97,7 @@ const AppContent: React.FC = () => {
   // 路由守卫：如果没有打开文件，禁止访问操作页面
   useEffect(() => {
     // Pages requiring a file to be opened
-    const protectedPaths = ['/methods', '/factors', '/graph', '/table', '/hplc-gradient']
+    const protectedPaths = ['/methods', '/factors', '/graph', '/graph/pretreatment', '/graph/instrument', '/graph/evaluation', '/table', '/hplc-gradient']
     
     // If currently on a protected path but no file is open, redirect to home page
     if (!currentFilePath && protectedPaths.includes(location.pathname)) {
@@ -531,9 +534,25 @@ const AppContent: React.FC = () => {
       disabled: !currentFilePath, // 没有打开文件时禁用
       children: [
         {
-          key: '/graph',
-          label: <Link to="/graph">Graph</Link>,
-          disabled: !currentFilePath,
+          key: 'graph-submenu',
+          label: 'Graph',
+          children: [
+            {
+              key: '/graph/pretreatment',
+              label: <Link to="/graph/pretreatment">Pretreatment Analysis</Link>,
+              disabled: !currentFilePath,
+            },
+            {
+              key: '/graph/instrument',
+              label: <Link to="/graph/instrument">Instrument Analysis</Link>,
+              disabled: !currentFilePath,
+            },
+            {
+              key: '/graph/evaluation',
+              label: <Link to="/graph/evaluation">Method Evaluation</Link>,
+              disabled: !currentFilePath,
+            },
+          ],
         },
         {
           key: '/table',
@@ -715,6 +734,9 @@ const AppContent: React.FC = () => {
                 <Route path="/methods" element={<MethodsPage />} />
                 <Route path="/factors" element={<FactorsPage />} />
                 <Route path="/graph" element={<GraphPage />} />
+                <Route path="/graph/pretreatment" element={<PretreatmentAnalysisPage />} />
+                <Route path="/graph/instrument" element={<InstrumentAnalysisPage />} />
+                <Route path="/graph/evaluation" element={<MethodEvaluationPage />} />
                 <Route path="/table" element={<TablePage />} />
                 <Route path="/comparison" element={<ComparisonPage />} />
                 <Route path="/about" element={<AboutPage />} />
