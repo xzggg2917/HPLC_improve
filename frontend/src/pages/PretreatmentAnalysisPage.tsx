@@ -178,10 +178,10 @@ const PretreatmentAnalysisPage: React.FC = () => {
   if (!hasData) {
     return (
       <div style={{ padding: '24px' }}>
-        <Title level={2}>样品前处理绿色度分析</Title>
+        <Title level={2}>Sample Pretreatment Green Chemistry Analysis</Title>
         <Alert
-          message="暂无数据"
-          description="请在 Methods 页面完成配置并点击 Calculate 按钮进行评分计算"
+          message="No Data Available"
+          description="Please complete the configuration on the Methods page and click the Calculate button to perform scoring"
           type="info"
           showIcon
           style={{ marginTop: 24 }}
@@ -192,9 +192,9 @@ const PretreatmentAnalysisPage: React.FC = () => {
 
   return (
     <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
-      <Title level={2}>样品前处理绿色度分析 (Sample Pretreatment)</Title>
+      <Title level={2}>Sample Pretreatment Green Chemistry Analysis</Title>
       
-      {/* 总分卡片 */}
+      {/* Total Score Card */}
       <Card style={{ marginBottom: 24 }}>
         <div style={{ 
           padding: '24px', 
@@ -205,7 +205,7 @@ const PretreatmentAnalysisPage: React.FC = () => {
           boxShadow: `0 4px 16px ${getColorRGBA(score2, 0.3)}`
         }}>
           <div style={{ fontSize: 16, opacity: 0.95, marginBottom: 8 }}>
-            样品前处理阶段绿色度评分 (Score₂)
+            Sample Pretreatment Stage Green Chemistry Score (Score₂)
           </div>
           <div style={{ fontSize: 52, fontWeight: 'bold', marginBottom: 12 }}>
             {score2.toFixed(2)}

@@ -16,18 +16,18 @@ interface AddReagentModalProps {
 const RP_STEP1_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 溶解气体或高挥发性液体',
-    description: '本质是气体溶于水，或极易挥发的液体'
+    label: 'A. Dissolved Gas or Highly Volatile Liquid',
+    description: 'Gas dissolved in water or extremely volatile liquid'
   },
   { 
     value: 'B', 
-    label: 'B. 固体无机盐或高沸点物质',
-    description: '常温下为固体(离子化合物)，或沸点极高(>200°C)的难挥发液体'
+    label: 'B. Solid Inorganic Salt or High Boiling Point Substance',
+    description: 'Solid at room temperature (ionic compound), or non-volatile liquid with very high boiling point (>200°C)'
   },
   { 
     value: 'C', 
-    label: 'C. 挥发性有机/无机液体',
-    description: '沸点在30°C ~ 200°C之间的液体'
+    label: 'C. Volatile Organic/Inorganic Liquid',
+    description: 'Liquid with boiling point between 30°C and 200°C'
   }
 ]
 
@@ -35,26 +35,26 @@ const RP_STEP1_OPTIONS = [
 const RP_STEP3_OPTIONS = [
   { 
     value: -0.045, 
-    label: 'A. 醇类 (Alcohols)',
-    description: '分子中含有羟基(-OH)，且能形成氢键',
+    label: 'A. Alcohols',
+    description: 'Molecule contains hydroxyl group (-OH) and can form hydrogen bonds',
     correction: -0.045
   },
   { 
     value: 0.015, 
-    label: 'B. 醚类 (Ethers)',
-    description: '分子中含有醚键(-O-)',
+    label: 'B. Ethers',
+    description: 'Molecule contains ether bond (-O-)',
     correction: 0.015
   },
   { 
     value: 0.075, 
-    label: 'C. 高度支链化烷烃 (Branched Alkanes)',
-    description: '烷烃且名称中带有"异(iso-)"、"叔(Tert-)"或结构高度分叉',
+    label: 'C. Highly Branched Alkanes',
+    description: 'Alkanes with "iso-" or "Tert-" in name or highly branched structure',
     correction: 0.075
   },
   { 
     value: 0, 
-    label: 'D. 标准溶剂 (Standard)',
-    description: '上述三类以外的其他挥发性液体',
+    label: 'D. Standard Solvents',
+    description: 'Other volatile liquids not in the above three categories',
     correction: 0
   }
 ]
@@ -63,21 +63,21 @@ const RP_STEP3_OPTIONS = [
 const FE_STEP1_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 完全惰性的无机物质',
-    description: '本质上不可燃、不助燃、不氧化',
+    label: 'A. Completely Inert Inorganic Substance',
+    description: 'Essentially non-flammable, non-oxidizing',
     result: 0.000
   },
   { 
     value: 'B', 
-    label: 'B. 常见无机固体盐类',
-    description: '非氧化性的常规盐类',
+    label: 'B. Common Inorganic Solid Salt',
+    description: 'Non-oxidizing regular salt',
     result: 0.000,
-    note: '注意：如果是氧化剂，请选择C'
+    note: 'Note: If oxidizer, select C'
   },
   { 
     value: 'C', 
-    label: 'C. 有机物质（溶剂、试剂）或 可能具有氧化性的无机物',
-    description: '需要进一步评估其氧化性和易燃性',
+    label: 'C. Organic Substance (Solvent, Reagent) or Potentially Oxidizing Inorganic',
+    description: 'Requires further assessment of oxidizing and flammability properties',
     continueToStep2: true
   }
 ]
@@ -87,25 +87,25 @@ const FE_STEP2_OPTIONS = [
   { 
     value: 'A', 
     label: 'A. R7 (May cause fire)',
-    description: '可能引发火灾',
+    description: 'May cause fire',
     result: 1.000
   },
   { 
     value: 'B', 
     label: 'B. R8 (Contact with combustible material may cause fire)',
-    description: '与可燃物质接触可能引发火灾',
+    description: 'Contact with combustible material may cause fire',
     result: 1.000
   },
   { 
     value: 'C', 
     label: 'C. R9 (Explosive when mixed with combustible material)',
-    description: '与可燃物质混合时具有爆炸性',
+    description: 'Explosive when mixed with combustible material',
     result: 1.000
   },
   { 
     value: 'D', 
-    label: 'D. 以上都没有',
-    description: '不具有显著氧化性风险',
+    label: 'D. None of the above',
+    description: 'No significant oxidizing risk',
     continueToStep3: true
   }
 ]
@@ -114,26 +114,26 @@ const FE_STEP2_OPTIONS = [
 const FE_STEP3_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 闪点 < 21°C，或者 R-codes 包含 R11 (Highly Flammable)',
-    description: '高度易燃',
+    label: 'A. Flash point < 21°C, or R-codes contain R11 (Highly Flammable)',
+    description: 'Highly Flammable',
     result: 1.000
   },
   { 
     value: 'B', 
-    label: 'B. 闪点在 21°C ~ 60°C 之间，或者 R-codes 包含 R10 (Flammable)',
-    description: '可燃',
+    label: 'B. Flash point 21°C ~ 60°C, or R-codes contain R10 (Flammable)',
+    description: 'Flammable',
     result: 0.500
   },
   { 
     value: 'C', 
-    label: 'C. 闪点 > 60°C，或者被标记为"不易燃"',
-    description: '低风险',
+    label: 'C. Flash point > 60°C, or marked as "non-flammable"',
+    description: 'Low Risk',
     result: 0.000
   },
   { 
     value: 'D', 
-    label: 'D. 无闪点',
-    description: '例如二氯甲烷、三氯乙酸，且未被标记为 R11',
+    label: 'D. No flash point',
+    description: 'E.g., dichloromethane, trichloroacetic acid, not marked as R11',
     result: 0.000
   }
 ]
@@ -142,15 +142,15 @@ const FE_STEP3_OPTIONS = [
 const RD_STEP1_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 纯物质（纯溶剂、固体盐、浓酸/浓碱）',
-    description: '需要进一步评估其反应性',
+    label: 'A. Pure Substance (Pure solvent, solid salt, concentrated acid/base)',
+    description: 'Requires further assessment of reactivity',
     continueToStep2: true
   },
   { 
     value: 'B', 
-    label: 'B. 稀释的水溶液',
-    description: '低浓度磷酸盐缓冲液、<5%的稀酸/稀碱调节剂',
-    note: '提示：根据 HPLC-EAT 规则，如果是以水为主的稀缓冲液（非强氧化性），通常忽略其贡献',
+    label: 'B. Diluted Aqueous Solution',
+    description: 'Low concentration phosphate buffer, <5% dilute acid/base modifier',
+    note: 'Note: According to HPLC-EAT rules, water-based dilute buffer (non-strong oxidizing) usually ignored',
     result: 0.000
   }
 ]
@@ -159,23 +159,23 @@ const RD_STEP1_OPTIONS = [
 const RD_STEP3_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 白色菱形标记有 "W" (Water Reactive / 遇水反应)',
-    description: '该物质与水接触会发生危险反应'
+    label: 'A. White diamond marked "W" (Water Reactive)',
+    description: 'Substance reacts dangerously with water'
   },
   { 
     value: 'B', 
-    label: 'B. 白色菱形标记有 "OX" (Oxidizer / 强氧化剂)',
-    description: '该物质是强氧化剂'
+    label: 'B. White diamond marked "OX" (Oxidizer)',
+    description: 'Substance is a strong oxidizer'
   },
   { 
     value: 'C', 
-    label: 'C. 该物质已知是高浓度强酸（如96%硫酸）或强碱，且具有强腐蚀性',
-    description: '对应 R35/H314 等腐蚀性标识'
+    label: 'C. Known to be high concentration strong acid (e.g., 96% sulfuric acid) or strong base with strong corrosivity',
+    description: 'Corresponds to R35/H314 corrosivity marking'
   },
   { 
     value: 'D', 
-    label: 'D. 以上皆无',
-    description: '不具有上述特殊风险'
+    label: 'D. None of the above',
+    description: 'Does not have the above special risks'
   }
 ]
 
@@ -183,14 +183,14 @@ const RD_STEP3_OPTIONS = [
 const RD_STEP4_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 是（包含不稳定基团）',
-    description: '分子中含有硝基、叠氮基、过氧键、重氮基、炔基等',
+    label: 'A. Yes (Contains unstable groups)',
+    description: 'Molecule contains nitro, azide, peroxide, diazo, alkyne, etc.',
     result: 0.600
   },
   { 
     value: 'B', 
-    label: 'B. 否（普通醇、酮、酯、烷烃、腈类等）',
-    description: '不含明显不稳定基团的常规有机溶剂',
+    label: 'B. No (Common alcohols, ketones, esters, alkanes, nitriles, etc.)',
+    description: 'Common organic solvents without obvious unstable groups',
     result: 0.000
   }
 ]
@@ -199,60 +199,60 @@ const RD_STEP4_OPTIONS = [
 const AT_PATH_OPTIONS = [
   { 
     value: 'A', 
-    label: '[路径 A] 常用 HPLC 有机溶剂或挥发性酸碱',
-    description: '液体、有明显的挥发性，能查到 IDLH (ppm) 数值'
+    label: '[Path A] Common HPLC Organic Solvents or Volatile Acids/Bases',
+    description: 'Liquid, with obvious volatility, IDLH (ppm) value available'
   },
   { 
     value: 'B', 
-    label: '[路径 B] HPLC 固体添加剂或无机盐',
-    description: '固体粉末、不挥发，通常没有 IDLH 值，但有 LD50 值'
+    label: '[Path B] HPLC Solid Additives or Inorganic Salts',
+    description: 'Solid powder, non-volatile, usually no IDLH value but has LD50 value'
   }
 ]
 
-// 常用 HPLC 溶剂的标准 IDLH 建议值
+// Standard IDLH recommended values for common HPLC solvents
 const COMMON_IDLH_VALUES = [
-  { name: '甲醇 (Methanol)', value: 6000 },
-  { name: '乙腈 (Acetonitrile)', value: 500, note: '注意：不要用 137' },
-  { name: '四氢呋喃 (THF)', value: 2000 },
-  { name: '丙酮 (Acetone)', value: 2500 },
-  { name: '乙醇 (Ethanol)', value: 3300 },
-  { name: '异丙醇 (IPA)', value: 2000 },
-  { name: '正己烷 (Hexane)', value: 1100 },
-  { name: '甲酸 (Formic Acid)', value: 30 },
-  { name: '氨气 (Ammonia)', value: 300, note: '用于氨水浓度' }
+  { name: 'Methanol', value: 6000 },
+  { name: 'Acetonitrile', value: 500, note: 'Note: Do not use 137' },
+  { name: 'Tetrahydrofuran (THF)', value: 2000 },
+  { name: 'Acetone', value: 2500 },
+  { name: 'Ethanol', value: 3300 },
+  { name: 'Isopropanol (IPA)', value: 2000 },
+  { name: 'n-Hexane', value: 1100 },
+  { name: 'Formic Acid', value: 30 },
+  { name: 'Ammonia', value: 300, note: 'For ammonia solution concentration' }
 ]
 
 // Irritation 问题1选项：严重腐蚀性
 const IRR_Q1_OPTIONS = [
-  { value: 'yes', label: '是 - 包含 R35 或 R34', result: 1.000 },
-  { value: 'no', label: '否 - 不包含上述代码', continueToQ2: true }
+  { value: 'yes', label: 'Yes - Contains R35 or R34', result: 1.000 },
+  { value: 'no', label: 'No - Does not contain the above codes', continueToQ2: true }
 ]
 
 // Irritation 问题2选项：明显刺激性
 const IRR_Q2_OPTIONS = [
-  { value: 'yes', label: '是 - 包含 R36/R37/R38/R41/R48 中的任一代码', result: 0.625 },
-  { value: 'ethanol', label: '特例：该物质是乙醇 (Ethanol)', result: 0.000, note: '直接填 0' },
-  { value: 'no', label: '否 - 不包含上述代码', continueToQ3: true }
+  { value: 'yes', label: 'Yes - Contains any of R36/R37/R38/R41/R48', result: 0.625 },
+  { value: 'ethanol', label: 'Special case: This substance is Ethanol', result: 0.000, note: 'Directly enter 0' },
+  { value: 'no', label: 'No - Does not contain the above codes', continueToQ3: true }
 ]
 
 // Irritation 问题3选项：pH判定
 const IRR_Q3_PH_RANGES = [
   { 
     value: 'strong', 
-    label: '强酸/强碱（pH < 2 或 pH > 11.5）', 
-    description: '强腐蚀性',
+    label: 'Strong acid/strong base (pH < 2 or pH > 11.5)', 
+    description: 'Strong corrosivity',
     result: 1.000 
   },
   { 
     value: 'moderate', 
-    label: '中强酸/中强碱（2 ≤ pH < 5 或 9 < pH ≤ 11.5）', 
-    description: '中等刺激性',
+    label: 'Moderately strong acid/base (2 ≤ pH < 5 or 9 < pH ≤ 11.5)', 
+    description: 'Moderate irritation',
     result: 0.625 
   },
   { 
     value: 'neutral', 
-    label: '中性/弱酸弱碱（5 ≤ pH ≤ 9）', 
-    description: '暂时计为 0，继续问题 4',
+    label: 'Neutral/weak acid weak base (5 ≤ pH ≤ 9)', 
+    description: 'Temporarily considered 0, continue to Question 4',
     continueToQ4: true 
   }
 ]
@@ -261,17 +261,17 @@ const IRR_Q3_PH_RANGES = [
 const IRR_Q4_CODES = [
   { 
     code: 'R40', 
-    label: 'R40（致癌可能性）', 
+    label: 'R40 (possible carcinogenicity)', 
     value: 0.236 
   },
   { 
     code: 'R20series', 
-    label: 'R20/21/22/23/24/25 系列（吸入/皮肤/吞咽有害或有毒）', 
+    label: 'R20/21/22/23/24/25 series (harmful or toxic by inhalation/skin/ingestion)', 
     value: 0.113 
   },
   { 
     code: 'R50series', 
-    label: 'R50/53（对水生环境有害）', 
+    label: 'R50/53 (harmful to aquatic environment)', 
     value: 0.110 
   }
 ]
@@ -280,14 +280,14 @@ const IRR_Q4_CODES = [
 const CT_Q1_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 固体 (Solid) 或 难挥发的盐类粉末',
-    description: '系数 K = 0.2',
+    label: 'A. Solid or Low-volatility Salt Powder',
+    description: 'Coefficient K = 0.2',
     factor: 0.2
   },
   { 
     value: 'B', 
-    label: 'B. 液体 (Liquid) 或 气体 (Gas)',
-    description: '系数 K = 1.0',
+    label: 'B. Liquid or Gas',
+    description: 'Coefficient K = 1.0',
     factor: 1.0
   }
 ]
@@ -296,20 +296,20 @@ const CT_Q1_OPTIONS = [
 const CT_Q2_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 强腐蚀性：R35 或 Skin Corr. 1A / H314（引起严重皮肤灼伤和眼损伤）',
-    description: '常见于：浓硫酸、发烟硝酸、纯甲酸、三氯乙酸 TFA',
+    label: 'A. Highly Corrosive: R35 or Skin Corr. 1A / H314 (causes severe skin burns and eye damage)',
+    description: 'Common: conc. sulfuric acid, fuming nitric acid, pure formic acid, TFA',
     result: 1.000
   },
   { 
     value: 'B', 
-    label: 'B. 致癌/致突变性：R45, R46, R49 或 H350（可能致癌），且 IARC 分类为 1 或 2A/2B',
-    description: '常见于：氯仿、苯',
+    label: 'B. Carcinogenic/Mutagenic: R45, R46, R49 or H350 (may cause cancer), IARC classification 1 or 2A/2B',
+    description: 'Common: chloroform, benzene',
     result: 0.800
   },
   { 
     value: 'C', 
-    label: 'C. 以上都没有',
-    description: '继续下一步',
+    label: 'C. None of the above',
+    description: 'Continue to next step',
     continueToQ3: true
   }
 ]
@@ -318,161 +318,161 @@ const CT_Q2_OPTIONS = [
 const CT_Q3_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 简单的饱和烷烃 (Alkane)，且不含神经毒性',
-    description: '如异辛烷、正己烷，但不包括正己烷',
+    label: 'A. Simple Saturated Alkane, Non-neurotoxic',
+    description: 'E.g., isooctane, heptane (but not n-hexane)',
     result: 0.000
   },
   { 
     value: 'B', 
-    label: 'B. 无害的无机盐/缓冲盐',
-    description: '如磷酸二氢钠、氯化钠，且无特定职业暴露限值 (TLV)',
+    label: 'B. Harmless Inorganic/Buffer Salt',
+    description: 'E.g., sodium phosphate monobasic, NaCl, no TLV',
     result: 0.000
   },
   { 
     value: 'C', 
-    label: 'C. 不属于以上两类',
-    description: '是有机溶剂、有毒气体或有明确 TLV 的物质',
+    label: 'C. Neither of the above',
+    description: 'Organic solvent, toxic gas, or substance with defined TLV',
     continueToQ4: true
   }
 ]
 
 // Chronic Toxicity Q5选项：是否为醇类
 const CT_Q5_OPTIONS = [
-  { value: 'yes', label: 'A. 是 (Yes) - 是醇类且不是剧毒品', correction: 0.06 },
-  { value: 'no', label: 'B. 否 (No) - 不是醇类', correction: 0 }
+  { value: 'yes', label: 'A. Yes - Is alcohol and not highly toxic', correction: 0.06 },
+  { value: 'no', label: 'B. No - Not an alcohol', correction: 0 }
 ]
 
 // Persistency (持久性) 的决策树选项
 const PERSISTENCY_Q1_OPTIONS = [
   { 
     value: 'A', 
-    label: 'A. 无机强酸', 
-    description: '浓度 ≥ 90% 的强酸 (例如：96% 浓硫酸)',
+    label: 'A. Inorganic Strong Acid', 
+    description: 'Strong acid ≥ 90% conc. (e.g., 96% H₂SO₄)',
     result: 0.485
   },
   { 
     value: 'B', 
-    label: 'B. 其他无机物', 
-    description: '例如：氨水、磷酸二氢钾、碳酸铵、盐酸、氢氧化钠',
+    label: 'B. Other Inorganic Substances', 
+    description: 'E.g., ammonia aq., KH₂PO₄, ammonium carbonate, HCl, NaOH',
     result: 0.000
   },
   { 
     value: 'C', 
-    label: 'C. 有机物', 
-    description: '例如：甲醇、乙腈、异辛烷、甲酸、醋酸、卤代烃'
+    label: 'C. Organic Substances', 
+    description: 'E.g., methanol, acetonitrile, isooctane, formic acid, acetic acid, halogenated hydrocarbons'
   }
 ]
 
 const PERSISTENCY_Q3_OPTIONS = [
   {
     value: 'A',
-    label: 'A. 极快降解/低蓄积',
-    description: 'Biodeg. Half-Life < 4.5天，或者 BCF < 1.6',
+    label: 'A. Very Rapid Biodegradation/Low Accumulation',
+    description: 'Biodeg. Half-Life < 4.5 days, or BCF < 1.6',
     result: 0.000
   },
   {
     value: 'B',
-    label: 'B. 醇或类似性低蓄积',
-    description: 'ReadyBiodeg = 0，且 Atmos. Hydroxylation Rate > 1.3e-13',
+    label: 'B. Alcohol or Similar Low Accumulation',
+    description: 'ReadyBiodeg = 0, and Atmos. Hydroxylation Rate > 1.3e-13',
     result: 0.020
   },
   {
     value: 'C',
-    label: 'C. 特殊代谢物质',
-    description: 'Fish Biotrans. Half-Life < 0.17天',
+    label: 'C. Special Metabolized Substance',
+    description: 'Fish Biotrans. Half-Life < 0.17 days',
     result: 0.130
   },
   {
     value: 'D',
-    label: 'D. 以上都不满足',
-    description: '请继续进入第四阶段核心计算'
+    label: 'D. None of the above',
+    description: 'Please proceed to Stage 4 core calculation'
   }
 ]
 
 const PERSISTENCY_DATA_SOURCE_OPTIONS = [
-  { value: 'Experimental', label: 'Experimental (实验数据)' },
-  { value: 'Predicted', label: 'Predicted (预测数据)' }
+  { value: 'Experimental', label: 'Experimental (Experimental Data)' },
+  { value: 'Predicted', label: 'Predicted (Predicted Data)' }
 ]
 
 const PERSISTENCY_READY_BIODEG_OPTIONS = [
-  { value: 1, label: '1 (易降解)' },
-  { value: 0, label: '0 (难降解)' }
+  { value: 1, label: '1 (Readily Biodegradable)' },
+  { value: 0, label: '0 (Not Readily Biodegradable)' }
 ]
 
 const PERSISTENCY_CHEMICAL_TYPE_OPTIONS = [
   {
     value: '2a',
-    label: '2a. 卤代烃类',
-    description: '含氯/溴，且 BCF > 5.0'
+    label: '2a. Halogenated Hydrocarbons',
+    description: 'Contains Cl/Br, and BCF > 5.0'
   },
   {
     value: '2b',
-    label: '2b. 醚类 或 支链烷烃',
+    label: '2b. Ethers or Branched Alkanes',
     description: 'BCF < 5.0'
   }
 ]
 
 const PERSISTENCY_OPTIONS = [
-  { value: 0, label: '易降解 (0.0)', description: '< 7天完全降解' },
-  { value: 0.3, label: '可降解 (0.3)', description: '7-30天降解' },
-  { value: 0.6, label: '难降解 (0.6)', description: '30-180天降解' },
-  { value: 1, label: '持久性 (1.0)', description: '> 180天' }
+  { value: 0, label: 'Readily Biodegradable (0.0)', description: '< 7 days complete degradation' },
+  { value: 0.3, label: 'Biodegradable (0.3)', description: '7-30 days degradation' },
+  { value: 0.6, label: 'Persistent (0.6)', description: '30-180 days degradation' },
+  { value: 1, label: 'Very Persistent (1.0)', description: '> 180 days' }
 ]
 
 const AIR_HAZARD_OPTIONS = [
-  { value: 0, label: '低 (0.0)', description: '对大气无害' },
-  { value: 0.5, label: '中 (0.5)', description: 'VOCs/部分污染' },
-  { value: 1, label: '高 (1.0)', description: '严重空气污染' }
+  { value: 0, label: 'Low (0.0)', description: 'No harm to atmosphere' },
+  { value: 0.5, label: 'Medium (0.5)', description: 'VOCs/Partial pollution' },
+  { value: 1, label: 'High (1.0)', description: 'Severe air pollution' }
 ]
 
 const WATER_HAZARD_OPTIONS = [
-  { value: 0, label: '低 (0.0)', description: '水生毒性低' },
-  { value: 0.3, label: '中低 (0.3)', description: 'LC50 > 100 mg/L' },
-  { value: 0.6, label: '中高 (0.6)', description: 'LC50 10-100 mg/L' },
-  { value: 1, label: '高 (1.0)', description: 'LC50 < 10 mg/L' }
+  { value: 0, label: 'Low (0.0)', description: 'Low aquatic toxicity' },
+  { value: 0.3, label: 'Low-Medium (0.3)', description: 'LC50 > 100 mg/L' },
+  { value: 0.6, label: 'Medium-High (0.6)', description: 'LC50 10-100 mg/L' },
+  { value: 1, label: 'High (1.0)', description: 'LC50 < 10 mg/L' }
 ]
 
 // Water Hazard (水体危害) 的决策树选项
 const WH_Q1_OPTIONS = [
   {
     value: 'A',
-    label: 'A. 强腐蚀性无机酸/碱',
-    description: '具有强腐蚀性、迅速改变水体pH值的无机物',
-    note: '注意：磷酸、甲酸、乙酸属于弱酸，不选此项',
+    label: 'A. Strongly Corrosive Inorganic Acid/Base',
+    description: 'Strongly corrosive inorganic that rapidly changes water pH',
+    note: 'Note: phosphoric acid, formic acid, acetic acid are weak acids, do not select',
     result: 0.500
   },
   {
     value: 'B',
-    label: 'B. 普通无机盐/缓冲盐',
-    description: '用于调节离子强度或弱酸碱性盐类',
+    label: 'B. Common Inorganic/Buffer Salt',
+    description: 'For adjusting ionic strength or weak acid/base salts',
     result: 0.000
   },
   {
     value: 'C',
-    label: 'C. 有机溶剂/有机添加剂',
-    description: '所有含碳的溶剂和改性剂'
+    label: 'C. Organic Solvent/Additive',
+    description: 'All carbon-containing solvents and modifiers'
   }
 ]
 
 const WH_Q2_OPTIONS = [
   {
     value: 'A',
-    label: 'A. 极毒 (LC₅₀ ≤ 1)',
+    label: 'A. Extremely Toxic (LC₅₀ ≤ 1)',
     result: 0.500
   },
   {
     value: 'B',
-    label: 'B. 高毒 (1 < LC₅₀ ≤ 10)',
+    label: 'B. Highly Toxic (1 < LC₅₀ ≤ 10)',
     result: 0.250
   },
   {
     value: 'C',
-    label: 'C. 中毒 (10 < LC₅₀ ≤ 100)',
+    label: 'C. Moderately Toxic (10 < LC₅₀ ≤ 100)',
     result: 0.125
   },
   {
     value: 'D',
-    label: 'D. 低毒/微毒 (LC₅₀ > 100)',
+    label: 'D. Low/Slight Toxicity (LC₅₀ > 100)',
     result: 0.000
   }
 ]
@@ -480,14 +480,14 @@ const WH_Q2_OPTIONS = [
 const WH_Q3_1_OPTIONS = [
   {
     value: 'A',
-    label: 'A. 易降解 (Readily Biodegradable) 或 易挥发 (Volatile)',
-    description: 'MSDS显示"易生物降解"，或者像二氯甲烷这样易挥发的溶剂',
+    label: 'A. Readily Biodegradable or Volatile',
+    description: 'MSDS shows "readily biodegradable" or volatile solvents like dichloromethane',
     penalty: 0.000
   },
   {
     value: 'B',
-    label: 'B. 难降解 (Not Readily Biodegradable)',
-    description: 'MSDS显示"非易生物降解"，且不易挥发',
+    label: 'B. Not Readily Biodegradable',
+    description: 'MSDS shows "not readily biodegradable" and not volatile',
     penalty: 0.125
   }
 ]
@@ -495,17 +495,17 @@ const WH_Q3_1_OPTIONS = [
 const WH_Q3_2_OPTIONS = [
   {
     value: 'A',
-    label: 'A. 高积累 (BCF > 500 或 Log Kow > 4)',
+    label: 'A. High Accumulation (BCF > 500 or Log Kow > 4)',
     penalty: 0.250
   },
   {
     value: 'B',
-    label: 'B. 中等积累 (100 < BCF ≤ 500 或 3 < Log Kow ≤ 4)',
+    label: 'B. Moderate Accumulation (100 < BCF ≤ 500 or 3 < Log Kow ≤ 4)',
     penalty: 0.075
   },
   {
     value: 'C',
-    label: 'C. 低/无积累 (BCF < 100 或 Log Kow < 3)',
+    label: 'C. Low/No Accumulation (BCF < 100 or Log Kow < 3)',
     penalty: 0.000
   }
 ]
@@ -513,66 +513,66 @@ const WH_Q3_2_OPTIONS = [
 const WH_Q4_K_OPTIONS = [
   {
     value: 6.0,
-    label: '含卤素/难降解有机物',
+    label: 'Halogenated/Persistent Organics',
     k: 6.0
   },
   {
     value: 0.7,
-    label: '普通易降解有机物',
+    label: 'Common Biodegradable Organics',
     k: 0.7
   },
   {
     value: 0,
-    label: '超低毒溶剂 (LC50 > 1000)',
+    label: 'Very Low Toxicity Solvent (LC50 > 1000)',
     k: 0
   }
 ]
 
 const RECYCLE_OPTIONS = [
-  { value: 0, label: '不可回收 (0)' },
-  { value: 1, label: '部分可回收 (1)' },
-  { value: 2, label: '易回收 (2)' },
-  { value: 3, label: '完全可回收 (3)' }
+  { value: 0, label: 'Non-recyclable (0)' },
+  { value: 1, label: 'Partially Recyclable (1)' },
+  { value: 2, label: 'Easily Recyclable (2)' },
+  { value: 3, label: 'Fully Recyclable (3)' }
 ]
 
 const POWER_OPTIONS = [
-  { value: 0, label: '无 (0)', description: '室温操作' },
-  { value: 1, label: '低 (1)', description: '< 50°C' },
-  { value: 2, label: '中 (2)', description: '50-100°C' },
-  { value: 3, label: '高 (3)', description: '> 100°C' }
+  { value: 0, label: 'None (0)', description: 'Room temperature operation' },
+  { value: 1, label: 'Low (1)', description: '< 50°C' },
+  { value: 2, label: 'Medium (2)', description: '50-100°C' },
+  { value: 3, label: 'High (3)', description: '> 100°C' }
 ]
 
 // Regeneration Factor (再生因子) 的选项 - 五级评分系统
 const REGENERATION_OPTIONS = [
   {
     value: 0.0,
-    label: '1. 自然本底级 (Natural)',
-    description: '直接取自自然界，无需化学合成，仅需物理净化。',
-    differentiation: '如水、乙醇（发酵）、甘油等'
+    label: '1. Natural Level',
+    description: 'Directly obtained from nature, no chemical synthesis, only physical purification.',
+    differentiation: 'E.g., water, ethanol (fermented), glycerol'
   },
   {
     value: 0.25,
-    label: '2. 绿色循环级 (Circular/Bio)',
-    description: '生物基或工业副回收。属于低碳经济范畴，显著优于化石资源。',
-    differentiation: '如生物乙醇、SFC用二氧化碳等'
+    label: '2. Green Circular Level (Circular/Bio)',
+    description: 'Bio-based or industrial byproduct. Low-carbon economy, significantly better than fossil resources.',
+    differentiation: 'E.g., bioethanol, CO₂ for SFC'
   },
   {
     value: 0.5,
-    label: '3. 简单合成级 (Simple Synthetic)',
-    description: '结构简单的C-H-O化合物。虽源自化石，但合成路径较短，原子经济性高，毒性较低。',
-    differentiation: '如甲醇、工业乙醇、异丙醇、丙酮、乙酸乙酯等'
+    label: '3. Simple Synthetic Level',
+    description: 'Simple C-H-O compounds. Fossil-derived but short synthesis path, high atom economy, low toxicity.',
+    differentiation: 'E.g., methanol, industrial ethanol, isopropanol, acetone, ethyl acetate'
   },
   {
     value: 0.75,
-    label: '4. 复杂/高耗能级 (Complex/Energy Intensive)',
-    description: '含氯/卤素/杂环化合物。合成路径较长，或属于石油化工中能耗较高的部分，或具有毒性。',
-    differentiation: '如乙腈、四氢呋喃、二氯甲烷、正己烷、二甲甲酰胺等'
+    label: '4. Complex/Energy Intensive',
+    description: 'Chlorinated/halogenated/heterocyclic. Longer synthesis path, high energy petrochemical, or toxic.',
+    differentiation: 'E.g., acetonitrile, THF, dichloromethane, n-hexane, DMF'
   },
   {
     value: 1.0,
-    label: '5. 资源枯竭/稀缺级 (Depletion/Fine Chem)',
-    description: '稀缺矿产或被精细化学品。涉及稀有元素（铂、镍、氟）开采，或合成步骤极为复杂的精细化学品。',
-    differentiation: '如磷酸盐、TFA、离子对试剂等'
+    label: '5. Depletion/Fine Chem',
+    description: 'Scarce mineral or fine chemicals. Involves rare elements (Pt, Ni, F) extraction, or extremely complex synthesis steps.',
+    differentiation: 'E.g., phosphates, TFA, ion-pair reagents'
   }
 ]
 
@@ -580,48 +580,48 @@ const REGENERATION_OPTIONS = [
 const DISPOSAL_OPTIONS = [
   { 
     value: 0.0, 
-    label: 'L1: 自然回归级 (Natural Return)',
-    description: '无需堆填，物质可直接回归自然环境，无需任何干预，无害且自然降解',
-    criteria: '如：纯水、气态CO₂',
+    label: 'L1: Natural Return',
+    description: 'No landfill required. Can return to nature directly with no intervention, harmless and naturally degradable',
+    criteria: 'E.g.: pure water, gaseous CO₂',
     color: '#52c41a'
   },
   { 
     value: 0.25, 
-    label: 'L2: 低熵回收级 (Low-Entropy Recovery)',
-    description: '极低能耗回收。沸点 < 80°C，非非沸，无需洗性，蒸馏回收的能耗低，且残渣风险可控',
-    criteria: '如：乙醇、丙酮、乙酸乙酯',
+    label: 'L2: Low-Entropy Recovery',
+    description: 'Very low energy recovery. BP < 80°C, non-halogen, low toxicity, low distillation energy, controlled residue risk',
+    criteria: 'E.g.: ethanol, acetone, ethyl acetate',
     color: '#95de64'
   },
   { 
     value: 0.5, 
-    label: 'L3: 标准工业级 (Standard Industrial)',
-    description: '常规能耗回收。沸点 80 ~ 100°C，或存在较等离毒性/腐蚀共质。工业回收技术成熟，但能源成本较高',
-    criteria: '如：甲醇、乙腈、正己烷',
+    label: 'L3: Standard Industrial',
+    description: 'Standard energy recovery. BP 80 ~ 100°C, or moderate toxicity/corrosion. Mature industrial recovery but higher cost',
+    criteria: 'E.g.: methanol, acetonitrile, n-hexane',
     color: '#ffc53d'
   },
   { 
     value: 0.75, 
-    label: 'L4: 高风险阻碍级 (High Barrier)',
-    description: '高能耗/高风险。沸点 > 100°C (能耗增加)，或含卤素 (需防腐设备)，或毒性过高/包装难 (需特殊安控)',
-    criteria: '如：THF, DCM, DMF, DMSO, 氯水, 乙醇',
+    label: 'L4: High Barrier',
+    description: 'High energy/high risk. BP > 100°C (more energy), or halogenated (needs corrosion-resistant equipment), or highly toxic/hard to package',
+    criteria: 'E.g.: THF, DCM, DMF, DMSO, chlorinated water, ethanol',
     color: '#ff9c6e'
   },
   { 
     value: 1.0, 
-    label: 'L5: 不可逆摧毁级 (Irreversible Destruction)',
-    description: '根本不可回收。含有不可再生固体 (导致级别)、持久性有机污染物 (POPs)，或需要焚烧进行焚烧性结构/或化',
-    criteria: '如：磷酸盐, TFA, 离子对试剂',
+    label: 'L5: Irreversible Destruction',
+    description: 'Fundamentally unrecoverable. Contains non-renewable solid (causes scaling), POPs, or requires incineration',
+    criteria: 'E.g.: phosphates, TFA, ion-pair reagents',
     color: '#ff4d4f'
   }
 ]
 
 // 处置百分比选项
 const DISPOSAL_PERCENTAGE_OPTIONS = [
-  { value: 0, label: 'A. 0% (完全废弃/外运焚烧) → P = 0', pValue: 0 },
-  { value: 25, label: 'B. 25% (少量回收用于清洗) → P = 25', pValue: 25 },
-  { value: 50, label: 'C. 50% (半数回收) → P = 50', pValue: 50 },
-  { value: 75, label: 'D. 75% (大部分回收) → P = 75', pValue: 75 },
-  { value: 100, label: 'E. 100% (完全闭环循环) → P = 100', pValue: 100 }
+  { value: 0, label: 'A. 0% (Complete Disposal/Incineration) → P = 0', pValue: 0 },
+  { value: 25, label: 'B. 25% (Minor Recovery for Cleaning) → P = 25', pValue: 25 },
+  { value: 50, label: 'C. 50% (Half Recovery) → P = 50', pValue: 50 },
+  { value: 75, label: 'D. 75% (Majority Recovery) → P = 75', pValue: 75 },
+  { value: 100, label: 'E. 100% (Complete Closed Loop) → P = 100', pValue: 100 }
 ]
 
 const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, onOk }) => {
@@ -868,8 +868,12 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
     
     // 第四步：核心计算
     if (q3 === 'C' && tlv !== undefined) {
-      // 二氯甲烷特例
-      if (substanceName && substanceName.toLowerCase().includes('二氯甲烷')) {
+      // 二氯甲烷特例 (Dichloromethane / DCM exception)
+      if (substanceName && (
+        substanceName.toLowerCase().includes('二氯甲烷') ||
+        substanceName.toLowerCase().includes('dichloromethane') ||
+        substanceName.toLowerCase().includes('dcm')
+      )) {
         const stateFactor = q1State === 'A' ? 0.2 : 1.0
         return Number((0.290 * stateFactor).toFixed(3))
       }
@@ -1533,7 +1537,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
       onOk(newReagent)
       form.resetFields()
       setCalculatedScores({ safetyScore: 0, healthScore: 0, envScore: 0 })
-      message.success('试剂添加成功！')
+      message.success('Reagent added successfully!')
     } catch (error) {
       console.error('表单验证失败:', error)
     }
@@ -1587,15 +1591,15 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
       title={
         <Space>
           <ExperimentOutlined style={{ color: '#1890ff' }} />
-          <span>添加新试剂</span>
+          <span>Add New Reagent</span>
         </Space>
       }
       open={visible}
       onOk={handleOk}
       onCancel={handleCancel}
       width={1000}
-      okText="添加"
-      cancelText="取消"
+      okText="Add"
+      cancelText="Cancel"
       destroyOnHidden
       styles={{ body: { maxHeight: '75vh', overflowY: 'auto', padding: '20px 24px' } }}
     >
@@ -1661,7 +1665,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
       >
         {/* 输入模式选择 */}
         <Alert
-          message="📝 请选择添加方式"
+          message="📝 Please Select Input Method"
           description={
             <div>
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -1673,9 +1677,9 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   style={{ width: '100%', height: 'auto', padding: '12px 16px', textAlign: 'left' }}
                 >
                   <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>智能引导模式（推荐）</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Guided Mode (Recommended)</div>
                     <div style={{ fontSize: 12, opacity: 0.85 }}>
-                      通过决策树和选择题逐步确定各项因子值，系统自动计算
+                      Determine factor values step by step through decision tree, automatic calculation
                     </div>
                   </div>
                 </Button>
@@ -1687,9 +1691,9 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   style={{ width: '100%', height: 'auto', padding: '12px 16px', textAlign: 'left' }}
                 >
                   <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>手动输入模式</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Manual Input Mode</div>
                     <div style={{ fontSize: 12, opacity: 0.85 }}>
-                      直接输入所有已知的因子数值，适合已有完整数据的情况
+                      Directly input all known factor values, suitable for complete data
                     </div>
                   </div>
                 </Button>
@@ -1701,25 +1705,25 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         />
         
         {/* 基本信息 */}
-        <Divider orientation="left" style={{ fontSize: 15, fontWeight: 'bold', color: '#262626', marginTop: 0, marginBottom: 16 }}>基本信息</Divider>
+        <Divider orientation="left" style={{ fontSize: 15, fontWeight: 'bold', color: '#262626', marginTop: 0, marginBottom: 16 }}>Basic Information</Divider>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="试剂名称"
+              label="Reagent Name"
               name="name"
               rules={[
-                { required: true, message: '请输入试剂名称' },
-                { min: 2, message: '试剂名称至少2个字符' }
+                { required: true, message: 'Please enter reagent name' },
+                { min: 2, message: 'Reagent name must be at least 2 characters' }
               ]}
             >
-              <Input placeholder="例如: Methanol, Ethanol" />
+              <Input placeholder="e.g., Methanol, Ethanol" />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="密度 ρ (g/mL)"
+              label="Density ρ (g/mL)"
               name="density"
-              rules={[{ required: true, message: '请输入密度值' }]}
+              rules={[{ required: true, message: 'Please enter density value' }]}
             >
               <InputNumber
                 style={{ width: '100%' }}
@@ -1740,7 +1744,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#ff4d4f', borderTopWidth: 2 }}>
               <Space size={8}>
                 <FireOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
-                <span>安全因子 (Safety Factors)</span>
+                <span>Safety Factors</span>
               </Space>
             </Divider>
             <Row gutter={16}>
@@ -1770,7 +1774,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>
               <Space size={8}>
                 <HeartOutlined style={{ color: '#52c41a', fontSize: 18 }} />
-                <span>健康因子 (Health Factors)</span>
+                <span>Health Factors</span>
               </Space>
             </Divider>
             <Row gutter={16}>
@@ -1790,7 +1794,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#1890ff', borderTopWidth: 2 }}>
               <Space size={8}>
                 <GlobalOutlined style={{ color: '#1890ff', fontSize: 18 }} />
-                <span>环境因子 (Environment Factors)</span>
+                <span>Environment Factors</span>
               </Space>
             </Divider>
             <Row gutter={16}>
@@ -1813,16 +1817,16 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
             {/* 再生与处置因子 - 手动输入 */}
             <Divider orientation="left" style={{ fontSize: 15, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16 }}>
-              再生与处置因子 (Regeneration & Disposal)
+              Regeneration & Disposal Factors
             </Divider>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label="Regeneration" name="regeneration" tooltip="0-1之间的值，表示再生难度">
+                <Form.Item label="Regeneration" name="regeneration" tooltip="Value between 0-1, indicating regeneration difficulty">
                   <InputNumber style={{ width: '100%' }} min={0} max={1} step={0.01} precision={2} />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item label="Disposal" name="disposal" tooltip="0-2之间的值，表示处置难度">
+                <Form.Item label="Disposal" name="disposal" tooltip="Value between 0-2, indicating disposal difficulty">
                   <InputNumber style={{ width: '100%' }} min={0} max={2} step={0.01} precision={2} />
                 </Form.Item>
               </Col>
@@ -1836,33 +1840,33 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#ff4d4f', borderTopWidth: 2 }}>
           <Space size={8}>
             <FireOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
-            <span>安全因子 (Safety Factors)</span>
+            <span>Safety Factors</span>
           </Space>
         </Divider>
         
         {/* Release Potential 决策树 */}
         <div style={{ marginBottom: 16, background: '#fff1f0', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #ff4d4f' }}>
           <Text strong style={{ fontSize: 15, color: '#cf1322' }}>
-            📊 释放潜力 (Release Potential) 评估
+            📊 Release Potential Assessment
           </Text>
         </div>
         
-        {/* 第一步：物质类别 */}
+        {/* Step 1: Substance Classification */}
         <Form.Item
-          label={<Text strong>第一步：物质类别初筛</Text>}
+          label={<Text strong>Step 1: Substance Classification</Text>}
           name="rpStep1"
-          rules={[{ required: true, message: '请选择物质类别' }]}
+          rules={[{ required: true, message: 'Please select substance classification' }]}
           tooltip={
             <div style={{ maxWidth: 400 }}>
-              <div style={{ marginBottom: 8 }}>请根据物质在常温常压下的物理形态及属性选择：</div>
-              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A.</strong> 本质是气体溶于水，或极易挥发的液体</div>
-              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B.</strong> 常温下为固体(离子化合物)，或沸点极高(&gt;200°C)的难挥发液体</div>
-              <div style={{ fontSize: 11 }}><strong>C.</strong> 沸点在30°C ~ 200°C之间的液体</div>
+              <div style={{ marginBottom: 8 }}>Select based on physical state and properties at room temperature and pressure:</div>
+              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A.</strong> Gas dissolved in water or extremely volatile liquid</div>
+              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B.</strong> Solid at room temperature (ionic compound), or non-volatile liquid with very high boiling point (&gt;200°C)</div>
+              <div style={{ fontSize: 11 }}><strong>C.</strong> Liquid with boiling point between 30°C and 200°C</div>
             </div>
           }
         >
           <Select 
-            placeholder="请判断该物质在常温常压下的物理形态及属性"
+            placeholder="Please determine the physical state and properties at room temperature and pressure"
             onChange={(value) => setRpStep1(value)}
           >
             {RP_STEP1_OPTIONS.map(opt => (
@@ -1879,51 +1883,51 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Form.Item
               label={
                 <div>
-                  <Text strong>第二步：数据录入 - 物质沸点</Text>
+                  <Text strong>Step 2: Data Entry - Boiling Point</Text>
                   <Link 
                     href="https://www.chemicalbook.com" 
                     target="_blank" 
                     style={{ marginLeft: 12, fontSize: 12 }}
                   >
-                    <LinkOutlined /> 查询沸点数据库 (ChemicalBook)
+                    <LinkOutlined /> Query Boiling Point Database (ChemicalBook)
                   </Link>
                 </div>
               }
               name="rpTbp"
               rules={[
-                { required: true, message: '请输入物质的标准沸点' },
-                { type: 'number', min: 30, max: 200, message: '沸点应在30-200°C之间' }
+                { required: true, message: 'Please enter standard boiling point' },
+                { type: 'number', min: 30, max: 200, message: 'Boiling point should be between 30-200°C' }
               ]}
-              tooltip="请查询该物质的标准沸点(Tbp)，并填入此处。参考数据库：ChemicalBook"
+              tooltip="Please query the standard boiling point (Tbp) of the substance and enter it here. Reference database: ChemicalBook"
             >
               <InputNumber
                 style={{ width: '100%' }}
-                placeholder="例如：甲醇的沸点为 64.7"
+                placeholder="e.g., Methanol boiling point is 64.7"
                 addonAfter="°C"
                 step={0.1}
                 precision={1}
               />
             </Form.Item>
 
-            {/* 第三步：结构特征修正 */}
+            {/* Step 3: Structural Feature Correction */}
             <Form.Item
-              label={<Text strong>第三步：结构特征修正</Text>}
+              label={<Text strong>Step 3: Structural Feature Correction</Text>}
               name="rpStructure"
-              rules={[{ required: true, message: '请选择化学结构分类' }]}
+              rules={[{ required: true, message: 'Please select chemical structure classification' }]}
               tooltip={
                 <div style={{ maxWidth: 400 }}>
-                  <div style={{ marginBottom: 8 }}>请判断该物质的化学结构属于哪一类：</div>
-                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A. 醇类：</strong>分子中含有羟基(-OH)，且能形成氢键</div>
-                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B. 醚类：</strong>分子中含有醚键(-O-)</div>
-                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>C. 高度支链化烷烃：</strong>名称中带有"异"或"叔"，或结构高度分叉</div>
-                  <div style={{ fontSize: 11 }}><strong>D. 标准溶剂：</strong>上述三类以外的其他挥发性液体</div>
+                  <div style={{ marginBottom: 8 }}>Determine which chemical structure category the substance belongs to:</div>
+                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A. Alcohols:</strong> Molecule contains hydroxyl group (-OH) and can form hydrogen bonds</div>
+                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B. Ethers:</strong> Molecule contains ether bond (-O-)</div>
+                  <div style={{ fontSize: 11, marginBottom: 6 }}><strong>C. Highly Branched Alkanes:</strong> Name contains "iso-" or "Tert-", or highly branched structure</div>
+                  <div style={{ fontSize: 11 }}><strong>D. Standard Solvents:</strong> Other volatile liquids not in the above three categories</div>
                 </div>
               }
             >
-              <Select placeholder="请判断该物质的化学结构属于哪一类">
+              <Select placeholder="Please determine which chemical structure category the substance belongs to">
                 {RP_STEP3_OPTIONS.map(opt => (
                   <Option key={opt.value} value={opt.value} title={opt.description}>
-                    {opt.label} (修正: {opt.correction > 0 ? '+' : ''}{opt.correction})
+                    {opt.label} (Correction: {opt.correction > 0 ? '+' : ''}{opt.correction})
                   </Option>
                 ))}
               </Select>
@@ -1934,33 +1938,33 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Release Potential 计算结果显示 */}
         {rpStep1 && (
           <Alert
-            message="Release Potential 计算结果"
+            message="Release Potential Calculation Result"
             description={
               <div>
                 {rpStep1 === 'A' && (
                   <Text>
-                    【结果A】溶解气体/高挥发性液体 → Release Potential = <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>1.0</Text>
+                    【Result A】Dissolved Gas/Highly Volatile Liquid → Release Potential = <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>1.0</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (依据：高流动性风险，参考文献 Figure 2a 中 "Gas dissolved but releasable" 类别)
+                      (Basis: High mobility risk, reference Figure 2a "Gas dissolved but releasable" category)
                     </Text>
                   </Text>
                 )}
                 {rpStep1 === 'B' && (
                   <Text>
-                    【结果B】固体/难挥发物质 → Release Potential = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.0001</Text> (≈ 0)
+                    【Result B】Solid/Non-volatile Substance → Release Potential = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.0001</Text> (≈ 0)
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (依据：极低流动性，参考文献 Figure 2a 中 "Solid" 或高沸点液体类别)
+                      (Basis: Extremely low mobility, reference Figure 2a "Solid" or high boiling point liquid category)
                     </Text>
                   </Text>
                 )}
                 {rpStep1 === 'C' && rpCalculatedValue > 0 && (
                   <Text>
-                    【结果C】挥发性液体 → Release Potential = <Text strong style={{ color: '#1890ff', fontSize: 16 }}>{rpCalculatedValue.toFixed(4)}</Text>
+                    【Result C】Volatile Liquid → Release Potential = <Text strong style={{ color: '#1890ff', fontSize: 16 }}>{rpCalculatedValue.toFixed(4)}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      计算公式：RP = 0.885 - (0.00333 × {form.getFieldValue('rpTbp')}°C) + {form.getFieldValue('rpStructure')} = {rpCalculatedValue.toFixed(4)}
+                      Calculation formula: RP = 0.885 - (0.00333 × {form.getFieldValue('rpTbp')}°C) + {form.getFieldValue('rpStructure')} = {rpCalculatedValue.toFixed(4)}
                     </Text>
                   </Text>
                 )}
@@ -1980,26 +1984,26 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Fire/Explosives 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#fff1f0', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #ff4d4f' }}>
           <Text strong style={{ fontSize: 15, color: '#cf1322' }}>
-            🔥 火灾/爆炸 (Fire/Explosives) 评估
+            🔥 Flammability/Explosiveness Assessment
           </Text>
         </div>
         
-        {/* 第一阶段：快速筛选 */}
+        {/* Stage 1: Quick Screening */}
         <Form.Item
-          label={<Text strong>第一阶段：快速筛选（排除绝对安全物质）</Text>}
+          label={<Text strong>Stage 1: Quick Screening (Exclude Absolutely Safe Substances)</Text>}
           name="feStep1"
-          rules={[{ required: true, message: '请选择物质类别' }]}
+          rules={[{ required: true, message: 'Please select substance classification' }]}
           tooltip={
             <div style={{ maxWidth: 400 }}>
-              <div style={{ marginBottom: 8 }}>首先判断该物质是否对安全无威胁：</div>
-              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A.</strong> 本质上不可燃、不助燃、不氧化</div>
-              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B.</strong> 非氧化性的常规盐类（⚠️ 如果是氧化剂，请选择C）</div>
-              <div style={{ fontSize: 11 }}><strong>C.</strong> 需要进一步评估其氧化性和易燃性</div>
+              <div style={{ marginBottom: 8 }}>First determine if the substance poses no safety threat:</div>
+              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A.</strong> Essentially non-flammable, non-oxidizing</div>
+              <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B.</strong> Non-oxidizing regular salt (⚠️ If oxidizer, select C)</div>
+              <div style={{ fontSize: 11 }}><strong>C.</strong> Requires further assessment of oxidizing and flammability properties</div>
             </div>
           }
         >
           <Select 
-            placeholder="请判断该物质属于以下哪种类型"
+            placeholder="Please determine which type the substance belongs to"
             onChange={(value) => setFeStep1(value)}
           >
             {FE_STEP1_OPTIONS.map(opt => (
@@ -2017,19 +2021,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 第二阶段：氧化性风险评估 (仅C选项显示) */}
         {feStep1 === 'C' && (
           <Form.Item
-            label={<Text strong>第二阶段：氧化性风险评估 (Oxygen Source)</Text>}
+            label={<Text strong>Stage 2: Oxidizing Risk Assessment (Oxygen Source)</Text>}
             name="feStep2"
-            rules={[{ required: true, message: '请选择是否有氧化性风险代码' }]}
+            rules={[{ required: true, message: 'Please select if there are oxidizing risk codes' }]}
             tooltip={
               <div style={{ maxWidth: 400 }}>
-                <div style={{ marginBottom: 8 }}>物质如果能提供氧气助燃（R7, R8, R9），即使自身不燃烧也被视为高风险：</div>
-                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A/B/C：</strong>具有R7/R8/R9标识，可能引发火灾或爆炸</div>
-                <div style={{ fontSize: 11 }}><strong>D：</strong>上述都没有，不具有显著氧化性风险</div>
+                <div style={{ marginBottom: 8 }}>Substance that can provide oxygen to support combustion (R7, R8, R9) is considered high risk even if not flammable itself:</div>
+                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A/B/C:</strong> Has R7/R8/R9 marking, may cause fire or explosion</div>
+                <div style={{ fontSize: 11 }}><strong>D:</strong> None of the above, no significant oxidizing risk</div>
               </div>
             }
           >
             <Select 
-              placeholder="查看该物质的 R-codes (危险代码) 或 GHS 分类，是否包含以下任意一项？"
+              placeholder="Check if R-codes (hazard codes) or GHS classification contains any of the following?"
               onChange={(value) => setFeStep2(value)}
             >
               {FE_STEP2_OPTIONS.map(opt => (
@@ -2046,30 +2050,30 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           <Form.Item
             label={
               <div>
-                <Text strong>第三阶段：易燃性风险评估 (Fuel Hazard)</Text>
+                <Text strong>Stage 3: Flammability Risk Assessment (Fuel Hazard)</Text>
                 <Link 
                   href="http://www.basechem.org" 
                   target="_blank" 
                   style={{ marginLeft: 12, fontSize: 12 }}
                 >
-                  <LinkOutlined /> 查询闪点/R语句 (BaseChemOrg)
+                  <LinkOutlined /> Query Flash Point/R Phrases (BaseChemOrg)
                 </Link>
               </div>
             }
             name="feStep3"
-            rules={[{ required: true, message: '请选择闪点情况' }]}
+            rules={[{ required: true, message: 'Please select flash point situation' }]}
             tooltip={
               <div style={{ maxWidth: 400 }}>
-                <div style={{ marginBottom: 8 }}>这是针对有机溶剂最关键的步骤，基于闪点或法规分类（默认工艺温度为室温 25°C）：</div>
-                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A：</strong>闪点 &lt; 21°C，或 R11 - 高度易燃</div>
-                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B：</strong>闪点 21-60°C，或 R10 - 可燃</div>
-                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>C：</strong>闪点 &gt; 60°C - 低风险</div>
-                <div style={{ fontSize: 11 }}><strong>D：</strong>无闪点，且未被标记为 R11</div>
-                <div style={{ marginTop: 8, fontSize: 11, color: '#1890ff' }}>💡 参考数据库：BaseChemOrg (闪点、R语句、燃烧热)</div>
+                <div style={{ marginBottom: 8 }}>Most critical step for organic solvents, based on flash point or regulatory classification (default process temperature is room temperature 25°C):</div>
+                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>A:</strong> Flash point &lt; 21°C, or R11 - Highly flammable</div>
+                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>B:</strong> Flash point 21-60°C, or R10 - Flammable</div>
+                <div style={{ fontSize: 11, marginBottom: 6 }}><strong>C:</strong> Flash point &gt; 60°C - Low risk</div>
+                <div style={{ fontSize: 11 }}><strong>D:</strong> No flash point, and not marked as R11</div>
+                <div style={{ marginTop: 8, fontSize: 11, color: '#1890ff' }}>💡 Reference database: BaseChemOrg (flash point, R phrases, heat of combustion)</div>
               </div>
             }
           >
-            <Select placeholder="请根据闪点或易燃标识选择">
+            <Select placeholder="Please select based on flash point or flammability marking">
               {FE_STEP3_OPTIONS.map(opt => (
                 <Option key={opt.value} value={opt.value} title={opt.description}>
                   {opt.label}
@@ -2082,41 +2086,41 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Fire/Explosives 计算结果显示 */}
         {feStep1 && (
           <Alert
-            message="Fire/Explosives 计算结果"
+            message="Fire/Explosives Calculation Result"
             description={
               <div>
                 {(feStep1 === 'A' || feStep1 === 'B') && (
                   <Text>
-                    【结果】完全惰性/非氧化性盐类 → Fire/Explos. Index = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.000</Text>
+                    【Result】Completely inert/non-oxidizing salts → Fire/Explos. Index = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.000</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (依据：无燃烧或助燃风险，不需要进一步评估)
+                      (Reason: No combustion or oxidation risk, no further evaluation needed)
                     </Text>
                   </Text>
                 )}
                 {feStep1 === 'C' && (feStep2 === 'A' || feStep2 === 'B' || feStep2 === 'C') && (
                   <Text>
-                    【结果】具有氧化性风险 (R7/R8/R9) → Fire/Explos. Index = <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>1.000</Text>
+                    【Result】Has oxidizing risk (R7/R8/R9) → Fire/Explos. Index = <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>1.000</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (依据：高氧化性，可能引发火灾或爆炸)
+                      (Reason: High oxidizing power, may cause fire or explosion)
                     </Text>
                   </Text>
                 )}
                 {feStep1 === 'C' && feStep2 === 'D' && feStep3 && (
                   <Text>
-                    【结果】易燃性评估 → Fire/Explos. Index = <Text strong style={{ color: feCalculatedValue === 1 ? '#ff4d4f' : feCalculatedValue === 0.5 ? '#fa8c16' : '#52c41a', fontSize: 16 }}>{feCalculatedValue.toFixed(3)}</Text>
+                    【Result】Flammability Evaluation → Fire/Explos. Index = <Text strong style={{ color: feCalculatedValue === 1 ? '#ff4d4f' : feCalculatedValue === 0.5 ? '#fa8c16' : '#52c41a', fontSize: 16 }}>{feCalculatedValue.toFixed(3)}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {feCalculatedValue === 1.000 && '(依据：高度易燃，闪点 < 21°C 或标记为 R11)'}
-                      {feCalculatedValue === 0.500 && '(依据：中等风险，闪点 21-60°C 或标记为 R10)'}
-                      {feCalculatedValue === 0.000 && '(依据：低风险，闪点 > 60°C 或无闪点且未标记)'}
+                      {feCalculatedValue === 1.000 && '(Reason: Highly flammable, flash point < 21°C or marked as R11)'}
+                      {feCalculatedValue === 0.500 && '(Reason: Moderate risk, flash point 21-60°C or marked as R10)'}
+                      {feCalculatedValue === 0.000 && '(Reason: Low risk, flash point > 60°C or no flash point and not marked)'}
                     </Text>
                   </Text>
                 )}
                 {feStep1 === 'C' && feStep2 === 'D' && !feStep3 && (
                   <Text type="secondary">
-                    ⏳ 请完成第三阶段：易燃性风险评估
+                    ⏳ Please complete Stage 3: Flammability Risk Evaluation
                   </Text>
                 )}
               </div>
@@ -2135,19 +2139,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Reaction/Decomposition 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#fff7e6', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #fa8c16' }}>
           <Text strong style={{ fontSize: 15, color: '#d46b08' }}>
-            ⚗️ 反应/分解 (Reaction/Decomposition) 评估
+            ⚗️ Reaction/Decomposition Evaluation
           </Text>
         </div>
         
         {/* 第一阶段：基础信息筛选 */}
         <Form.Item
-          label={<Text strong>第一阶段：基础信息与快速筛选</Text>}
+          label={<Text strong>Stage 1: Basic Information & Quick Screening</Text>}
           name="rdStep1"
-          rules={[{ required: true, message: '请选择物质形式' }]}
-          tooltip="首先判断该物质在工艺中的存在形式"
+          rules={[{ required: true, message: 'Please select substance form' }]}
+          tooltip="First determine the form of this substance in the process"
         >
           <Select 
-            placeholder="该物质在工艺中的存在形式是什么？"
+            placeholder="What is the form of this substance in the process?"
             onChange={(value) => setRdStep1(value)}
           >
             {RD_STEP1_OPTIONS.map(opt => (
@@ -2170,47 +2174,47 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={
                     <div>
-                      <Text>黄色菱形 (Instability/Reactivity) 的数字</Text>
+                      <Text>Yellow Diamond (Instability/Reactivity) Number</Text>
                       <Link 
                         href="https://cameochemicals.noaa.gov/search/simple" 
                         target="_blank" 
                         style={{ marginLeft: 8, fontSize: 12 }}
                       >
-                        <LinkOutlined /> NFPA数据库 (CAMEO)
+                        <LinkOutlined /> NFPA Database (CAMEO)
                       </Link>
                     </div>
                   }
                   name="rdNfpaYellow"
-                  rules={[{ required: true, message: '请填写黄色菱形的数字' }]}
-                  tooltip="第二阶段：查找 NFPA 704 数据（核心步骤）- 请在 CAMEO Chemicals 数据库中搜索物质英文名，找到NFPA 704菱形标签。黄色菱形代表反应性/不稳定性，数值范围 0-4"
+                  rules={[{ required: true, message: 'Please fill in the yellow diamond number' }]}
+                  tooltip="Stage 2: Find NFPA 704 Data (Core Step) - Search substance English name in CAMEO Chemicals database to find NFPA 704 diamond label. Yellow diamond represents reactivity/instability, value range 0-4"
                 >
                   <Select 
-                    placeholder="请选择 0-4"
+                    placeholder="Please select 0-4"
                     onChange={(value) => setRdNfpaYellow(value)}
                   >
-                    <Option value={0}>0 - 稳定</Option>
-                    <Option value={1}>1 - 通常稳定，但在高温高压下可能不稳定</Option>
-                    <Option value={2}>2 - 剧烈化学变化，但不会爆炸</Option>
-                    <Option value={3}>3 - 可能爆炸，但需要强起爆源</Option>
-                    <Option value={4}>4 - 室温下可能爆炸</Option>
+                    <Option value={0}>0 - Stable</Option>
+                    <Option value={1}>1 - Usually stable, but may be unstable at high T/P</Option>
+                    <Option value={2}>2 - Violent chemical change, but won't explode</Option>
+                    <Option value={3}>3 - May explode, but requires strong detonation source</Option>
+                    <Option value={4}>4 - May explode at room temperature</Option>
                   </Select>
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<Text>白色菱形 (Special Hazard) 是否有标识</Text>}
+                  label={<Text>White Diamond (Special Hazard) - Any Marking?</Text>}
                   name="rdNfpaWhite"
-                  tooltip='NFPA 704 白色菱形代表特殊危险，常见标识：W（遇水反应）、OX（氧化剂）'
+                  tooltip='NFPA 704 white diamond represents special hazards, common markings: W (Water Reactive), OX (Oxidizer)'
                 >
                   <Select 
-                    placeholder="请选择"
+                    placeholder="Please select"
                     onChange={(value) => setRdNfpaWhite(value)}
                     allowClear
                   >
-                    <Option value="无">无标识</Option>
-                    <Option value="W">W - 遇水反应 (Water Reactive)</Option>
-                    <Option value="OX">OX - 氧化剂 (Oxidizer)</Option>
-                    <Option value="其他">其他标识</Option>
+                    <Option value="None">No marking</Option>
+                    <Option value="W">W - Water Reactive</Option>
+                    <Option value="OX">OX - Oxidizer</Option>
+                    <Option value="Other">Other marking</Option>
                   </Select>
                 </Form.Item>
               </Col>
@@ -2218,13 +2222,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
             {/* 第三阶段：不兼容性与特殊风险判定 */}
             <Form.Item
-              label={<Text strong>第三阶段：不兼容性与特殊风险判定</Text>}
+              label={<Text strong>Stage 3: Incompatibility & Special Risk Assessment</Text>}
               name="rdStep3"
-              tooltip="基于 Q2 的结果或物质特性，判断是否有特殊风险（可多选）"
+              tooltip="Based on Q2 result or substance characteristics, determine if there are special risks (multiple choice)"
             >
               <Select
                 mode="multiple"
-                placeholder="该物质是否符合以下任一描述？（可多选，若无请选D）"
+                placeholder="Does this substance meet any of the following descriptions? (Multiple choice, select D if none)"
                 onChange={(value) => setRdStep3(value)}
               >
                 {RD_STEP3_OPTIONS.map(opt => (
@@ -2238,11 +2242,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             {/* 第四阶段：化学结构检查（针对有机物，当NFPA数据不明确时） */}
             {(rdNfpaYellow === undefined || rdNfpaYellow === 0) && (!rdStep3 || rdStep3.includes('D') || rdStep3.length === 0) && (
               <Form.Item
-                label={<Text strong>第四阶段：化学结构检查（针对有机物）</Text>}
+                label={<Text strong>Stage 4: Chemical Structure Check (For Organics)</Text>}
                 name="rdStep4"
-                tooltip="如果找不到 NFPA 数据，请检查分子结构"
+                tooltip="If NFPA data not found, please check molecular structure"
               >
-                <Select placeholder="(仅针对有机物) 该物质是否包含不稳定基团？">
+                <Select placeholder="(For organics only) Does this substance contain unstable groups?">
                   {RD_STEP4_OPTIONS.map(opt => (
                     <Option key={opt.value} value={opt.value} title={opt.description}>
                       {opt.label}
@@ -2257,34 +2261,34 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Reaction/Decomposition 计算结果显示 */}
         {rdStep1 && (
           <Alert
-            message="Reaction/Decomposition 计算结果"
+            message="Reaction/Decomposition Calculation Result"
             description={
               <div>
                 {rdStep1 === 'B' && (
                   <Text>
-                    【结果】稀释水溶液（非强氧化性） → React./Decom. = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.000</Text>
+                    【Result】Diluted aqueous solution (non-strongly oxidizing) → React./Decom. = <Text strong style={{ color: '#52c41a', fontSize: 16 }}>0.000</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (依据：HPLC-EAT 规则，以水为主的稀缓冲液通常忽略其贡献)
+                      (Reason: HPLC-EAT rules, water-based dilute buffers typically ignore their contribution)
                     </Text>
                   </Text>
                 )}
                 {rdStep1 === 'A' && rdCalculatedValue >= 0 && (
                   <Text>
-                    【第五阶段：计算结果】纯物质评估 → React./Decom. = <Text strong style={{ 
+                    【Stage 5: Calculation Result】Pure substance evaluation → React./Decom. = <Text strong style={{ 
                       color: rdCalculatedValue >= 0.800 ? '#ff4d4f' : rdCalculatedValue >= 0.600 ? '#fa8c16' : '#52c41a', 
                       fontSize: 16 
                     }}>{rdCalculatedValue.toFixed(3)}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {rdCalculatedValue === 0.800 && rdStep3 && (rdStep3.includes('A') || rdStep3.includes('B') || rdStep3.includes('C')) && 
-                        '(依据：最高优先级 - 不兼容性，有 W/OX 标记或强酸强碱)'}
+                        '(Reason: Highest priority - incompatibility, with W/OX marking or strong acid/base)'}
                       {rdCalculatedValue === 0.800 && rdNfpaYellow !== undefined && rdNfpaYellow >= 2 && 
-                        '(依据：次高优先级 - NFPA 黄色数字 ≥ 2，副反应风险)'}
+                        '(Reason: Second highest priority - NFPA yellow number ≥ 2, side reaction risk)'}
                       {rdCalculatedValue === 0.600 && 
-                        '(依据：中等优先级 - NFPA 黄色数字 = 1，或含不稳定基团)'}
+                        '(Reason: Medium priority - NFPA yellow number = 1, or contains unstable groups)'}
                       {rdCalculatedValue === 0.000 && 
-                        '(依据：低风险 - NFPA 黄色数字 = 0，或绝对稳定结构)'}
+                        '(Reason: Low risk - NFPA yellow number = 0, or absolutely stable structure)'}
                     </Text>
                   </Text>
                 )}
@@ -2304,19 +2308,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Acute Toxicity 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#f9f0ff', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #722ed1' }}>
           <Text strong style={{ fontSize: 15, color: '#531dab' }}>
-            ☠️ 急性毒性 (Acute Toxicity) 评估
+            ☠️ Acute Toxicity Evaluation
           </Text>
         </div>
         
         {/* 第一阶段：路径选择 */}
         <Form.Item
-          label={<Text strong>第一阶段：物质分类与路径选择</Text>}
+          label={<Text strong>Stage 1: Substance Classification & Path Selection</Text>}
           name="atPath"
-          rules={[{ required: true, message: '请选择计算路径' }]}
-          tooltip="不同的物质使用不同的毒性数据源"
+          rules={[{ required: true, message: 'Please select calculation path' }]}
+          tooltip="Different substances use different toxicity data sources"
         >
           <Select 
-            placeholder="该物质属于以下哪一类？"
+            placeholder="Which category does this substance belong to?"
             onChange={(value) => setAtPath(value)}
           >
             {AT_PATH_OPTIONS.map(opt => (
@@ -2333,23 +2337,23 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={
                     <div>
-                      <Text>【填空 1】查找或输入 IDLH (ppm)</Text>
+                      <Text>[Fill-in 1] Find or Enter IDLH (ppm)</Text>
                       <Link 
                         href="https://www.cdc.gov/niosh/idlh/intridl4.html" 
                         target="_blank" 
                         style={{ marginLeft: 8, fontSize: 12 }}
                       >
-                        <LinkOutlined /> IDLH数据库 (NIOSH)
+                        <LinkOutlined /> IDLH Database (NIOSH)
                       </Link>
                     </div>
                   }
                   name="atIdlh"
-                  rules={[{ required: true, message: '请输入 IDLH 值' }]}
-                  tooltip="【路径 A】计算挥发性物质急性毒性（基于 IDLH）- 适用于：甲醇、乙腈、THF 等有机溶剂。参考数据库：NIOSH IDLH Database"
+                  rules={[{ required: true, message: 'Please enter IDLH value' }]}
+                  tooltip="【Path A】Calculate acute toxicity of volatile substances (based on IDLH) - Applicable to: methanol, acetonitrile, THF and other organic solvents. Reference: NIOSH IDLH Database"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="例如：甲醇的 IDLH 为 6000"
+                    placeholder="Example: IDLH of methanol is 6000"
                     addonAfter="ppm"
                     min={0}
                     step={100}
@@ -2358,14 +2362,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<Text>物质分子量 (MW)</Text>}
+                  label={<Text>Substance Molecular Weight (MW)</Text>}
                   name="atMw"
-                  rules={[{ required: true, message: '请输入分子量' }]}
-                  tooltip="物质的分子量，用于浓度换算"
+                  rules={[{ required: true, message: 'Please enter molecular weight' }]}
+                  tooltip="Molecular weight of the substance, used for concentration conversion"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="例如：甲醇的 MW 为 32.04"
+                    placeholder="Example: MW of methanol is 32.04"
                     addonAfter="g/mol"
                     min={0}
                     step={0.01}
@@ -2376,7 +2380,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Row>
 
             <div style={{ background: '#f0f5ff', padding: '12px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 13 }}>HPLC 常用物质标准 IDLH 建议值：</Text>
+              <Text strong style={{ fontSize: 13 }}>Standard IDLH Values for Common HPLC Substances:</Text>
               <div style={{ marginTop: 8 }}>
                 {COMMON_IDLH_VALUES.map((item, index) => (
                   <div key={index} style={{ marginBottom: 4 }}>
@@ -2395,14 +2399,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {atPath === 'B' && (
           <>
             <Form.Item
-              label={<Text>【填空 1】输入 LD50 数据</Text>}
+              label={<Text>[Fill-in 1] Enter LD50 Data</Text>}
               name="atLd50"
-              rules={[{ required: true, message: '请输入 LD50 值' }]}
-              tooltip="【路径 B】计算固体无机物急性毒性（基于 LD50）- 适用于：磷酸盐、乙酸铵等固体添加剂。请查找该物质的大鼠经口 LD50 (Oral Rat LD50)，数据来源：MSDS 或 Sigma-Aldrich 官网"
+              rules={[{ required: true, message: 'Please enter LD50 value' }]}
+              tooltip="[Path B] Calculate acute toxicity of solid inorganics (based on LD50) - Applicable to: phosphates, ammonium acetate and other solid additives. Please find the rat oral LD50 (Oral Rat LD50), data source: MSDS or Sigma-Aldrich website"
             >
               <InputNumber
                 style={{ width: '100%' }}
-                placeholder="例如：磷酸二氢钠的 LD50 约为 8290"
+                placeholder="Example: LD50 of sodium dihydrogen phosphate is about 8290"
                 addonAfter="mg/kg"
                 min={0}
                 step={10}
@@ -2410,14 +2414,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Form.Item>
 
             <Alert
-              message="快速判断规则（无需计算器）"
+              message="Quick Judgment Rules (No calculator needed)"
               description={
                 <div>
-                  <Text>• 如果 LD50 ≥ 2000（如磷酸盐）→ 直接填 <Text strong style={{ color: '#52c41a' }}>0.000</Text></Text>
+                  <Text>• If LD50 ≥ 2000 (e.g. phosphates) → Directly fill <Text strong style={{ color: '#52c41a' }}>0.000</Text></Text>
                   <br />
-                  <Text>• 如果 LD50 ≤ 20（剧毒）→ 直接填 <Text strong style={{ color: '#ff4d4f' }}>1.000</Text></Text>
+                  <Text>• If LD50 ≤ 20 (highly toxic) → Directly fill <Text strong style={{ color: '#ff4d4f' }}>1.000</Text></Text>
                   <br />
-                  <Text>• 只有在 20 ~ 2000 之间才需要用公式计算</Text>
+                  <Text>• Only when LD50 is between 20 ~ 2000, use formula to calculate</Text>
                 </div>
               }
               type="info"
@@ -2430,18 +2434,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Acute Toxicity 计算结果显示 */}
         {atPath && atCalculatedValue >= 0 && (
           <Alert
-            message="Acute Toxicity 计算结果"
+            message="Acute Toxicity Calculation Result"
             description={
               <div>
                 {atPath === 'A' && (
                   <Text>
-                    【结果】挥发性物质（IDLH 路径） → Acute Toxicity = <Text strong style={{ 
+                    【Result】Volatile substance (IDLH path) → Acute Toxicity = <Text strong style={{ 
                       color: atCalculatedValue >= 0.8 ? '#ff4d4f' : atCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a', 
                       fontSize: 16 
                     }}>{atCalculatedValue.toFixed(3)}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      计算公式：C = ({form.getFieldValue('atIdlh')} × {form.getFieldValue('atMw')}) / 24.45 = {((form.getFieldValue('atIdlh') || 0) * (form.getFieldValue('atMw') || 0) / 24.45).toFixed(2)} mg/m³
+                      Calculation Formula: C = ({form.getFieldValue('atIdlh')} × {form.getFieldValue('atMw')}) / 24.45 = {((form.getFieldValue('atIdlh') || 0) * (form.getFieldValue('atMw') || 0) / 24.45).toFixed(2)} mg/m³
                       <br />
                       Acute Value = 1.24 - 0.25 × log₁₀({((form.getFieldValue('atIdlh') || 0) * (form.getFieldValue('atMw') || 0) / 24.45).toFixed(2)}) = {atCalculatedValue.toFixed(3)}
                     </Text>
@@ -2449,16 +2453,16 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 )}
                 {atPath === 'B' && (
                   <Text>
-                    【结果】固体无机物（LD50 路径） → Acute Toxicity = <Text strong style={{ 
+                    【Result】Solid inorganic substance (LD50 path) → Acute Toxicity = <Text strong style={{ 
                       color: atCalculatedValue >= 0.8 ? '#ff4d4f' : atCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a', 
                       fontSize: 16 
                     }}>{atCalculatedValue.toFixed(3)}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {form.getFieldValue('atLd50') >= 2000 && '快速判断：LD50 ≥ 2000 (如磷酸盐) → 0.000'}
-                      {form.getFieldValue('atLd50') <= 20 && '快速判断：LD50 ≤ 20 (剧毒) → 1.000'}
+                      {form.getFieldValue('atLd50') >= 2000 && 'Quick check: LD50 ≥ 2000 (e.g., phosphates) → 0.000'}
+                      {form.getFieldValue('atLd50') <= 20 && 'Quick Assessment: LD50 ≤ 20 (highly toxic) → 1.000'}
                       {form.getFieldValue('atLd50') > 20 && form.getFieldValue('atLd50') < 2000 && 
-                        `计算公式：Acute Value = 1.65 - 0.5 × log₁₀(${form.getFieldValue('atLd50')}) = ${atCalculatedValue.toFixed(3)}`
+                        `Calculation Formula: Acute Value = 1.65 - 0.5 × log₁₀(${form.getFieldValue('atLd50')}) = ${atCalculatedValue.toFixed(3)}`
                       }
                     </Text>
                   </Text>
@@ -2480,14 +2484,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#ff7a45', borderTopWidth: 2 }}>
           <Space size={8}>
             <HeartOutlined style={{ color: '#ff7a45', fontSize: 18 }} />
-            <span>健康因子 (Health Factors)</span>
+            <span>Health Factors</span>
           </Space>
         </Divider>
 
         {/* Irritation 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#fff7e6', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #ff7a45' }}>
           <Text strong style={{ fontSize: 15, color: '#d4380d' }}>
-            🔬 刺激性 (Irritation) 评估
+            🔬 Irritation Evaluation
           </Text>
         </div>
 
@@ -2495,22 +2499,22 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <Form.Item
           label={
             <div>
-              <Text strong>问题 1：是否存在严重腐蚀性代码？</Text>
+              <Text strong>Question 1: Any severe corrosive codes?</Text>
               <Link 
                 href="http://www.basechem.org" 
                 target="_blank" 
                 style={{ marginLeft: 8, fontSize: 12 }}
               >
-                <LinkOutlined /> R语句数据库 (BaseChemOrg)
+                <LinkOutlined /> R-codes Database (BaseChemOrg)
               </Link>
             </div>
           }
           name="irrQ1"
-          rules={[{ required: true, message: '请选择' }]}
-          tooltip="第一阶段：R-codes 快速判定 - 请查看物质的 MSDS 或标签上的 R-codes（风险代码）。检查该物质是否包含 R35（引起严重灼伤）或 R34（引起灼伤）。参考数据库：BaseChemOrg"
+          rules={[{ required: true, message: 'Please select' }]}
+          tooltip="Stage 1: R-codes Quick Determination - Check R-codes (Risk codes) on the substance MSDS or label. Check if the substance contains R35 (Causes severe burns) or R34 (Causes burns). Reference database: BaseChemOrg"
         >
           <Select 
-            placeholder="该物质是否包含 R35（引起严重灼伤）或 R34（引起灼伤）？"
+            placeholder="Does this substance contain R35 (Causes severe burns) or R34 (Causes burns)?"
             onChange={(value) => setIrrQ1(value)}
           >
             {IRR_Q1_OPTIONS.map(opt => (
@@ -2518,7 +2522,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Text strong>{opt.label}</Text>
                 {opt.result !== undefined && (
                   <Text type="secondary" style={{ marginLeft: 8 }}>
-                    → 结果: {opt.result.toFixed(3)}
+                    → Result: {opt.result.toFixed(3)}
                   </Text>
                 )}
               </Option>
@@ -2529,13 +2533,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 问题 2：明显刺激性（仅当Q1选no时显示） */}
         {irrQ1 === 'no' && (
           <Form.Item
-            label={<Text strong>问题 2：是否存在明显刺激性或严重损害代码？</Text>}
+            label={<Text strong>Question 2: Any obvious irritation or severe damage codes?</Text>}
             name="irrQ2"
-            rules={[{ required: true, message: '请选择' }]}
-            tooltip="检查是否包含 R36/R37/R38/R41/R48"
+            rules={[{ required: true, message: 'Please select' }]}
+            tooltip="Check if it contains R36/R37/R38/R41/R48"
           >
             <Select 
-              placeholder="该物质是否包含以下任一代码：R36/R37/R38/R41/R48？"
+              placeholder="Does this substance contain any of the following codes: R36/R37/R38/R41/R48?"
               onChange={(value) => setIrrQ2(value)}
             >
               {IRR_Q2_OPTIONS.map(opt => (
@@ -2543,7 +2547,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   <Text strong>{opt.label}</Text>
                   {opt.result !== undefined && (
                     <Text type="secondary" style={{ marginLeft: 8 }}>
-                      → 结果: {opt.result.toFixed(3)}
+                      → Result: {opt.result.toFixed(3)}
                     </Text>
                   )}
                   {opt.note && (
@@ -2561,21 +2565,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {irrQ1 === 'no' && irrQ2 === 'no' && (
           <>
             <div style={{ background: '#f0f5ff', padding: '12px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14 }}>第二阶段：无机物/无代码物质的 pH 程序</Text>
+              <Text strong style={{ fontSize: 14 }}>Stage 2: pH Procedure for Inorganic/Non-coded Substances</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                适用于缓冲液、盐类（如磷酸二氢钠、碳酸铵等）没有上述 R 代码的物质
+                Applicable to buffers, salts (such as monosodium phosphate, ammonium carbonate, etc.) that do not have the above R codes
               </Text>
             </div>
 
             <Form.Item
-              label={<Text strong>问题 3：测量或查询物质在工艺条件（假设 1M 浓度）下的 pH 值</Text>}
+              label={<Text strong>Question 3: Measure or query substance pH value at process conditions (assume 1M concentration)</Text>}
               name="irrQ3Ph"
-              rules={[{ required: true, message: '请选择 pH 范围' }]}
-              tooltip="根据物质的 pH 值选择对应区间"
+              rules={[{ required: true, message: 'Please select pH range' }]}
+              tooltip="Select the corresponding range based on substance pH value"
             >
               <Select 
-                placeholder="该物质的 pH 值属于哪个范围？"
+                placeholder="Which range does the substance pH value fall into?"
                 onChange={(value) => setIrrQ3Ph(value)}
               >
                 {IRR_Q3_PH_RANGES.map(opt => (
@@ -2584,7 +2588,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                     value={opt.value}
                     title={opt.description}
                   >
-                    {opt.label} {opt.result !== undefined && `(结果: ${opt.result.toFixed(3)})`}
+                    {opt.label} {opt.result !== undefined && `(Result: ${opt.result.toFixed(3)})`}
                   </Option>
                 ))}
               </Select>
@@ -2596,21 +2600,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {irrQ1 === 'no' && irrQ2 === 'no' && irrQ3Ph === 'neutral' && (
           <>
             <div style={{ background: '#e6fffb', padding: '12px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14 }}>第三阶段：微量危害累加（兜底计算）</Text>
+              <Text strong style={{ fontSize: 14 }}>Stage 3: Cumulative Minor Hazards (Backup Calculation)</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                该物质既无强腐蚀/刺激 R 代码，pH 值也相对温和。我们需要计算它可能存在的微弱潜在危害。
+                This substance has no strong corrosion/irritation R codes and relatively mild pH. We need to calculate its potential minor hazards.
               </Text>
             </div>
 
             <Form.Item
-              label={<Text strong>问题 4：累加计算（初始分数为 0）</Text>}
+              label={<Text strong>Question 4: Cumulative Calculation (Initial score = 0)</Text>}
               name="irrQ4Codes"
-              tooltip="检查是否含有以下特定代码，可多选"
+              tooltip="Check if it contains the following specific codes, multiple choice"
             >
               <Select
                 mode="multiple"
-                placeholder="请检查是否含有以下特定代码，并将对应数值相加（可多选，无则不选）"
+                placeholder="Please check if it contains the following specific codes, and add corresponding values (multiple choice, none if not applicable)"
                 onChange={(value) => setIrrQ4Codes(value)}
               >
                 {IRR_Q4_CODES.map(opt => (
@@ -2627,13 +2631,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Form.Item>
 
             <Alert
-              message="计算公式"
+              message="Calculation Formula"
               description={
                 <Text>
-                  Irritation = 0 + (R40得分) + (R20系列得分) + (R50系列得分)
+                  Irritation = 0 + (R40 score) + (R20 series score) + (R50 series score)
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    注意：如果以上都没有，且 pH 为中性，则结果为 0
+                    Note: If none of the above applies and pH is neutral, the result is 0
                   </Text>
                 </Text>
               }
@@ -2647,26 +2651,26 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Irritation 计算结果显示 */}
         {irrQ1 && irrCalculatedValue >= 0 && (
           <Alert
-            message="Irritation 计算结果"
+            message="Irritation Calculation Result"
             description={
               <div>
                 <Text>
-                  【最终结果】Irritation = <Text strong style={{ 
+                  【Final Result】Irritation = <Text strong style={{ 
                     color: irrCalculatedValue >= 1.0 ? '#ff4d4f' : irrCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a', 
                     fontSize: 16 
                   }}>{irrCalculatedValue.toFixed(3)}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {irrQ1 === 'yes' && '(依据：Figure 3a - 腐蚀性 C级，R34/R35，Physical Value = 1)'}
-                    {irrQ2 === 'yes' && '(依据：Figure 3a - 刺激性 Xi级，R36/37/38，Index Value ≈ 0.625)'}
-                    {irrQ2 === 'ethanol' && '(依据：乙醇特例，直接填 0)'}
-                    {irrQ3Ph === 'strong' && '(依据：Figure 3a - pH < 2 或 > 11.5，最高风险)'}
-                    {irrQ3Ph === 'moderate' && '(依据：Figure 3a - pH 中等范围，中等风险)'}
+                    {irrQ1 === 'yes' && '(Reason: Figure 3a - Corrosive C grade, R34/R35, Physical Value = 1)'}
+                    {irrQ2 === 'yes' && '(Reason: Figure 3a - Irritant Xi grade, R36/37/38, Index Value ≈ 0.625)'}
+                    {irrQ2 === 'ethanol' && '(Reason: Ethanol special case, directly set to 0)'}
+                    {irrQ3Ph === 'strong' && '(Reason: Figure 3a - pH < 2 or > 11.5, highest risk)'}
+                    {irrQ3Ph === 'moderate' && '(Reason: Figure 3a - pH moderate range, moderate risk)'}
                     {irrQ3Ph === 'neutral' && irrCalculatedValue > 0 && 
-                      `(依据：微量危害累加，共选中 ${irrQ4Codes?.length || 0} 项代码)`
+                      `(Reason: Trace hazard accumulation, total ${irrQ4Codes?.length || 0} codes selected)`
                     }
                     {irrQ3Ph === 'neutral' && irrCalculatedValue === 0 && 
-                      '(依据：pH 中性且无特定危害代码，结果为 0)'}
+                      '(Reason: Neutral pH and no specific hazard codes, result is 0)'}
                   </Text>
                 </Text>
               </div>
@@ -2685,19 +2689,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Chronic Toxicity 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#fff1f0', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #f5222d' }}>
           <Text strong style={{ fontSize: 15, color: '#a8071a' }}>
-            ⚠️ 慢性毒性 (Chronic Toxicity) 评估
+            ⚠️ Chronic Toxicity Evaluation
           </Text>
         </div>
 
         {/* 第一步：物理状态 */}
         <Form.Item
-          label={<Text strong>第一步：物理状态 (Physical State)</Text>}
+          label={<Text strong>Step 1: Physical State</Text>}
           name="ctQ1State"
-          rules={[{ required: true, message: '请选择物理状态' }]}
-          tooltip="该物质在常温常压下的物理状态是什么？"
+          rules={[{ required: true, message: 'Please select physical state' }]}
+          tooltip="What is the physical state of this substance at normal temperature and pressure?"
         >
           <Select 
-            placeholder="该物质在常温常压下的物理状态是什么？"
+            placeholder="What is the physical state of this substance at normal temperature and pressure?"
             onChange={(value) => setCtQ1State(value)}
           >
             {CT_Q1_OPTIONS.map(opt => (
@@ -2708,13 +2712,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
         {/* 第二步：高危一票否决 */}
         <Form.Item
-          label={<Text strong>第二步：高危一票否决 (High Hazard Check)</Text>}
+          label={<Text strong>Step 2: High Hazard Veto Check</Text>}
           name="ctQ2"
-          rules={[{ required: true, message: '请选择' }]}
-          tooltip='检查 MSDS 中的"危险性标述"或 R-codes/H-codes'
+          rules={[{ required: true, message: 'Please select' }]}
+          tooltip='Check "Hazard Statements" or R-codes/H-codes in MSDS'
         >
           <Select 
-            placeholder='检查 MSDS 中的"危险性标述"或 R-codes/H-codes，是否包含以下内容？'
+            placeholder='Check MSDS "Hazard Statements" or R-codes/H-codes for the following content'
             onChange={(value) => setCtQ2(value)}
           >
             {CT_Q2_OPTIONS.map(opt => (
@@ -2723,7 +2727,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 value={opt.value}
                 title={opt.description}
               >
-                {opt.label} {opt.result !== undefined && `(结果: ${opt.result.toFixed(3)})`}
+                {opt.label} {opt.result !== undefined && `(Result: ${opt.result.toFixed(3)})`}
               </Option>
             ))}
           </Select>
@@ -2732,13 +2736,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 第三步：无毒豁免（仅当Q2选C时显示） */}
         {ctQ2 === 'C' && (
           <Form.Item
-            label={<Text strong>第三步：无毒豁免 (Safety Exemption)</Text>}
+            label={<Text strong>Step 3: Non-toxic Exemption</Text>}
             name="ctQ3"
-            rules={[{ required: true, message: '请选择' }]}
-            tooltip='该物质是否属于以下"低毒/无毒"类别？'
+            rules={[{ required: true, message: 'Please select' }]}
+            tooltip='Does this substance belong to the following "low toxicity/non-toxic" categories?'
           >
             <Select 
-              placeholder='该物质是否属于以下"低毒/无毒"类别？'
+              placeholder='Does the substance belong to the following "Low/Non-toxic" categories?'
               onChange={(value) => setCtQ3(value)}
             >
               {CT_Q3_OPTIONS.map(opt => (
@@ -2747,7 +2751,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   value={opt.value}
                   title={opt.description}
                 >
-                  {opt.label} {opt.result !== undefined && `(结果: ${opt.result.toFixed(3)})`}
+                  {opt.label} {opt.result !== undefined && `(Result: ${opt.result.toFixed(3)})`}
                 </Option>
               ))}
             </Select>
@@ -2758,11 +2762,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {ctQ2 === 'C' && ctQ3 === 'C' && (
           <>
             <Form.Item
-              label={<Text>物质名称（可选，用于二氯甲烷特例判断）</Text>}
+              label={<Text>Substance Name (optional, for dichloromethane special case)</Text>}
               name="ctSubstanceName"
-              tooltip="第四步：数据采集与核心计算 (Core Calculation) - 如果没有得出结果，请将以下数据代入公式计算。如果是二氯甲烷，请填写，系统将使用特殊值 0.290"
+              tooltip="Step 4: Data Collection & Core Calculation - If no result obtained, please substitute the following data into the formula. If it's dichloromethane, please fill in, system will use special value 0.290"
             >
-              <Input placeholder="例如：二氯甲烷" />
+              <Input placeholder="Example: Dichloromethane" />
             </Form.Item>
 
             <Row gutter={16}>
@@ -2770,23 +2774,23 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={
                     <div>
-                      <Text strong>Q4. [填空] ACGIH TLV-TWA 值</Text>
+                      <Text strong>Q4. [Fill-in] ACGIH TLV-TWA Value</Text>
                       <Link 
                         href="https://pubchem.ncbi.nlm.nih.gov" 
                         target="_blank" 
                         style={{ marginLeft: 8, fontSize: 12 }}
                       >
-                        <LinkOutlined /> TLV数据库 (PubChem)
+                        <LinkOutlined /> TLV Database (PubChem)
                       </Link>
                     </div>
                   }
                   name="ctTlv"
-                  rules={[{ required: true, message: '请输入 TLV 值' }]}
-                  tooltip="必须使用 mg/m³ 为单位。如果是 ppm，请根据分子量换算。参考数据库：PubChem"
+                  rules={[{ required: true, message: 'Please enter TLV value' }]}
+                  tooltip="Must use mg/m³ as unit. If it's ppm, please convert based on molecular weight. Reference database: PubChem"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="请查找 TLV-TWA 值"
+                    placeholder="Please look up TLV-TWA value"
                     addonAfter="mg/m³"
                     min={0}
                     step={1}
@@ -2796,18 +2800,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<Text strong>Q5. [选择] 是否为醇类？</Text>}
+                  label={<Text strong>Q5. [Select] Is it an alcohol?</Text>}
                   name="ctQ5Alcohol"
-                  rules={[{ required: true, message: '请选择' }]}
-                  tooltip='该物质是否为"醇类 (Alcohol, -OH)"且不是剧毒品？判别标准：名字里带"醇"，如乙醇、异丙醇，但不包含甲醇'
+                  rules={[{ required: true, message: 'Please select' }]}
+                  tooltip='Is this substance an "Alcohol (-OH)" and not highly toxic? Criteria: Name contains "alcohol", such as ethanol, isopropanol, but excludes methanol'
                 >
-                  <Select placeholder="是否为醇类（-OH）且不是剧毒品？">
+                  <Select placeholder="Is it an alcohol (-OH) and not highly toxic?">
                     {CT_Q5_OPTIONS.map(opt => (
                       <Option key={opt.value} value={opt.value}>
                         <Text strong>{opt.label}</Text>
                         {opt.correction > 0 && (
                           <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
-                            (修正: +{opt.correction})
+                            (Correction: +{opt.correction})
                           </Text>
                         )}
                       </Option>
@@ -2818,25 +2822,25 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Row>
 
             <Alert
-              message="最终计算公式"
+              message="Final Calculation Formula"
               description={
                 <div>
-                  <Text strong>1. 计算基础分 (Base Score):</Text>
+                  <Text strong>1. Calculate Base Score:</Text>
                   <br />
-                  <Text code>Base = 0.80 - 0.20 × log₁₀(TLV 数值)</Text>
-                  <Text type="secondary"> (注：如果结果小于 0，取 0)</Text>
+                  <Text code>Base = 0.80 - 0.20 × log₁₀(TLV value)</Text>
+                  <Text type="secondary"> (Note: If result &lt; 0, take 0)</Text>
                   <br /><br />
-                  <Text strong>2. 醇类修正 (Alcohol Correction):</Text>
+                  <Text strong>2. Alcohol Correction:</Text>
                   <br />
-                  <Text>如果 Q5 选了 A (是醇类) → 基础分 + 0.06</Text>
+                  <Text>If Q5 selected A (is alcohol) -&gt; Base score + 0.06</Text>
                   <br /><br />
-                  <Text strong>3. 二氯甲烷特例 (DCM Exception):</Text>
+                  <Text strong>3. DCM Exception:</Text>
                   <br />
-                  <Text>如果是二氯甲烷，直接取值 0.290，忽略上述公式</Text>
+                  <Text>If it's dichloromethane, directly use 0.290, ignore above formula</Text>
                   <br /><br />
-                  <Text strong>4. 物理状态修正 (Final State Correction):</Text>
+                  <Text strong>4. Final State Correction:</Text>
                   <br />
-                  <Text code>最终数值 = (修正后的基础分) × (Q1 的系数 K)</Text>
+                  <Text code>Final value = (Corrected base score) × (K coefficient from Q1)</Text>
                 </div>
               }
               type="info"
@@ -2849,22 +2853,22 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Chronic Toxicity 计算结果显示 */}
         {ctQ1State && ctQ2 && ctCalculatedValue >= 0 && (
           <Alert
-            message="Chronic Toxicity 计算结果"
+            message="Chronic Toxicity Calculation Result"
             description={
               <div>
                 <Text>
-                  【最终结果】Chronic Toxicity = <Text strong style={{ 
+                  【Final Result】Chronic Toxicity = <Text strong style={{ 
                     color: ctCalculatedValue >= 0.8 ? '#ff4d4f' : ctCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a', 
                     fontSize: 16 
                   }}>{ctCalculatedValue.toFixed(3)}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {ctQ2 === 'A' && '(依据：强腐蚀性 R35/H314，一票否决 = 1.000)'}
-                    {ctQ2 === 'B' && '(依据：致癌/致突变性 R45/R46/R49/H350，一票否决 = 0.800)'}
-                    {ctQ3 === 'A' && '(依据：简单的饱和烷烃，无毒豁免 = 0.000)'}
-                    {ctQ3 === 'B' && '(依据：无害的无机盐/缓冲盐，无毒豁免 = 0.000)'}
+                    {ctQ2 === 'A' && '(Reason: Highly corrosive R35/H314, veto = 1.000)'}
+                    {ctQ2 === 'B' && '(Reason: Carcinogenic/Mutagenic R45/R46/R49/H350, veto = 0.800)'}
+                    {ctQ3 === 'A' && '(Reason: Simple saturated alkane, non-toxic exemption = 0.000)'}
+                    {ctQ3 === 'B' && '(Reason: Harmless inorganic salt/buffer salt, non-toxic exemption = 0.000)'}
                     {ctQ2 === 'C' && ctQ3 === 'C' && ctCalculatedValue > 0 && 
-                      `(依据：核心计算，物理状态系数 K = ${ctQ1State === 'A' ? '0.2' : '1.0'})`
+                      `(Reason: Core calculation, physical state coefficient K = ${ctQ1State === 'A' ? '0.2' : '1.0'})`
                     }
                   </Text>
                 </Text>
@@ -2885,26 +2889,26 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>
           <Space size={8}>
             <GlobalOutlined style={{ color: '#52c41a', fontSize: 18 }} />
-            <span>环境因子 (Environment Factors)</span>
+            <span>Environment Factors</span>
           </Space>
         </Divider>
 
         {/* Persistency 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#f6ffed', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #52c41a' }}>
           <Text strong style={{ fontSize: 15, color: '#389e0d' }}>
-            🌱 持久性 (Persistency) 评估
+            🌱 Persistency Evaluation
           </Text>
         </div>
 
         {/* 第一阶段：物质身份确认 */}
         <Form.Item
-          label={<Text strong>第一阶段：物质身份确认</Text>}
+          label={<Text strong>Stage 1: Substance Identity Confirmation</Text>}
           name="persQ1"
-          rules={[{ required: true, message: '请选择化学属性' }]}
-          tooltip="该物质的化学属性是什么？"
+          rules={[{ required: true, message: 'Please select chemical property' }]}
+          tooltip="What is the chemical property of this substance?"
         >
           <Select 
-            placeholder="该物质的化学属性是什么？（单选）"
+            placeholder="What is the chemical property of this substance? (Single choice)"
             onChange={(value) => setPersQ1(value)}
           >
             {PERSISTENCY_Q1_OPTIONS.map(opt => (
@@ -2913,7 +2917,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 value={opt.value}
                 title={opt.description}
               >
-                {opt.label} {opt.result !== undefined && `(结果: ${opt.result.toFixed(3)})`}
+                {opt.label} {opt.result !== undefined && `(Result: ${opt.result.toFixed(3)})`}
               </Option>
             ))}
           </Select>
@@ -2925,7 +2929,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: 16 }}>
               <div style={{ marginBottom: 12 }}>
                 <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
-                  📊 第二阶段：数据提取 (请查看 CompTox 数据库)
+                  📊 Stage 2: Data Extraction (Please check CompTox Database)
                 </Text>
               </div>
               <Button 
@@ -2935,24 +2939,24 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 target="_blank"
                 style={{ marginBottom: 8 }}
               >
-                打开 CompTox Dashboard
+                Open CompTox Dashboard
               </Button>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                请打开 CompTox 网站查找该物质的 "Env. Fate/Transport" 页面，
-                提取以下5个数据（若无数据填 N/A 或留空）:
+                Please open the CompTox website to find the "Env. Fate/Transport" page for this substance,
+                Extract the following 5 data points (if no data available, fill in N/A or leave blank):
               </Text>
             </div>
 
             <Alert
-              message="💡 数据提取提示"
+              message="💡 Data Extraction Tips"
               description={
                 <div style={{ fontSize: 12 }}>
-                  <Text>1. 在 CompTox 网站中搜索物质名称</Text>
+                  <Text>1. Search substance name in CompTox website</Text>
                   <br />
-                  <Text>2. 点击 "Env. Fate/Transport" 标签页</Text>
+                  <Text>2. Click "Env. Fate/Transport" tab</Text>
                   <br />
-                  <Text>3. 查找并提取下方所需的5个数据项</Text>
+                  <Text>3. Find and extract the 5 required data items below</Text>
                 </div>
               }
               type="info"
@@ -2963,14 +2967,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<Text strong>Q2.1 Biodeg. Half-Life (Days) 生物降解半衰期</Text>}
+                  label={<Text strong>Q2.1 Biodeg. Half-Life (Days)</Text>}
                   name="persBiodegHalfLife"
-                  tooltip="生物降解半衰期（天），记为 t"
+                  tooltip="Biodegradation half-life (days), denoted as t"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="输入天数 (例如: 4.5)"
-                    addonAfter="天"
+                    placeholder="Enter days (e.g.: 4.5)"
+                    addonAfter="days"
                     min={0}
                     step={0.1}
                     precision={2}
@@ -2979,11 +2983,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<Text>数据来源 (Experimental 或 Predicted)</Text>}
+                  label={<Text>Data Source (Experimental or Predicted)</Text>}
                   name="persDataSource"
-                  tooltip="数据来源是实验值还是预测值？Predicted预测值需要修正-0.03"
+                  tooltip="Is the data source experimental value or predicted value? Predicted values need to be corrected by -0.03"
                 >
-                  <Select placeholder="选择数据来源">
+                  <Select placeholder="Select data source">
                     {PERSISTENCY_DATA_SOURCE_OPTIONS.map(opt => (
                       <Option key={opt.value} value={opt.value}>
                         {opt.label}
@@ -2997,12 +3001,12 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item
-                  label={<Text strong>Q2.2 ReadyBiodeg 易降解性</Text>}
+                  label={<Text strong>Q2.2 ReadyBiodeg (Readily Biodegradable)</Text>}
                   name="persReadyBiodeg"
-                  tooltip="0 = 难降解，1 = 易降解"
+                  tooltip="0 = Hardly biodegradable, 1 = Readily biodegradable"
                 >
                   <Select 
-                    placeholder="选择 0 或 1"
+                    placeholder="Select 0 or 1"
                     onChange={(value) => setPersReadyBiodeg(value)}
                   >
                     {PERSISTENCY_READY_BIODEG_OPTIONS.map(opt => (
@@ -3015,13 +3019,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={8}>
                 <Form.Item
-                  label={<Text strong>Q2.3 BCF 生物富集因子</Text>}
+                  label={<Text strong>Q2.3 BCF (Bioconcentration Factor)</Text>}
                   name="persBcf"
-                  tooltip="Bioconcentration Factor (BCF) - 生物富集因子"
+                  tooltip="Bioconcentration Factor (BCF)"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="输入数值"
+                    placeholder="Enter value"
                     min={0}
                     step={0.1}
                     precision={2}
@@ -3032,9 +3036,9 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={<Text strong>Q2.4 Atmos. Hydroxylation Rate</Text>}
                   name="persAtmosRate"
-                  tooltip="大气羟基化速率 (例如 1.4e-13)"
+                  tooltip="Atmospheric hydroxylation rate (e.g., 1.4e-13)"
                 >
-                  <Input placeholder="例如: 1.4e-13" />
+                  <Input placeholder="e.g.: 1.4e-13" />
                 </Form.Item>
               </Col>
             </Row>
@@ -3044,12 +3048,12 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={<Text strong>Q2.5 Fish Biotrans. Half-Life</Text>}
                   name="persFishHalfLife"
-                  tooltip="鱼体内生物转化半衰期（天）"
+                  tooltip="Biotransformation half-life in fish (days)"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="输入天数"
-                    addonAfter="天"
+                    placeholder="Enter days"
+                    addonAfter="days"
                     min={0}
                     step={0.01}
                     precision={2}
@@ -3058,7 +3062,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={12}>
                 <Alert
-                  message="填写完成后，请继续第三阶段的选择"
+                  message="After completion, please continue to Stage 3 selection"
                   type="success"
                   showIcon
                   style={{ marginTop: 30 }}
@@ -3071,18 +3075,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 第三阶段：特殊物质快速通道（仅当Q1选C且填写了Q2数据后显示） */}
         {persQ1 === 'C' && (
           <Form.Item
-            label={<Text strong>第三阶段：特殊物质快速通道 ("Fast Track")</Text>}
+            label={<Text strong>Stage 3: Special Substance Fast Track</Text>}
             name="persQ3"
-            rules={[{ required: true, message: '请选择' }]}
-            tooltip="该物质是否满足以下任意快速判定条件？"
+            rules={[{ required: true, message: 'Please select' }]}
+            tooltip="Does this substance meet any of the following rapid determination criteria?"
           >
             <Select 
-              placeholder="该物质是否满足以下任意条件？（单选）"
+              placeholder="Does this substance meet any of the following conditions? (Single choice)"
               onChange={(value) => setPersQ3(value)}
             >
               {PERSISTENCY_Q3_OPTIONS.map(opt => (
                 <Option key={opt.value} value={opt.value} title={opt.description}>
-                  {opt.label} {opt.result !== undefined && `(结果: ${opt.result.toFixed(3)})`}
+                  {opt.label} {opt.result !== undefined && `(Result: ${opt.result.toFixed(3)})`}
                 </Option>
               ))}
             </Select>
@@ -3097,13 +3101,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={<Text strong>Q2.1 Biodeg. Half-Life</Text>}
                   name="persBiodegHalfLife"
-                  rules={[{ required: true, message: '请输入半衰期' }]}
-                  tooltip="🧮 第四阶段：核心计算公式 (适用于多数有机溶剂) - 如正己烷、乙醇、乙腈、MTBE、异辛烷、氯仿等。生物降解半衰期（天），记为 t"
+                  rules={[{ required: true, message: 'Please enter half-life' }]}
+                  tooltip="🧮 Stage 4: Core Calculation Formula (applicable to most organic solvents) - such as n-hexane, ethanol, acetonitrile, MTBE, isooctane, chloroform, etc. Biodegradation half-life (days), denoted as t"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="输入天数"
-                    addonAfter="天"
+                    placeholder="Enter days"
+                    addonAfter="days"
                     min={0}
                     step={0.1}
                     precision={2}
@@ -3112,11 +3116,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={8}>
                 <Form.Item
-                  label={<Text strong>数据来源</Text>}
+                  label={<Text strong>Data Source</Text>}
                   name="persDataSource"
-                  tooltip="数据来源是实验值还是预测值？Predicted预测值需要修正"
+                  tooltip="Is the data source experimental value or predicted value? Predicted values need correction"
                 >
-                  <Select placeholder="选择数据来源">
+                  <Select placeholder="Select data source">
                     {PERSISTENCY_DATA_SOURCE_OPTIONS.map(opt => (
                       <Option key={opt.value} value={opt.value}>
                         {opt.label}
@@ -3129,11 +3133,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Form.Item
                   label={<Text strong>Q2.2 ReadyBiodeg</Text>}
                   name="persReadyBiodeg"
-                  rules={[{ required: true, message: '请选择' }]}
-                  tooltip="0 = 难降解，1 = 易降解"
+                  rules={[{ required: true, message: 'Please select' }]}
+                  tooltip="0 = Hardly biodegradable, 1 = Readily biodegradable"
                 >
                   <Select 
-                    placeholder="选择 0 或 1"
+                    placeholder="Select 0 or 1"
                     onChange={(value) => setPersReadyBiodeg(value)}
                   >
                     {PERSISTENCY_READY_BIODEG_OPTIONS.map(opt => (
@@ -3149,21 +3153,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             {/* 路径1: ReadyBiodeg = 1 (易降解) */}
             {persReadyBiodeg === 1 && (
               <Alert
-                message="✅ 路径1: 易降解物质 (ReadyBiodeg = 1)"
+                message="✅ Path 1: Readily Biodegradable Substance (ReadyBiodeg = 1)"
                 description={
                   <div>
-                    <Text strong>计算公式:</Text>
+                    <Text strong>Calculation Formula:</Text>
                     <br />
                     <Text code>Persistency = 0.45 × log₁₀(t)</Text>
                     <br /><br />
-                    <Text strong>修正项:</Text>
+                    <Text strong>Correction Term:</Text>
                     <br />
-                    <Text>• 如果数据来源是 <Text code>Predicted</Text> (预测值)，结果需要 <Text strong>减去 0.03</Text></Text>
+                    <Text>• If data source is <Text code>Predicted</Text> (predicted value), result needs to <Text strong>subtract 0.03</Text></Text>
                     <br />
-                    <Text>• 如果是 <Text code>Experimental</Text> (实验值)，则不减</Text>
+                    <Text>• If it's <Text code>Experimental</Text> (experimental value), no subtraction</Text>
                     <br /><br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      (典型例子: 乙醇、乙腈、正己烷、丙酮)
+                      (Typical examples: ethanol, acetonitrile, n-hexane, acetone)
                     </Text>
                   </div>
                 }
@@ -3177,14 +3181,14 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             {persReadyBiodeg === 0 && (
               <>
                 <Alert
-                  message="⚠️ 路径2: 难降解物质 (ReadyBiodeg = 0)"
+                  message="⚠️ Path 2: Persistent Substance (ReadyBiodeg = 0)"
                   description={
                     <div>
-                      <Text strong>需要判断物质的化学结构类型:</Text>
+                      <Text strong>Need to determine chemical structure type:</Text>
                       <br />
-                      <Text>• 2a. 卤代烃类 (含氯/溴，且 BCF &gt; 5.0)</Text>
+                      <Text>• 2a. Halogenated Hydrocarbons (Contains Cl/Br, and BCF &gt; 5.0)</Text>
                       <br />
-                      <Text>• 2b. 醚类 或 支链烷烃 (BCF &lt; 5.0)</Text>
+                      <Text>• 2b. Ethers or Branched Alkanes (BCF &lt; 5.0)</Text>
                     </div>
                   }
                   type="warning"
@@ -3195,13 +3199,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item
-                      label={<Text strong>Q2.3 BCF 值</Text>}
+                      label={<Text strong>Q2.3 BCF Value</Text>}
                       name="persBcf"
-                      tooltip="生物富集因子 (Bioconcentration Factor)，用于判断化学类型"
+                      tooltip="Bioconcentration Factor (BCF), used to determine chemical type"
                     >
                       <InputNumber
                         style={{ width: '100%' }}
-                        placeholder="输入 BCF 数值"
+                        placeholder="Enter BCF value"
                         min={0}
                         step={0.1}
                         precision={2}
@@ -3210,13 +3214,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   </Col>
                   <Col span={12}>
                     <Form.Item
-                      label={<Text strong>化学结构类型</Text>}
+                      label={<Text strong>Chemical Structure Type</Text>}
                       name="persChemicalType"
-                      rules={[{ required: true, message: '难降解物质必须选择化学类型' }]}
-                      tooltip="根据BCF值和化学结构判断"
+                      rules={[{ required: true, message: 'Persistent substance must select chemical type' }]}
+                      tooltip="Determined based on BCF value and chemical structure"
                     >
                       <Select 
-                        placeholder="选择化学类型"
+                        placeholder="Select chemical type"
                         onChange={(value) => setPersChemicalType(value)}
                       >
                         {PERSISTENCY_CHEMICAL_TYPE_OPTIONS.map(opt => (
@@ -3229,15 +3233,15 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
                 {persChemicalType === '2a' && (
                   <Alert
-                    message="路径2a: 卤代烃类 (含氯/溴，BCF &gt; 5.0)"
+                    message="Path 2a: Halogenated Hydrocarbons (Cl/Br, BCF &gt; 5.0)"
                     description={
                       <div>
-                        <Text strong>计算公式:</Text>
+                        <Text strong>Calculation Formula:</Text>
                         <br />
                         <Text code>Persistency = 0.32 × log₁₀(t)</Text>
                         <br /><br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          (典型例子: 氯仿)
+                          (Typical example: chloroform)
                         </Text>
                       </div>
                     }
@@ -3249,15 +3253,15 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
                 {persChemicalType === '2b' && (
                   <Alert
-                    message="路径2b: 醚类 或 支链烷烃 (BCF &lt; 5.0)"
+                    message="Path 2b: Ethers or Branched Alkanes (BCF &lt; 5.0)"
                     description={
                       <div>
-                        <Text strong>计算公式:</Text>
+                        <Text strong>Calculation Formula:</Text>
                         <br />
                         <Text code>Persistency = 0.45 × log₁₀(t) + 0.32</Text>
                         <br /><br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          (典型例子: MTBE, 异辛烷)
+                          (Typical examples: MTBE, isooctane)
                         </Text>
                       </div>
                     }
@@ -3274,24 +3278,24 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Persistency 计算结果显示 */}
         {persQ1 && persCalculatedValue >= 0 && (
           <Alert
-            message="Persistency 计算结果"
+            message="Persistency Calculation Result"
             description={
               <div>
                 <Text>
-                  【最终结果】Persistency = <Text strong style={{ 
+                  【Final Result】Persistency = <Text strong style={{ 
                     color: persCalculatedValue >= 0.6 ? '#ff4d4f' : persCalculatedValue >= 0.3 ? '#fa8c16' : '#52c41a', 
                     fontSize: 16 
                   }}>{persCalculatedValue.toFixed(3)}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {persQ1 === 'A' && '(依据：无机强酸，固定值 = 0.485)'}
-                    {persQ1 === 'B' && '(依据：其他无机物，固定值 = 0.000)'}
-                    {persQ3 === 'A' && '(依据：极快降解/低蓄积，固定值 = 0.000)'}
-                    {persQ3 === 'B' && '(依据：醇或类似性低蓄积，固定值 = 0.020)'}
-                    {persQ3 === 'C' && '(依据：特殊代谢物质，固定值 = 0.130)'}
-                    {persQ3 === 'D' && persReadyBiodeg === 1 && '(依据：易降解公式计算)'}
-                    {persQ3 === 'D' && persReadyBiodeg === 0 && persChemicalType === '2a' && '(依据：卤代烃类公式计算)'}
-                    {persQ3 === 'D' && persReadyBiodeg === 0 && persChemicalType === '2b' && '(依据：醚类/支链烷烃公式计算)'}
+                    {persQ1 === 'A' && '(Reason: Inorganic strong acid, fixed value = 0.485)'}
+                    {persQ1 === 'B' && '(Reason: Other inorganic substances, fixed value = 0.000)'}
+                    {persQ3 === 'A' && '(Reason: Extremely rapid degradation/low accumulation, fixed value = 0.000)'}
+                    {persQ3 === 'B' && '(Reason: Alcohol or similar low accumulation, fixed value = 0.020)'}
+                    {persQ3 === 'C' && '(Reason: Special metabolized substance, fixed value = 0.130)'}
+                    {persQ3 === 'D' && persReadyBiodeg === 1 && '(Reason: Calculated by readily biodegradable formula)'}
+                    {persQ3 === 'D' && persReadyBiodeg === 0 && persChemicalType === '2a' && '(Reason: Calculated by halogenated hydrocarbon formula)'}
+                    {persQ3 === 'D' && persReadyBiodeg === 0 && persChemicalType === '2b' && '(Reason: Calculated by ether/branched alkane formula)'}
                   </Text>
                 </Text>
               </div>
@@ -3310,19 +3314,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <Row gutter={16}>
           <Col span={8}>
             <Alert
-              message="大气危害 (Air Hazard)"
+              message="Air Hazard"
               description={
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Air Hazard 的分数等于 Chronic Toxicity
+                    Air Hazard score equals Chronic Toxicity
                   </Text>
                   <br />
                   <Text strong style={{ fontSize: 16, color: ctCalculatedValue >= 0.8 ? '#ff4d4f' : ctCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a' }}>
-                    {ctCalculatedValue >= 0 ? ctCalculatedValue.toFixed(3) : '待计算'}
+                    {ctCalculatedValue >= 0 ? ctCalculatedValue.toFixed(3) : 'To be calculated'}
                   </Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 11 }}>
-                    (自动同步自 Chronic Toxicity)
+                    (Automatically synced from Chronic Toxicity)
                   </Text>
                 </div>
               }
@@ -3341,28 +3345,28 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Water Hazard 决策树 */}
         <div style={{ marginBottom: 16, marginTop: 24, background: '#e6f7ff', padding: '10px 16px', borderRadius: '6px', borderLeft: '4px solid #1890ff' }}>
           <Text strong style={{ fontSize: 15, color: '#0050b3' }}>
-            💧 水体危害 (Water Hazard) 评估
+            💧 Water Hazard Evaluation
           </Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            逻辑核心：基础分 + 罚分 + 微量残差
+            Logic Core: Base Score + Penalty + Trace Residuals
           </Text>
         </div>
 
         {/* 第一步：物质类别初筛 */}
         <Form.Item
-          label={<Text strong>第一步：物质类别初筛（基础定性，记为S1）</Text>}
+          label={<Text strong>Step 1: Initial Substance Category Screening (Baseline Qualitative, denoted as S1)</Text>}
           name="whQ1"
-          rules={[{ required: true, message: '请选择物质类别' }]}
-          tooltip="该物质属于以下哪一类？"
+          rules={[{ required: true, message: 'Please select substance category' }]}
+          tooltip="Which of the following categories does this substance belong to?"
         >
           <Select 
-            placeholder="请判断您的物质属于以下哪一类？（单选）"
+            placeholder="Please determine which category your substance belongs to? (Single choice)"
             onChange={(value) => setWhQ1(value)}
           >
             {WH_Q1_OPTIONS.map(opt => (
               <Option key={opt.value} value={opt.value} title={opt.description + (opt.note ? ` 💡 ${opt.note}` : '')}>
-                {opt.label} {opt.result !== undefined && `(结果: S1 = ${opt.result.toFixed(3)})`}
+                {opt.label} {opt.result !== undefined && `(Result: S1 = ${opt.result.toFixed(3)})`}
               </Option>
             ))}
           </Select>
@@ -3374,30 +3378,30 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             <Form.Item
               label={
                 <div>
-                  <Text strong>Q2. LC50 范围判断</Text>
+                  <Text strong>Q2. LC50 Range Determination</Text>
                   <div style={{ marginTop: 4 }}>
                     <Link 
                       href="https://comptox.epa.gov/dashboard/" 
                       target="_blank" 
                       style={{ fontSize: 12, marginRight: 12 }}
                     >
-                      <LinkOutlined /> CompTox数据库
+                      <LinkOutlined /> CompTox Database
                     </Link>
-                    <Text type="secondary" style={{ fontSize: 11 }}>（若无数据可通过文献搜索）</Text>
+                    <Text type="secondary" style={{ fontSize: 11 }}>(If no data available, search through literature)</Text>
                   </div>
                 </div>
               }
               name="whQ2"
-              rules={[{ required: true, message: '请选择LC50范围' }]}
-              tooltip="第二步：急性毒性评分 (Toxicity Score) - 请查找物质的 96小时鱼类 LC50 (mg/L)。参考数据库：CompTox Dashboard，若无数据可通过文献搜索获得。根据96h鱼类LC50值选择对应范围"
+              rules={[{ required: true, message: 'Please select LC50 range' }]}
+              tooltip="Stage 2: Acute Toxicity Score - Find the substance's 96-hour fish LC50 (mg/L). Reference: CompTox Dashboard, if no data available, search through literature. Select the corresponding range based on 96h fish LC50 value"
             >
               <Select 
-                placeholder="请根据LC50值选择对应范围（单选）"
+                placeholder="Please select the corresponding range based on LC50 value (Single choice)"
                 onChange={(value) => setWhQ2(value)}
               >
                 {WH_Q2_OPTIONS.map(opt => (
-                  <Option key={opt.value} value={opt.value} title={`第二步得分 S2 = ${opt.result.toFixed(3)}`}>
-                    {opt.label} (得分: {opt.result.toFixed(3)})
+                  <Option key={opt.value} value={opt.value} title={`Stage 2 Score S2 = ${opt.result.toFixed(3)}`}>
+                    {opt.label} (Score: {opt.result.toFixed(3)})
                   </Option>
                 ))}
               </Select>
@@ -3405,28 +3409,28 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
             {/* 第三步：环境归趋"罚分" */}
             <div style={{ background: '#fffbe6', padding: '12px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14 }}>第三步：环境归趋"罚分" (Fate Penalty)</Text>
+              <Text strong style={{ fontSize: 14 }}>Step 3: Environmental Fate Penalty</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                此步骤包含两个"罚分项"，请分别判断并累加
+                This step includes two penalty items. Please evaluate and accumulate separately.
               </Text>
             </div>
 
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<Text strong>3.1 持久性罚分（单选）</Text>}
+                  label={<Text strong>3.1 Persistency Penalty (Single choice)</Text>}
                   name="whQ3_1"
-                  rules={[{ required: true, message: '请选择' }]}
-                  tooltip="物质是否会在水中长期存在？"
+                  rules={[{ required: true, message: 'Please select' }]}
+                  tooltip="Does the substance persist in water for a long time?"
                 >
                   <Select 
-                    placeholder="物质是否会在水中长期存在？"
+                    placeholder="Will this substance persist in water for a long time?"
                     onChange={(value) => setWhQ3_1(value)}
                   >
                     {WH_Q3_1_OPTIONS.map(opt => (
                       <Option key={opt.value} value={opt.value} title={opt.description}>
-                        {opt.label} (罚分: {opt.penalty.toFixed(3)})
+                        {opt.label} (Penalty: {opt.penalty.toFixed(3)})
                       </Option>
                     ))}
                   </Select>
@@ -3434,18 +3438,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<Text strong>3.2 生物累积罚分（单选）</Text>}
+                  label={<Text strong>3.2 Bioaccumulation Penalty (Single choice)</Text>}
                   name="whQ3_2"
-                  rules={[{ required: true, message: '请选择' }]}
-                  tooltip="物质是否会在生物体内富集？（查询 BCF 或 Log Kow）"
+                  rules={[{ required: true, message: 'Please select' }]}
+                  tooltip="Does the substance bioaccumulate in organisms? (Query BCF or Log Kow)"
                 >
                   <Select 
-                    placeholder="是否会在生物体内富集？"
+                    placeholder="Will it bioaccumulate in organisms?"
                     onChange={(value) => setWhQ3_2(value)}
                   >
                     {WH_Q3_2_OPTIONS.map(opt => (
-                      <Option key={opt.value} value={opt.value} title={`罚分: ${opt.penalty.toFixed(3)}`}>
-                        {opt.label} (罚分: {opt.penalty.toFixed(3)})
+                      <Option key={opt.value} value={opt.value} title={`Penalty: ${opt.penalty.toFixed(3)}`}>
+                        {opt.label} (Penalty: {opt.penalty.toFixed(3)})
                       </Option>
                     ))}
                   </Select>
@@ -3455,25 +3459,25 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
             {/* 第四步：微量残差计算 */}
             <div style={{ background: '#f6ffed', padding: '12px', borderRadius: '8px', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14 }}>第四步：微量残差计算 (Residuals)</Text>
+              <Text strong style={{ fontSize: 14 }}>Step 4: Trace Residuals Calculation</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                计算当前总分 Sum = S1 + S2 + S3<br />
-                • 情形A: 如果 Sum &gt; 0 → S4 = 0（无需修正，直接结算）<br />
-                • 情形B: 如果 Sum = 0 → 需要输入LC50和K值计算微量残差: S4 = K / LC₅₀
+                Calculate current total Sum = S1 + S2 + S3<br />
+                &bull; Case A: If Sum &gt; 0 -&gt; S4 = 0 (No correction needed, proceed to final calculation)<br />
+                &bull; Case B: If Sum = 0 -&gt; Input LC50 and K value to calculate trace residuals: S4 = K / LC₅₀
               </Text>
             </div>
 
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item
-                  label={<Text>LC50 数值（用于微量残差）</Text>}
+                  label={<Text>LC50 Value (for trace residuals)</Text>}
                   name="whLc50"
-                  tooltip="输入完整的LC50数值（mg/L），用于情形B的微量残差计算"
+                  tooltip="Enter the complete LC50 value (mg/L) for Scenario B trace residual calculation"
                 >
                   <InputNumber
                     style={{ width: '100%' }}
-                    placeholder="输入 LC50 值"
+                    placeholder="Enter LC50 value"
                     addonAfter="mg/L"
                     min={0}
                     step={1}
@@ -3483,11 +3487,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
               </Col>
               <Col span={16}>
                 <Form.Item
-                  label={<Text>K值选择（用于微量残差）</Text>}
+                  label={<Text>K Value Selection (for trace residuals)</Text>}
                   name="whKValue"
-                  tooltip="仅当Sum=0时需要选择K值"
+                  tooltip="Only select K value when Sum=0"
                 >
-                  <Select placeholder="选择K值类型">
+                  <Select placeholder="Select K value type">
                     {WH_Q4_K_OPTIONS.map(opt => (
                       <Option key={opt.value} value={opt.value}>
                         <div>
@@ -3502,12 +3506,12 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
             </Row>
 
             <Alert
-              message="💡 K值选择提示"
+              message="💡 K Value Selection Tips"
               description={
                 <div style={{ fontSize: 12 }}>
-                  <Text>1. 含卤素/难降解有机物（如二氯甲烷、氯仿）：<Text strong>K = 6.0</Text></Text><br />
-                  <Text>2. 普通易降解有机物（如甲醇、乙酸乙酯、三乙胺）：<Text strong>K = 0.7</Text></Text><br />
-                  <Text>3. 超低毒溶剂（LC50 &gt; 1000，如甲醇、乙腈、丙酮）：<Text strong>K = 0</Text>（忽略不计）</Text>
+                  <Text>1. Halogenated/Persistent Organics (e.g., dichloromethane, chloroform): <Text strong>K = 6.0</Text></Text><br />
+                  <Text>2. Common Biodegradable Organics (e.g., methanol, ethyl acetate, triethylamine): <Text strong>K = 0.7</Text></Text><br />
+                  <Text>3. Very Low Toxicity Solvents (LC50 &gt; 1000, e.g., methanol, acetonitrile, acetone): <Text strong>K = 0</Text> (Negligible)</Text>
                 </div>
               }
               type="info"
@@ -3520,19 +3524,19 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Water Hazard 计算结果显示 */}
         {whQ1 && whCalculatedValue >= 0 && (
           <Alert
-            message="Water Hazard 计算结果"
+            message="Water Hazard Calculation Result"
             description={
               <div>
                 <Text>
-                  【最终结果】Water Hazard = <Text strong style={{ 
+                  【Final Result】Water Hazard = <Text strong style={{ 
                     color: whCalculatedValue >= 0.6 ? '#ff4d4f' : whCalculatedValue >= 0.3 ? '#fa8c16' : '#52c41a', 
                     fontSize: 16 
                   }}>{whCalculatedValue.toFixed(3)}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {whQ1 === 'A' && '(依据：强腐蚀性无机酸/碱，固定值 S1 = 0.500)'}
-                    {whQ1 === 'B' && '(依据：普通无机盐/缓冲盐，固定值 = 0.000)'}
-                    {whQ1 === 'C' && '(依据：基础分 + 急性毒性 + 环境罚分 + 微量残差)'}
+                    {whQ1 === 'A' && '(Reason: Highly corrosive inorganic acid/base, fixed value S1 = 0.500)'}
+                    {whQ1 === 'B' && '(Reason: Common inorganic salt/buffer salt, fixed value = 0.000)'}
+                    {whQ1 === 'C' && '(Reason: Base score + Acute toxicity + Environmental penalty + Trace residuals)'}
                   </Text>
                 </Text>
               </div>
@@ -3550,29 +3554,29 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
         {/* Regeneration Factor */}
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 32, marginBottom: 16, borderTopColor: '#722ed1', borderTopWidth: 2 }}>
-          ♻️ 再生属性评级 (Regeneration Factor, Rᵢ)
+          ♻️ Regeneration Factor (Rᵢ)
         </Divider>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            五级R值评分公式与规则 (The 5-Tier Formula & Rules) | 核心公式: Rᵢ = 0.25 × (L_res - 1)
+            The 5-Tier Formula & Rules | Core Formula: Rᵢ = 0.25 × (L_res - 1)
           </Text>
         </div>
 
         <Form.Item
-          label={<Text strong>请选择该物质的来源与合成属性类别 (L_res = 1, 2, 3, 4, 5)</Text>}
+          label={<Text strong>Please select the source and synthesis property category of this substance (L_res = 1, 2, 3, 4, 5)</Text>}
           name="regeneration"
-          rules={[{ required: true, message: '请选择来源与合成属性' }]}
-          tooltip="根据物质的化学性质、来源和合成复杂度，选择对应的L_res等级（1-5），系统将自动计算R值"
+          rules={[{ required: true, message: 'Please select source and synthesis property' }]}
+          tooltip="Based on the substance's chemical properties, source, and synthesis complexity, select the corresponding L_res level (1-5), the system will automatically calculate R value"
         >
           <Select 
-            placeholder="请根据物质的来源和合成复杂度选择对应等级"
+            placeholder="Please select the corresponding level based on substance source and synthesis complexity"
             onChange={(value) => setRegenerationValue(value)}
           >
             {REGENERATION_OPTIONS.map(opt => (
               <Option 
                 key={opt.value} 
                 value={opt.value}
-                title={`${opt.description} | 适用: ${opt.differentiation}`}
+                title={`${opt.description} | Applicable: ${opt.differentiation}`}
               >
                 {opt.label} (R = {opt.value.toFixed(2)})
               </Option>
@@ -3583,11 +3587,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Regeneration Factor 结果显示 */}
         {regenerationValue !== undefined && (
           <Alert
-            message="再生属性评级结果 (Regeneration Factor Result)"
+            message="Regeneration Factor Result"
             description={
               <div>
                 <Text>
-                  【最终得分】Rᵢ = <Text strong style={{ 
+                  【Final Score】Rᵢ = <Text strong style={{ 
                     color: regenerationValue === 0 ? '#52c41a' : 
                            regenerationValue <= 0.5 ? '#52c41a' : 
                            regenerationValue <= 0.75 ? '#fa8c16' : '#ff4d4f', 
@@ -3595,11 +3599,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   }}>{regenerationValue.toFixed(2)}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {regenerationValue === 0 && '(等级1：自然本底级 - 无需化学合成)'}
-                    {regenerationValue === 0.25 && '(等级2：绿色循环级 - 生物基或工业副回收)'}
-                    {regenerationValue === 0.5 && '(等级3：简单合成级 - C-H-O简单有机物)'}
-                    {regenerationValue === 0.75 && '(等级4：复杂/高耗能级 - 含卤素/杂环化合物)'}
-                    {regenerationValue === 1.0 && '(等级5：资源枯竭/稀缺级 - 稀缺矿产或精细化学品)'}
+                    {regenerationValue === 0 && '(Level 1: Natural Background - No chemical synthesis needed)'}
+                    {regenerationValue === 0.25 && '(Level 2: Green Recycling - Bio-based or industrial waste recovery)'}
+                    {regenerationValue === 0.5 && '(Level 3: Simple Synthesis - C-H-O simple organics)'}
+                    {regenerationValue === 0.75 && '(Level 4: Complex/Energy Intensive - Halogenated/heterocyclic compounds)'}
+                    {regenerationValue === 1.0 && '(Level 5: Depletion/Scarcity - Scarce minerals or fine chemicals)'}
                   </Text>
                 </Text>
               </div>
@@ -3614,23 +3618,23 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
         {/* Disposal Factor (处置因子 D) */}
         <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 32, marginBottom: 16, borderTopColor: '#fa541c', borderTopWidth: 2 }}>
-          🗑️ 处置考量因子 (Disposal Considerations Factor, Dᵢ)
+          🗑️ Disposal Considerations Factor (Dᵢ)
         </Divider>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            引入处置百分比的高级算法公式 (The Advanced Formula with Disposal Percentage) | 核心公式: Dᵢ = D_int × [1 - (P_disp/100% × ξ_eff)]
+            The Advanced Formula with Disposal Percentage | Core Formula: Dᵢ = D_int × [1 - (P_disp/100% × ξ_eff)]
           </Text>
         </div>
 
         {/* 题目一：物质废弃属性 (D_int) */}
         <Form.Item
-          label={<Text strong>题目一：物质废弃属性 (D_int, Intrinsic Disposal Resistance)</Text>}
+          label={<Text strong>Question 1: Substance Disposal Property (D_int, Intrinsic Disposal Resistance)</Text>}
           name="disposalDint"
-          rules={[{ required: true, message: '请选择物质废弃属性' }]}
-          tooltip="基于物质本身的难处理性质，采用5级高阻力值(0.00 - 1.00)"
+          rules={[{ required: true, message: 'Please select substance disposal property' }]}
+          tooltip="Based on the substance's inherent difficulty of disposal, using 5-level high resistance values (0.00 - 1.00)"
         >
           <Select 
-            placeholder="请选择该试剂降解后的物理化学属性与处置难度"
+            placeholder="Please select the physicochemical properties and disposal difficulty of this reagent after degradation"
             onChange={(value) => {
               setDisposalDint(value)
               form.setFieldsValue({ disposalDint: value })
@@ -3650,13 +3654,13 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
 
         {/* 题目二：处置百分比 (P_disp) */}
         <Form.Item
-          label={<Text strong>题目二：处置百分比 (P_disp, Effective Disposal/Recovery Percentage)</Text>}
+          label={<Text strong>Question 2: Disposal Percentage (P_disp, Effective Disposal/Recovery Percentage)</Text>}
           name="disposalPercentage"
-          rules={[{ required: true, message: '请选择处置百分比' }]}
-          tooltip="实验室对该废液的'资源化回收'或'中和还原'的百分比 (0% ~ 100%)"
+          rules={[{ required: true, message: 'Please select disposal percentage' }]}
+          tooltip="Percentage of this waste liquid that undergoes 'resource recovery' or 'neutralization/reduction' in the laboratory (0% ~ 100%)"
         >
           <Select 
-            placeholder="实验室对该类废液进行了合规回收/资源化回收的比例是多少？（注：单纯的外运焚烧请填0%）"
+            placeholder="What percentage of this type of waste liquid has undergone compliant recovery/resource recycling in the lab? (Note: Simple outsourced incineration should be filled as 0%)"
             onChange={(value) => {
               setDisposalPercentage(value)
               form.setFieldsValue({ disposalPercentage: value })
@@ -3673,11 +3677,11 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* Disposal Factor 结果显示 */}
         {disposalValue !== undefined && (
           <Alert
-            message="处置考量因子计算结果 (Disposal Considerations Factor Result)"
+            message="Disposal Considerations Factor Result"
             description={
               <div>
                 <Text>
-                  【最终得分】Dᵢ = <Text strong style={{ 
+                  【Final Score】Dᵢ = <Text strong style={{ 
                     color: disposalValue === 0 ? '#52c41a' : 
                            disposalValue <= 0.25 ? '#95de64' :
                            disposalValue <= 0.5 ? '#ffc53d' : 
@@ -3690,16 +3694,16 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                   </Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 11, marginTop: 4 }}>
-                    {disposalDint === 0 && '物质属性：自然回归级 | '}
-                    {disposalDint === 0.25 && '物质属性：低熵回收级 | '}
-                    {disposalDint === 0.5 && '物质属性：标准工业级 | '}
-                    {disposalDint === 0.75 && '物质属性：高风险阻碍级 | '}
-                    {disposalDint === 1.0 && '物质属性：不可逆摧毁级 | '}
-                    {disposalPercentage === 0 && '完全废弃/外运焚烧'}
-                    {disposalPercentage === 25 && '少量回收用于清洗'}
-                    {disposalPercentage === 50 && '半数回收'}
-                    {disposalPercentage === 75 && '大部分回收'}
-                    {disposalPercentage === 100 && '完全闭环循环'}
+                    {disposalDint === 0 && 'Substance: Natural Return | '}
+                    {disposalDint === 0.25 && 'Substance: Low-Entropy Recovery | '}
+                    {disposalDint === 0.5 && 'Substance: Standard Industrial | '}
+                    {disposalDint === 0.75 && 'Substance: High Barrier | '}
+                    {disposalDint === 1.0 && 'Substance: Irreversible Destruction | '}
+                    {disposalPercentage === 0 && 'Complete Disposal/Incineration'}
+                    {disposalPercentage === 25 && 'Minor Recovery for Cleaning'}
+                    {disposalPercentage === 50 && 'Half Recovery'}
+                    {disposalPercentage === 75 && 'Majority Recovery'}
+                    {disposalPercentage === 100 && 'Complete Closed Loop'}
                   </Text>
                 </Text>
               </div>
@@ -3724,12 +3728,12 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 显示小因子计算结果 - 仅在智能引导模式下显示 */}
         {inputMode === 'select' && (
         <>
-        <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#1890ff', borderTopWidth: 2 }}>📋 小因子计算结果</Divider>
+        <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 24, marginBottom: 16, borderTopColor: '#1890ff', borderTopWidth: 2 }}>📋 Subfactor Calculation Results</Divider>
         
         <div style={{ background: '#fafafa', padding: '12px', borderRadius: '8px', marginBottom: 12 }}>
           <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
             <FireOutlined style={{ color: '#ff4d4f', marginRight: 6 }} />
-            安全因子 (Safety) 各小因子得分
+            Safety Factor Subfactor Scores
           </Text>
           <Row gutter={[8, 8]}>
             <Col span={6}>
@@ -3770,7 +3774,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <div style={{ background: '#f6ffed', padding: '12px', borderRadius: '8px', marginBottom: 12 }}>
           <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
             <HeartOutlined style={{ color: '#52c41a', marginRight: 6 }} />
-            健康因子 (Health) 各小因子得分
+            Health Factor Subfactor Scores
           </Text>
           <Row gutter={[8, 8]}>
             <Col span={12}>
@@ -3795,7 +3799,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         <div style={{ background: '#e6f7ff', padding: '12px', borderRadius: '8px', marginBottom: 12 }}>
           <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
             <GlobalOutlined style={{ color: '#1890ff', marginRight: 6 }} />
-            环境因子 (Environment) 各小因子得分
+            Environment Factor Subfactor Scores
           </Text>
           <Row gutter={[8, 8]}>
             <Col span={8}>
@@ -3829,7 +3833,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         {/* 小因子计算结果显示结束 */}
 
         {/* 计算结果显示 - 两种模式都显示 */}
-        <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 20, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>🎯 大因子自动累加结果</Divider>
+        <Divider style={{ fontSize: 16, fontWeight: 'bold', color: '#262626', marginTop: 20, marginBottom: 16, borderTopColor: '#52c41a', borderTopWidth: 2 }}>🎯 Accumulated Factor Results</Divider>
         <div style={{ 
           background: '#f6f8fa', 
           padding: '12px 16px', 
@@ -3840,56 +3844,56 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           <Row gutter={16} justify="center">
             <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
               <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ffa39e' }}>
-                <Text strong style={{ fontSize: 14 }}>安全分数 (S)</Text>
+                <Text strong style={{ fontSize: 14 }}>Safety Score (S)</Text>
                 <div style={{ fontSize: 22, color: '#ff4d4f', fontWeight: 'bold', marginTop: 4 }}>
                   {calculatedScores.safetyScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  4个子因子之和
+                  Sum of 4 subfactors
                 </Text>
               </div>
             </Col>
             <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
               <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ffbb96' }}>
-                <Text strong style={{ fontSize: 14 }}>健康分数 (H)</Text>
+                <Text strong style={{ fontSize: 14 }}>Health Score (H)</Text>
                 <div style={{ fontSize: 22, color: '#ff7a45', fontWeight: 'bold', marginTop: 4 }}>
                   {calculatedScores.healthScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  2个子因子之和
+                  Sum of 2 subfactors
                 </Text>
               </div>
             </Col>
             <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
               <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #95de64' }}>
-                <Text strong style={{ fontSize: 14 }}>环境分数 (E)</Text>
+                <Text strong style={{ fontSize: 14 }}>Environmental Score (E)</Text>
                 <div style={{ fontSize: 22, color: '#52c41a', fontWeight: 'bold', marginTop: 4 }}>
                   {calculatedScores.envScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  3个子因子之和
+                  Sum of 3 subfactors
                 </Text>
               </div>
             </Col>
             <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
               <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #b37feb' }}>
-                <Text strong style={{ fontSize: 14 }}>再生因子 (R)</Text>
+                <Text strong style={{ fontSize: 14 }}>Regeneration Factor (R)</Text>
                 <div style={{ fontSize: 22, color: '#722ed1', fontWeight: 'bold', marginTop: 4 }}>
                   {(form.getFieldValue('regeneration') || 0).toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  来源属性
+                  Source Property
                 </Text>
               </div>
             </Col>
             <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
               <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ff9c6e' }}>
-                <Text strong style={{ fontSize: 14 }}>废弃因子 (D)</Text>
+                <Text strong style={{ fontSize: 14 }}>Disposal Factor (D)</Text>
                 <div style={{ fontSize: 22, color: '#fa541c', fontWeight: 'bold', marginTop: 4 }}>
                   {(form.getFieldValue('disposal') || 0).toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  废弃处置特性
+                  Disposal Property
                 </Text>
               </div>
             </Col>

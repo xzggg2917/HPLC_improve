@@ -62,7 +62,7 @@ const FactorsPage: React.FC = () => {
         }
       } catch (error) {
         console.error('❌ 加载全局试剂库失败:', error)
-        message.error('加载试剂库失败')
+        message.error('Failed to load reagent library')
         // 失败时使用预定义数据
         setReagents(sortReagentsByName([...PREDEFINED_REAGENTS]))
       } finally {
@@ -86,7 +86,7 @@ const FactorsPage: React.FC = () => {
       window.dispatchEvent(new Event('factorsLibraryUpdated'))
     } catch (error) {
       console.error('❌ 保存全局试剂库失败:', error)
-      message.error('保存失败')
+      message.error('Save failed')
     }
   }
 
@@ -128,14 +128,14 @@ const FactorsPage: React.FC = () => {
     await saveToGlobalLibrary(updatedReagents)
     
     setIsModalVisible(false)
-    message.success(`试剂 "${newReagent.name}" 已添加到全局试剂库！`)
+    message.success(`Reagent "${newReagent.name}" has been added to global library!`)
   }
 
   // Delete last reagent (old function, now toggle delete mode)
   const toggleDeleteMode = () => {
     setIsDeletingMode(!isDeletingMode)
     if (!isDeletingMode) {
-      message.info('请点击每行后的垃圾筒图标来删除该试剂')
+      message.info('Please click the trash icon at the end of each row to delete that reagent')
     }
   }
 
@@ -143,17 +143,17 @@ const FactorsPage: React.FC = () => {
   const deleteReagent = async (id: string) => {
     const reagentToDelete = reagents.find(r => r.id === id)
     if (reagents.length <= 1) {
-      message.warning('至少要保留一个试剂')
+      message.warning('At least one reagent must be kept')
       return
     }
-    if (window.confirm(`确定要从全局试剂库删除 "${reagentToDelete?.name}" 吗？`)) {
+    if (window.confirm(`Are you sure to delete "${reagentToDelete?.name}" from global reagent library?`)) {
       const updatedReagents = sortReagentsByName(reagents.filter(r => r.id !== id))
       setReagents(updatedReagents)
       
       // 📚 保存到全局试剂库
       await saveToGlobalLibrary(updatedReagents)
       
-      message.success(`已从全局试剂库删除 "${reagentToDelete?.name}"`)
+      message.success(`Deleted "${reagentToDelete?.name}" from global reagent library`)
     }
   }
 
@@ -309,19 +309,19 @@ const FactorsPage: React.FC = () => {
       
       if (customReagents.length > 0) {
         if (modifiedCustomCount > 0) {
-          message.success(`全局试剂库已重置: ${PREDEFINED_REAGENTS.length} 个预定义试剂 + ${modifiedCustomCount} 个自定义试剂恢复原值`)
+          message.success(`Global library reset: ${PREDEFINED_REAGENTS.length} predefined reagents + ${modifiedCustomCount} custom reagent(s) restored`)
         } else {
-          message.success(`预定义试剂已重置，${customReagents.length} 个自定义试剂未变化`)
+          message.success(`Predefined reagents reset, ${customReagents.length} custom reagent(s) unchanged`)
         }
       } else {
-        message.success('全局试剂库已重置为默认数据')
+        message.success('Global reagent library has been reset to default data')
       }
     }
   }
 
   return (
     <div className="factors-page">
-      <Title level={2}>📚 全局试剂因子库</Title>
+      <Title level={2}>📚 Global Reagent Factor Library</Title>
       
       {/* 添加说明卡片 */}
       <Card 
@@ -332,16 +332,16 @@ const FactorsPage: React.FC = () => {
         }}
       >
         <p style={{ margin: 0, fontSize: '14px' }}>
-          <strong>🌐 全局共享试剂库：</strong>
-          这是所有文件和所有用户共享的试剂因子数据库。在此处添加、编辑或删除试剂后，
-          所有方法文件和评分计算都会自动使用最新数据。
+          <strong>🌐 Global Shared Reagent Library:</strong>
+          This is the shared reagent factor database for all files and users. After adding, editing, or deleting reagents here,
+          all method files and scoring calculations will automatically use the latest data.
         </p>
       </Card>
 
       {isLoading ? (
         <Card>
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p>加载全局试剂库中...</p>
+            <p>Loading global reagent library...</p>
           </div>
         </Card>
       ) : (
@@ -362,7 +362,7 @@ const FactorsPage: React.FC = () => {
                 <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>Regeneration</th>
                 <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center' }}>Disposal</th>
                 {isDeletingMode && (
-                  <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center', minWidth: '60px' }}>操作</th>
+                  <th rowSpan={2} style={{ verticalAlign: 'middle', textAlign: 'center', minWidth: '60px' }}>Action</th>
                 )}
               </tr>
               <tr>

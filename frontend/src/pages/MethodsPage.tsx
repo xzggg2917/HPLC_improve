@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react'
+﻿import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { Card, Typography, InputNumber, Select, Button, Row, Col, message, Tooltip, Divider, Spin, Statistic } from 'antd'
 import { PlusOutlined, DeleteOutlined, QuestionCircleOutlined, TrophyOutlined, ExperimentOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -34,7 +34,7 @@ const MethodsPage: React.FC = () => {
   const [environmentScheme, setEnvironmentScheme] = useState<string>('PBT_Balanced')
   const [instrumentStageScheme, setInstrumentStageScheme] = useState<string>('Balanced')
   const [prepStageScheme, setPrepStageScheme] = useState<string>('Balanced')
-  const [finalScheme, setFinalScheme] = useState<string>('Standard')
+  const [finalScheme, setFinalScheme] = useState<string>('Direct_Online')
 
   // 评分结果状态（新增）
   const [scoreResults, setScoreResults] = useState<any>(null)
@@ -350,7 +350,7 @@ const MethodsPage: React.FC = () => {
       // 保存到存储
       await StorageHelper.setJSON(STORAGE_KEYS.METHODS, dataToSave)
       
-      // 跳过初始挂载时的更新
+      // Skip update on initial mount
       if (isInitialMount.current) {
         console.log('⏭️ MethodsPage: 跳过初始挂载时的更新')
         isInitialMount.current = false
@@ -358,7 +358,7 @@ const MethodsPage: React.FC = () => {
         return
       }
       
-      // 如果本地数据没有变化（可能是从Context同步来的），跳过更新
+      // Skip update if local data unchanged (may be synced from Context)
       if (lastLocalData.current === currentLocalDataStr) {
         console.log('⏭️ MethodsPage: 本地数据未变化，跳过Context更新')
         return
@@ -367,18 +367,18 @@ const MethodsPage: React.FC = () => {
       console.log('🔄 MethodsPage: 本地数据变化，同步到Context并标记dirty')
       lastLocalData.current = currentLocalDataStr
       
-      // 同步到Context并标记为脏数据
+      // Sync to Context and mark as dirty
       updateMethodsData(dataToSave)
       setIsDirty(true)
       
-      // 触发事件通知其他页面（如TablePage）
+      // Trigger event to notify other pages (like TablePage)
       window.dispatchEvent(new CustomEvent('methodsDataUpdated', { detail: dataToSave }))
     }
     
     saveData()
   }, [sampleCount, preTreatmentReagents, mobilePhaseA, mobilePhaseB, instrumentEnergy, pretreatmentEnergy, updateMethodsData, setIsDirty])
 
-  // 处理样品数变化
+  // Handle sample count changes
   const handleSampleCountChange = (value: number | null) => {
     setSampleCount(value)
     if (value === null || value <= 0 || !Number.isInteger(value)) {
@@ -388,7 +388,7 @@ const MethodsPage: React.FC = () => {
     }
   }
 
-  // 添加试剂
+  // Add reagent
   const addReagent = (type: 'preTreatment' | 'phaseA' | 'phaseB') => {
     if (type === 'preTreatment') {
       const newReagent: PreTreatmentReagent = { id: Date.now().toString(), name: '', volume: 0 }
@@ -403,30 +403,30 @@ const MethodsPage: React.FC = () => {
     }
   }
 
-  // 删除最后一行试剂
+  // Delete last reagent
   const deleteLastReagent = (type: 'preTreatment' | 'phaseA' | 'phaseB') => {
     if (type === 'preTreatment') {
       if (preTreatmentReagents.length <= 1) {
-        message.warning('至少保留一个试剂')
+        message.warning('Keep at least one reagent')
         return
       }
       setPreTreatmentReagents(preTreatmentReagents.slice(0, -1))
     } else if (type === 'phaseA') {
       if (mobilePhaseA.length <= 1) {
-        message.warning('至少保留一个试剂')
+        message.warning('Keep at least one reagent')
         return
       }
       setMobilePhaseA(mobilePhaseA.slice(0, -1))
     } else {
       if (mobilePhaseB.length <= 1) {
-        message.warning('至少保留一个试剂')
+        message.warning('Keep at least one reagent')
         return
       }
       setMobilePhaseB(mobilePhaseB.slice(0, -1))
     }
   }
 
-  // 更新试剂 - 使用useCallback缓存函数，避免每次渲染创建新函数
+  // Update reagent - use useCallback to cache function, avoid creating new function on each render
   const updateReagent = useCallback((
     type: 'preTreatment' | 'phaseA' | 'phaseB',
     id: string,
@@ -475,11 +475,11 @@ const MethodsPage: React.FC = () => {
       
       console.log('🔄 重新计算gradient calculations...')
       
-      // 获取原有的体积数据
+      // Get original volume data
       const totalVolumeA = gradientData.calculations.mobilePhaseA?.volume || 0
       const totalVolumeB = gradientData.calculations.mobilePhaseB?.volume || 0
       
-      // 重新计算 Mobile Phase A 的组分
+      // Recalculate Mobile Phase A components
       const totalPercentageA = phaseA.reduce((sum, r) => sum + (r.percentage || 0), 0)
       const newComponentsA = phaseA
         .filter(r => r.name && r.name.trim())
@@ -490,7 +490,7 @@ const MethodsPage: React.FC = () => {
           volume: totalPercentageA > 0 ? (totalVolumeA * r.percentage / totalPercentageA) : 0
         }))
       
-      // 重新计算 Mobile Phase B 的组分
+      // Recalculate Mobile Phase B components
       const totalPercentageB = phaseB.reduce((sum, r) => sum + (r.percentage || 0), 0)
       const newComponentsB = phaseB
         .filter(r => r.name && r.name.trim())
@@ -501,11 +501,11 @@ const MethodsPage: React.FC = () => {
           volume: totalPercentageB > 0 ? (totalVolumeB * r.percentage / totalPercentageB) : 0
         }))
       
-      // 更新calculations中的组分信息
+      // Update component info in calculations
       gradientData.calculations.mobilePhaseA.components = newComponentsA
       gradientData.calculations.mobilePhaseB.components = newComponentsB
       
-      // 重新计算所有试剂的总体积
+      // Recalculate total volume of all reagents
       const allReagentVolumes: { [key: string]: number } = {}
       
       newComponentsA.forEach((c: any) => {
@@ -526,7 +526,7 @@ const MethodsPage: React.FC = () => {
       
       gradientData.calculations.allReagentVolumes = allReagentVolumes
       
-      // 保存更新后的gradient数据
+      // Save updated gradient data
       await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, gradientData)
       console.log('✅ 已更新gradient calculations')
     } catch (error) {
@@ -534,23 +534,23 @@ const MethodsPage: React.FC = () => {
     }
   }
 
-  // 计算百分比总和(仅用于 Mobile Phase A/B)
+  // Calculate percentage sum (for Mobile Phase A/B only)
   const calculateTotal = (reagents: Reagent[]): number => {
     return reagents.reduce((sum, r) => sum + (r.percentage || 0), 0)
   }
 
-  // 计算体积总和(仅用于 Sample PreTreatment)
+  // Calculate volume sum (for Sample PreTreatment only)
   const calculateTotalVolume = (reagents: PreTreatmentReagent[]): number => {
     return reagents.reduce((sum, r) => sum + (r.volume || 0), 0)
   }
 
-  // 验证百分比总和
+  // Validate percentage sum
   const validatePercentage = (reagents: Reagent[]): boolean => {
     const total = calculateTotal(reagents)
     return Math.abs(total - 100) < 0.01 // 允许浮点误差
   }
 
-  // 获取百分比显示样式
+  // Get percentage display style
   const getPercentageStyle = (total: number) => {
     const isValid = Math.abs(total - 100) < 0.01
     return {
@@ -874,14 +874,14 @@ const MethodsPage: React.FC = () => {
       // 1. 获取梯度数据
       const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
       if (!gradientData) {
-        if (!silent) message.error('请先在 HPLC Gradient 页面配置梯度程序')
+        if (!silent) message.error('Please configure gradient program in HPLC Gradient page first')
         return
       }
       
       // 2. 获取因子数据
       const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
       if (!factors) {
-        if (!silent) message.error('请先在 Factors 页面配置试剂因子')
+        if (!silent) message.error('Please configure reagent factors in Factors page first')
         return
       }
       
@@ -967,7 +967,7 @@ const MethodsPage: React.FC = () => {
 
       // 验证梯度数据结构
       if (!gradientData.steps || !Array.isArray(gradientData.steps)) {
-        message.error('梯度数据格式错误：缺少steps数组')
+        message.error('Gradient data format error: missing steps array')
         return
       }
 
@@ -1155,7 +1155,7 @@ const MethodsPage: React.FC = () => {
       )
       
       if (hasInvalidData) {
-        if (!silent) message.error('数据验证失败：检测到无效数值，请检查梯度和试剂配置')
+        if (!silent) message.error('Data validation failed: invalid values detected, please check gradient and reagent configuration')
         console.error('❌ 数据验证失败，请求数据:', requestData)
         return
       }
@@ -1165,7 +1165,7 @@ const MethodsPage: React.FC = () => {
       
       if (response.data.success) {
         setScoreResults(response.data.data)
-        if (!silent) message.success('评分计算成功！')
+        if (!silent) message.success('Scoring calculation completed successfully!')
         
         // 详细日志输出
         console.log('✅ 评分计算成功！完整结果:', response.data.data)
@@ -1180,7 +1180,7 @@ const MethodsPage: React.FC = () => {
         // 触发GraphPage更新
         window.dispatchEvent(new CustomEvent('scoreDataUpdated'))
       } else {
-        if (!silent) message.error('评分计算失败: ' + response.data.message)
+        if (!silent) message.error('Scoring calculation failed: ' + response.data.message)
       }
     } catch (error: any) {
       console.error('评分计算错误:', error)
@@ -1297,24 +1297,24 @@ const MethodsPage: React.FC = () => {
     // 验证试剂名称
     const allReagents = [...preTreatmentReagents, ...mobilePhaseA, ...mobilePhaseB]
     if (allReagents.some(r => !r.name)) {
-      message.error('请选择所有试剂')
+      message.error('Please select all reagents')
       return
     }
 
-    // 验证 Sample PreTreatment 的体积
+    // Validate Sample PreTreatment volumes
     const hasInvalidVolume = preTreatmentReagents.some(r => r.volume < 0)
     if (hasInvalidVolume) {
-      message.error('Sample PreTreatment 的体积不能为负')
+      message.error('Sample PreTreatment volumes cannot be negative')
       return
     }
 
-    // 验证 Mobile Phase 百分比
+    // Validate Mobile Phase percentages
     if (!validatePercentage(mobilePhaseA)) {
-      message.error('Mobile Phase A 的百分比总和必须为 100%')
+      message.error('Mobile Phase A percentage sum must be 100%')
       return
     }
     if (!validatePercentage(mobilePhaseB)) {
-      message.error('Mobile Phase B 的百分比总和必须为 100%')
+      message.error('Mobile Phase B percentage sum must be 100%')
       return
     }
 
@@ -1389,7 +1389,7 @@ const MethodsPage: React.FC = () => {
     })
     setIsDirty(true)
 
-    message.success('Data saved, navigating to HPLC Gradient Prg')
+    message.success('Data saved, navigating to HPLC Gradient Program')
     
     // 触发自定义事件，通知其他组件数据已更新
     window.dispatchEvent(new CustomEvent('methodsDataUpdated', { detail: {
@@ -1413,7 +1413,7 @@ const MethodsPage: React.FC = () => {
     
     return (
       <div className="reagent-section">
-        <Title level={4}>Individual Sample PreTreatment</Title>
+        <Title level={4}>Sample PreTreatment</Title>
         {preTreatmentReagents.map((reagent) => (
           <Row gutter={8} key={reagent.id} style={{ marginBottom: 12 }}>
             <Col span={15}>
@@ -1564,6 +1564,90 @@ const MethodsPage: React.FC = () => {
   return (
     <div className="methods-page">
       <Title level={2}>Methods</Title>
+
+      {/* 绿色化学评分系统配置 */}
+      <Card 
+        title={
+          <span>
+            <TrophyOutlined style={{ marginRight: 8, color: '#faad14' }} />
+            Green Chemistry Scoring System Configuration (0-100 Scale)
+          </span>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        {/* 能耗配置 */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col span={12}>
+            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>Instrument Analysis Energy (kWh) <Tooltip title="P Factor Formula: When E<1.5, P=100×(E/1.5)^0.235; When E≥1.5, P=100"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <InputNumber style={{ width: '100%' }} min={0} step={0.01} precision={4} value={instrumentEnergy} onChange={(value) => setInstrumentEnergy(value || 0)} placeholder="Instrument Energy" />
+            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>Current P Factor Score: {calculatePowerScore(instrumentEnergy).toFixed(2)}</div>
+          </Col>
+          <Col span={12}>
+            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>Pretreatment Energy (kWh) <Tooltip title="Same P Factor Formula as above"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <InputNumber style={{ width: '100%' }} min={0} step={0.01} precision={4} value={pretreatmentEnergy} onChange={(value) => setPretreatmentEnergy(value || 0)} placeholder="Pretreatment Energy" />
+            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>Current P Factor Score: {calculatePowerScore(pretreatmentEnergy).toFixed(2)}</div>
+          </Col>
+        </Row>
+
+        <Divider style={{ margin: '12px 0' }} />
+
+        {/* 权重方案配置 - 竖向布局确保内容完整显示 */}
+        <Row gutter={16}>
+          <Col span={8}>
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Safety Factor (S) Weight Scheme <Tooltip title="S1-Release Potential, S2-Fire/Explosion, S3-Reaction/Decomposition, S4-Acute Toxicity"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={safetyScheme} onChange={setSafetyScheme}>
+              <Option value="PBT_Balanced">PBT Balanced (0.25/0.25/0.25/0.25)</Option>
+              <Option value="Frontier_Focus">Frontier Focus (0.10/0.60/0.15/0.15)</Option>
+              <Option value="Personnel_Exposure">Personnel Exposure (0.10/0.20/0.20/0.50)</Option>
+              <Option value="Material_Transport">Material Transport (0.50/0.20/0.20/0.10)</Option>
+            </Select>
+
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Instrument Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/P/R/D"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%' }} value={instrumentStageScheme} onChange={setInstrumentStageScheme}>
+              <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
+              <Option value="Safety_First">Safety First (S:0.30 H:0.30 E:0.10 R:0.10 D:0.10 P:0.10)</Option>
+              <Option value="Eco_Friendly">Eco-Friendly (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
+              <Option value="Energy_Efficient">Energy Efficient (S:0.10 H:0.10 E:0.15 P:0.40 R:0.15 D:0.10)</Option>
+            </Select>
+          </Col>
+
+          <Col span={8}>
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Health Factor (H) Weight Scheme <Tooltip title="H1-Chronic Toxicity, H2-Irritation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={healthScheme} onChange={setHealthScheme}>
+              <Option value="Occupational_Exposure">Occupational Exposure (0.70/0.30)</Option>
+              <Option value="Operation_Protection">Operation Protection (0.30/0.70)</Option>
+              <Option value="Strict_Compliance">Strict Compliance (0.90/0.10)</Option>
+              <Option value="Absolute_Balance">Absolute Balance (0.50/0.50)</Option>
+            </Select>
+
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Sample Prep Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/R/D/P"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%' }} value={prepStageScheme} onChange={setPrepStageScheme}>
+              <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
+              <Option value="Operation_Protection">Operation Protection (S:0.35 H:0.35 E:0.10 R:0.10 D:0.10 P:0.00)</Option>
+              <Option value="Circular_Economy">Circular Economy (S:0.10 H:0.10 E:0.10 R:0.40 D:0.30 P:0.00)</Option>
+              <Option value="Environmental_Tower">Environmental Tower (S:0.15 H:0.15 E:0.40 R:0.15 D:0.15 P:0.00)</Option>
+            </Select>
+          </Col>
+
+          <Col span={8}>
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Environmental Factor (E) Weight Scheme <Tooltip title="E1-Persistence, E2-Emissions, E3-Aquatic Hazards"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={environmentScheme} onChange={setEnvironmentScheme}>
+              <Option value="PBT_Balanced">PBT Balanced (0.334/0.333/0.333)</Option>
+              <Option value="Emission_Compliance">Emission Compliance (0.10/0.80/0.10)</Option>
+              <Option value="Deep_Impact">Deep Impact (0.10/0.10/0.80)</Option>
+              <Option value="Degradation_Priority">Degradation Priority (0.70/0.15/0.15)</Option>
+            </Select>
+
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Final Summary Weight Scheme <Tooltip title="Weight allocation between Instrument Analysis and Sample Preparation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%' }} value={finalScheme} onChange={setFinalScheme}>
+              <Option value="Direct_Online">Direct Injection (Instrument:0.8 Prep:0.2)</Option>
+              <Option value="Standard">Standard (Instrument:0.6 Prep:0.4)</Option>
+              <Option value="Equal">Equal Weight (Instrument:0.5 Prep:0.5)</Option>
+              <Option value="Complex_Prep">Complex Prep (Instrument:0.3 Prep:0.7)</Option>
+            </Select>
+          </Col>
+        </Row>
+      </Card>
 
       {/* 三个试剂部分 */}
       <Row gutter={16} style={{ marginLeft: 0, marginRight: 0 }}>
@@ -2189,349 +2273,6 @@ const MethodsPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
-
-      {/* 评分结果展示（顶部） */}
-      {scoreResults && (
-        <Card 
-          title={
-            <span>
-              <TrophyOutlined style={{ marginRight: 8, color: '#faad14' }} />
-              评分结果
-            </span>
-          }
-          style={{ marginTop: 24 }}
-        >
-          {/* 最终总分 */}
-          <Card style={{ marginBottom: 16, background: '#f0f5ff', borderColor: '#1890ff' }}>
-            <Statistic
-              title="最终绿色化学总分 (Score₃)"
-              value={scoreResults.final.score3}
-              precision={2}
-              suffix="/ 100"
-              valueStyle={{ color: '#1890ff', fontSize: 32, fontWeight: 'bold' }}
-            />
-          </Card>
-
-          {/* 阶段得分 */}
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={12}>
-              <Card>
-                <Statistic
-                  title="仪器分析阶段 (Score₁)"
-                  value={scoreResults.instrument.score1}
-                  precision={2}
-                  suffix="/ 100"
-                  valueStyle={{ color: '#52c41a', fontSize: 24 }}
-                />
-              </Card>
-            </Col>
-            <Col span={12}>
-              <Card>
-                <Statistic
-                  title="样品前处理阶段 (Score₂)"
-                  value={scoreResults.preparation.score2}
-                  precision={2}
-                  suffix="/ 100"
-                  valueStyle={{ color: '#faad14', fontSize: 24 }}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          {/* 大因子得分 */}
-          <Card title="大因子得分" size="small" style={{ marginBottom: 16 }}>
-            <Row gutter={8}>
-              <Col span={8}>
-                <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>安全 (S)</div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: '#ff4d4f' }}>
-                    {((scoreResults.instrument.major_factors.S + scoreResults.preparation.major_factors.S) / 2).toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-              <Col span={8}>
-                <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>健康 (H)</div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: '#fa8c16' }}>
-                    {((scoreResults.instrument.major_factors.H + scoreResults.preparation.major_factors.H) / 2).toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-              <Col span={8}>
-                <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>环境 (E)</div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
-                    {((scoreResults.instrument.major_factors.E + scoreResults.preparation.major_factors.E) / 2).toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* P/R/D 附加因子 */}
-          <Card title="附加因子 (P/R/D)" size="small" style={{ marginBottom: 16 }}>
-            <Row gutter={8}>
-              <Col span={24}>
-                <div style={{ textAlign: 'center', padding: '8px 0', marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>能耗 (P)</div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: '#1890ff' }}>
-                    {scoreResults.additional_factors?.P?.toFixed(2) || 'N/A'}
-                  </div>
-                </div>
-              </Col>
-            </Row>
-            <Divider style={{ margin: '8px 0' }}>可回收 (R) / 可降解 (D)</Divider>
-            <Row gutter={8}>
-              <Col span={12}>
-                <div style={{ textAlign: 'center', padding: '8px', background: '#f5f5f5', borderRadius: 4 }}>
-                  <div style={{ fontSize: 11, color: '#999', marginBottom: 4 }}>🔬 仪器分析阶段</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 4 }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: '#666' }}>R</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#722ed1' }}>
-                        {scoreResults.additional_factors?.instrument_R?.toFixed(2) || 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, color: '#666' }}>D</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#eb2f96' }}>
-                        {scoreResults.additional_factors?.instrument_D?.toFixed(2) || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div style={{ textAlign: 'center', padding: '8px', background: '#f5f5f5', borderRadius: 4 }}>
-                  <div style={{ fontSize: 11, color: '#999', marginBottom: 4 }}>🧪 前处理阶段</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 4 }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: '#666' }}>R</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#722ed1' }}>
-                        {scoreResults.additional_factors?.pretreatment_R?.toFixed(2) || 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, color: '#666' }}>D</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#eb2f96' }}>
-                        {scoreResults.additional_factors?.pretreatment_D?.toFixed(2) || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* 小因子得分（用于雷达图） */}
-          <Card title="小因子得分（雷达图数据）" size="small" style={{ minHeight: 'auto' }}>
-            <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>
-              这些数据将用于GraphPage的雷达图展示
-            </div>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-              gap: '8px'
-            }}>
-              {Object.entries(scoreResults.merged.sub_factors).map(([key, value]: [string, any]) => (
-                <div 
-                  key={key}
-                  style={{ 
-                    padding: '6px 8px', 
-                    background: '#fafafa', 
-                    borderRadius: 4,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>{key}:</span>
-                  <span style={{ fontSize: 13, color: '#1890ff' }}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </Card>
-      )}
-
-      {/* 权重方案配置 */}
-      <Card 
-        title={
-          <span>
-            <TrophyOutlined style={{ marginRight: 8, color: '#faad14' }} />
-            绿色化学评分系统配置 (0-100分制)
-          </span>
-        }
-        style={{ marginTop: 24 }}
-      >
-        {/* 能耗输入部分 */}
-        <Title level={5}>能耗配置 (P因子)</Title>
-        <div style={{ marginBottom: 24, padding: '16px', background: '#f0f5ff', borderRadius: '4px' }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-              仪器分析能耗 (kWh)
-              <Tooltip title="输入仪器分析阶段的总能耗，单位：千瓦时(kWh)。P因子公式: E<1.5时 P=100×(E/1.5)^0.235，E≥1.5时 P=100">
-                <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-              </Tooltip>
-            </div>
-            <InputNumber
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={4}
-              value={instrumentEnergy}
-              onChange={(value) => setInstrumentEnergy(value || 0)}
-              placeholder="输入仪器分析能耗"
-            />
-            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
-              当前P因子得分: {calculatePowerScore(instrumentEnergy).toFixed(2)}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 0 }}>
-            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-              前处理能耗 (kWh)
-              <Tooltip title="输入样品前处理阶段的总能耗，单位：千瓦时(kWh)。P因子公式同上">
-                <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-              </Tooltip>
-            </div>
-            <InputNumber
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={4}
-              value={pretreatmentEnergy}
-              onChange={(value) => setPretreatmentEnergy(value || 0)}
-              placeholder="输入前处理能耗"
-            />
-            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
-              当前P因子得分: {calculatePowerScore(pretreatmentEnergy).toFixed(2)}
-            </div>
-          </div>
-        </div>
-
-        <Divider style={{ margin: '24px 0' }} />
-
-        <Title level={5}>权重方案配置</Title>
-            
-            {/* S/H/E因子权重 */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                安全因子 (S) 权重方案
-                <Tooltip title="S1-释放潜力, S2-火灾/爆炸, S3-反应/分解, S4-急性毒性">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={safetyScheme}
-                onChange={setSafetyScheme}
-              >
-                <Option value="PBT_Balanced">PBT均衡型 (0.25/0.25/0.25/0.25)</Option>
-                <Option value="Frontier_Focus">前沿聚焦型 (0.10/0.60/0.15/0.15)</Option>
-                <Option value="Personnel_Exposure">人员曝露型 (0.10/0.20/0.20/0.50)</Option>
-                <Option value="Material_Transport">物质运输型 (0.50/0.20/0.20/0.10)</Option>
-              </Select>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                健康因子 (H) 权重方案
-                <Tooltip title="H1-慢性毒性, H2-刺激性">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={healthScheme}
-                onChange={setHealthScheme}
-              >
-                <Option value="Occupational_Exposure">职业暴露型 (0.70/0.30)</Option>
-                <Option value="Operation_Protection">操作防护型 (0.30/0.70)</Option>
-                <Option value="Strict_Compliance">严格合规型 (0.90/0.10)</Option>
-                <Option value="Absolute_Balance">绝对平衡型 (0.50/0.50)</Option>
-              </Select>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                环境因子 (E) 权重方案
-                <Tooltip title="E1-持久性, E2-排放, E3-水体危害">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={environmentScheme}
-                onChange={setEnvironmentScheme}
-              >
-                <Option value="PBT_Balanced">PBT均衡型 (0.334/0.333/0.333)</Option>
-                <Option value="Emission_Compliance">排放合规型 (0.10/0.80/0.10)</Option>
-                <Option value="Deep_Impact">深远影响型 (0.10/0.10/0.80)</Option>
-                <Option value="Degradation_Priority">降解优先型 (0.70/0.15/0.15)</Option>
-              </Select>
-            </div>
-
-            <Divider style={{ margin: '16px 0' }} />
-
-            {/* 阶段权重 */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                仪器分析阶段权重方案 (6因子含P)
-                <Tooltip title="包含S/H/E/P/R/D六个因子">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={instrumentStageScheme}
-                onChange={setInstrumentStageScheme}
-              >
-                <Option value="Balanced">均衡型 (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
-                <Option value="Safety_First">安全优先型 (S:0.30 H:0.30 E:0.10 R:0.10 D:0.10 P:0.10)</Option>
-                <Option value="Eco_Friendly">环保优先型 (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
-                <Option value="Energy_Efficient">能效优先型 (S:0.10 H:0.10 E:0.15 P:0.40 R:0.15 D:0.10)</Option>
-              </Select>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                样品前处理阶段权重方案 (6因子含P)
-                <Tooltip title="包含S/H/E/R/D/P六个因子">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={prepStageScheme}
-                onChange={setPrepStageScheme}
-              >
-                <Option value="Balanced">均衡型 (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
-                <Option value="Operation_Protection">操作防护型 (S:0.35 H:0.35 E:0.10 R:0.10 D:0.10 P:0.00)</Option>
-                <Option value="Circular_Economy">循环经济型 (S:0.10 H:0.10 E:0.10 R:0.40 D:0.30 P:0.00)</Option>
-                <Option value="Environmental_Tower">环境白塔型 (S:0.15 H:0.15 E:0.40 R:0.15 D:0.15 P:0.00)</Option>
-              </Select>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                最终汇总权重方案
-                <Tooltip title="仪器分析和样品前处理的权重分配">
-                  <QuestionCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
-                </Tooltip>
-              </div>
-              <Select
-                style={{ width: '100%' }}
-                value={finalScheme}
-                onChange={setFinalScheme}
-              >
-                <Option value="Standard">标准型 (仪器:0.6 前处理:0.4)</Option>
-                <Option value="Complex_Prep">复杂前处理型 (仪器:0.3 前处理:0.7)</Option>
-                <Option value="Direct_Online">直接进样型 (仪器:0.8 前处理:0.2)</Option>
-                <Option value="Equal">等权型 (仪器:0.5 前处理:0.5)</Option>
-              </Select>
-            </div>
-          </Card>
 
           {/* 确认按钮 */}
       <div style={{ textAlign: 'right', marginTop: 24 }}>

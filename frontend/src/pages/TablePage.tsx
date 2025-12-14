@@ -710,17 +710,17 @@ const TablePage: React.FC = () => {
 
           {/* Detailed Data Tables */}
           <Alert
-            message="试剂级别 R/D 计算说明"
+            message="Reagent-level R/D Calculation Explanation"
             description={
               <div>
-                <p>表格中每个试剂的 R (Recyclability & Regeneration) 和 D (Disposal & Degradation) 值按照 GEMAM 评价体系计算：</p>
+                <p>The R (Recyclability & Regeneration) and D (Disposal & Degradation) values for each reagent in the table are calculated according to the GEMAM evaluation system:</p>
                 <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
-                  <li><strong>归一化公式</strong>：Score = min(100, 33.3 × log₁₀(1 + 质量 × 因子值))</li>
-                  <li><strong>R</strong>：反映试剂的可回收性和再生潜力</li>
-                  <li><strong>D</strong>：反映试剂的处置难度和降解性</li>
+                  <li><strong>Normalization Formula</strong>: Score = min(100, 33.3 × log₁₀(1 + mass × factor value))</li>
+                  <li><strong>R</strong>: Reflects the recyclability and regeneration potential of the reagent</li>
+                  <li><strong>D</strong>: Reflects the disposal difficulty and degradability of the reagent</li>
                 </ul>
                 <p style={{ marginTop: 8, marginBottom: 0 }}>
-                  <strong>注意：</strong>S/H/E 分数通过子因子（S1-S4, H1-H2, E1-E3）在后端计算，详见 "Green Chemistry Assessment Total Scores" 区域。
+                  <strong>Note:</strong> S/H/E scores are calculated via sub-factors (S1-S4, H1-H2, E1-E3) on the backend. See "Green Chemistry Assessment Total Scores" section for details.
                 </p>
               </div>
             }

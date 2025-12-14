@@ -495,9 +495,9 @@ const MethodEvaluationPage: React.FC = () => {
 
   return (
     <div className="graph-page" style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
-      <Title level={2}>方法绿色度评估 (Method Green Chemistry Evaluation)</Title>
+      <Title level={2}>Method Green Chemistry Evaluation</Title>
 
-      {/* 阶段评分对比 */}
+      {/* Stage Score Comparison */}
       {hasData && score1 > 0 && score2 > 0 && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
           <Col span={12}>
@@ -508,7 +508,7 @@ const MethodEvaluationPage: React.FC = () => {
               }}
             >
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>仪器分析阶段 (Instrument Analysis)</div>
+                <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Instrument Analysis Stage</div>
                 <div style={{ fontSize: 42, fontWeight: 'bold', color: getColorHex(score1) }}>
                   Score₁: {score1.toFixed(2)}
                 </div>
@@ -523,7 +523,7 @@ const MethodEvaluationPage: React.FC = () => {
               }}
             >
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>样品前处理阶段 (Sample Pretreatment)</div>
+                <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Sample Pretreatment Stage</div>
                 <div style={{ fontSize: 42, fontWeight: 'bold', color: getColorHex(score2) }}>
                   Score₂: {score2.toFixed(2)}
                 </div>
