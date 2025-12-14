@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, Form, Input, message } from 'antd'
+import { StorageHelper } from '../utils/storage'
 
 interface PasswordConfirmModalProps {
   visible: boolean
@@ -67,11 +68,14 @@ const PasswordConfirmModal: React.FC<PasswordConfirmModalProps> = ({
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="Confirm"
+      okText="Confirm Save"
       cancelText="Cancel"
+      closable={true}
       maskClosable={false}
+      centered
     >
       <p>To protect your data security, the file will be encrypted and saved with a password.</p>
+      <p style={{ color: '#ff4d4f', fontWeight: 500 }}>⚠️ If this is a misclick, please click the ✕ button or Cancel button</p>
       <p>Current user: <strong>{username}</strong></p>
       <Form form={form} layout="vertical">
         <Form.Item

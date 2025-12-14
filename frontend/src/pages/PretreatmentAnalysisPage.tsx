@@ -168,10 +168,10 @@ const PretreatmentAnalysisPage: React.FC = () => {
   }
 
   const getScoreLevel = (score: number): string => {
-    if (score >= 80) return 'Excellent - Highly Compliant'
-    if (score >= 60) return 'Good - Well Compliant'
-    if (score >= 40) return 'Fair - Moderately Compliant'
-    if (score >= 20) return 'Poor - Minimally Compliant'
+    if (score < 20) return 'Excellent - Fully Compliant'
+    if (score < 40) return 'Good - Well Compliant'
+    if (score < 60) return 'Fair - Moderately Compliant'
+    if (score < 80) return 'Poor - Needs Improvement'
     return 'Very Poor - Non-Compliant'
   }
 

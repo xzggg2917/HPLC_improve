@@ -74,6 +74,7 @@ export interface AppData {
 interface AppContextType {
   // 数据状态
   data: AppData
+  isLoading: boolean  // 是否正在加载初始数据
   updateMethodsData: (methodsData: AppData['methods']) => void
   updateFactorsData: (factorsData: ReagentFactor[]) => void
   updateGradientData: (gradientData: GradientStep[]) => void
@@ -130,6 +131,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const savedFilePath = await storage.getItem('currentFilePath')
         
         console.log('  - methods:', savedMethods ? '存在' : '不存在')
+        console.log('  - savedMethods详情:', savedMethods)
+        console.log('  - savedMethods.preTreatmentReagents:', savedMethods?.preTreatmentReagents)
         console.log('  - factors:', savedFactors ? '存在' : '不存在')
         console.log('  - gradient:', savedGradient ? '存在' : '不存在')
         console.log('  - currentFilePath:', savedFilePath)
@@ -160,15 +163,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           gradient: gradientSteps
         })
         
+        console.log('✅ AppContext初始化完成，加载的数据:')
+        console.log('  - preTreatmentReagents:', savedMethods?.preTreatmentReagents?.length, '个')
+        console.log('  - preTreatmentReagents详情:', savedMethods?.preTreatmentReagents)
+        console.log('  - mobilePhaseA:', savedMethods?.mobilePhaseA?.length, '个')
+        console.log('  - mobilePhaseA详情:', savedMethods?.mobilePhaseA)
+        console.log('  - mobilePhaseB:', savedMethods?.mobilePhaseB?.length, '个')
+        console.log('  - mobilePhaseB详情:', savedMethods?.mobilePhaseB)
+        console.log('  - factors:', savedFactors?.length, '个')
+        console.log('  - gradient steps:', gradientSteps.length, '个')
+        console.log('  - savedFilePath原始值:', savedFilePath)
+        
         if (savedFilePath) {
           // savedFilePath 是 JSON 字符串，需要解析
           try {
             const parsedPath = JSON.parse(savedFilePath)
+            console.log('  - parsedPath:', parsedPath)
             setCurrentFilePathState(parsedPath)
           } catch {
             // 兼容旧格式（直接是字符串）
+            console.log('  - 使用原始字符串格式')
             setCurrentFilePathState(savedFilePath)
           }
+        } else {
+          console.log('  ⚠️ savedFilePath为null，不设置currentFilePath')
         }
         
         console.log('✅ AppContext: 初始数据加载完成')
@@ -265,6 +283,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const setAllData = async (newData: AppData) => {
     console.log('📂 setAllData 被调用')
+    console.log('  - methods.preTreatmentReagents:', newData.methods.preTreatmentReagents)
     console.log('  - methods.mobilePhaseA:', newData.methods.mobilePhaseA)
     console.log('  - methods.mobilePhaseB:', newData.methods.mobilePhaseB)
     console.log('  - gradient类型:', Array.isArray(newData.gradient) ? '数组' : '对象')
@@ -312,6 +331,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setData(processedData)
     
     // 同步到存储（⚠️ 注意：factors不保存，保持全局独立）
+    console.log('  💾 准备保存methods到存储:')
+    console.log('    - preTreatmentReagents:', newData.methods.preTreatmentReagents?.length, '个')
+    console.log('    - preTreatmentReagents详情:', newData.methods.preTreatmentReagents)
+    console.log('    - mobilePhaseA:', newData.methods.mobilePhaseA?.length, '个')
+    console.log('    - mobilePhaseB:', newData.methods.mobilePhaseB?.length, '个')
     await StorageHelper.setJSON(STORAGE_KEYS.METHODS, newData.methods)
     console.log('  ✅ 已更新methods到存储')
     console.log('  ℹ️ Factors保持全局配置不变（', factorsToUse.length, '个试剂）')
@@ -399,6 +423,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider
       value={{
         data,
+        isLoading,
         updateMethodsData,
         updateFactorsData,
         updateGradientData,

@@ -236,63 +236,61 @@ const TablePage: React.FC = () => {
         // 使用后端返回的大因子分数
         const instMajor = scoreResults.instrument.major_factors
         const prepMajor = scoreResults.preparation.major_factors
-        const additionalFactors = scoreResults.additional_factors || { P: 0, R: 0, D: 0 }
+        const additionalFactors = scoreResults.additional_factors || { 
+          P: 0, 
+          instrument_R: 0, 
+          instrument_D: 0,
+          pretreatment_R: 0, 
+          pretreatment_D: 0 
+        }
         
         const avgS = (instMajor.S + prepMajor.S) / 2
         const avgH = (instMajor.H + prepMajor.H) / 2
         const avgE = (instMajor.E + prepMajor.E) / 2
         
+        // R和D取仪器和前处理的平均值（与后端一致）
+        const avgR = ((additionalFactors.instrument_R || 0) + (additionalFactors.pretreatment_R || 0)) / 2
+        const avgD = ((additionalFactors.instrument_D || 0) + (additionalFactors.pretreatment_D || 0)) / 2
+        
+        // P因子使用加权平均（根据最终汇总权重方案）
+        const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
+        const weightMap: Record<string, { instrument: number, preparation: number }> = {
+          'Standard': { instrument: 0.6, preparation: 0.4 },
+          'Complex_Prep': { instrument: 0.3, preparation: 0.7 },
+          'Direct_Online': { instrument: 0.8, preparation: 0.2 },
+          'Equal': { instrument: 0.5, preparation: 0.5 }
+        }
+        const weights = weightMap[finalWeights] || weightMap['Standard']
+        const instP = additionalFactors.instrument_P || 0
+        const prepP = additionalFactors.pretreatment_P || 0
+        const avgP = instP * weights.instrument + prepP * weights.preparation
+        
         setTotalScores({
           S: avgS,
           H: avgH,
           E: avgE,
-          R: additionalFactors.R,
-          D: additionalFactors.D,
+          R: avgR,
+          D: avgD,
+          totalVolume: gradientData?.calculations?.totalVolume || 0,
+          totalMass: (gradientData?.calculations?.totalMass !== undefined && gradientData?.calculations?.totalMass !== null) 
+            ? gradientData.calculations.totalMass 
+            : 0,
           totalScore: scoreResults.final?.score3 || 0
         })
         
-        setPowerScore(additionalFactors.P)
+        setPowerScore(avgP)
         
-        // 构建试剂详细列表（使用前端归一化计算）
+        // 构建试剂详细列表（用于显示，但不用于计算总分）
         const factorsData = await StorageHelper.getJSON<ReagentFactor[]>(STORAGE_KEYS.FACTORS)
         
         if (!factorsData) {
-          // 即使没有详细数据，也显示后端总分
-          setTotalScores({
-            S: avgS,
-            H: avgH,
-            E: avgE,
-            R: additionalFactors.R,
-            D: additionalFactors.D,
-            totalVolume: gradientData?.calculations?.totalVolume || 0,
-            totalMass: gradientData?.calculations?.totalMass || 0,
-            totalScore: scoreResults.final?.score3 || 0
-          })
           setHasData(true)
           return
         }
         
         // 生成试剂详细列表（包含每个试剂的 S/H/E/R/D 贡献）
-        const reagentDetails = await loadReagentDetails(factorsData, methodsData, gradientData)
+        await loadReagentDetails(factorsData, methodsData, gradientData)
         
-        // 计算所有试剂的 R/D 总和（用于显示）
-        const allReagents = [
-          ...reagentDetails.preTreatmentDetails,
-          ...reagentDetails.phaseADetails,
-          ...reagentDetails.phaseBDetails
-        ]
-        const calculatedTotals = {
-          S: avgS,  // 使用后端计算的 S
-          H: avgH,  // 使用后端计算的 H
-          E: avgE,  // 使用后端计算的 E
-          R: allReagents.reduce((sum, r) => sum + r.R, 0),
-          D: allReagents.reduce((sum, r) => sum + r.D, 0),
-          totalVolume: gradientData?.calculations?.totalVolume || 0,
-          totalMass: gradientData?.calculations?.totalMass || 0,
-          totalScore: scoreResults.final?.score3 || 0
-        }
-        
-        setTotalScores(calculatedTotals)
         setHasData(true)
         return
       }
@@ -713,14 +711,14 @@ const TablePage: React.FC = () => {
             message="Reagent-level R/D Calculation Explanation"
             description={
               <div>
-                <p>The R (Recyclability & Regeneration) and D (Disposal & Degradation) values for each reagent in the table are calculated according to the GEMAM evaluation system:</p>
+                <p>The R (Recyclability & Regeneration) and D (Disposal & Degradation) values are calculated using the latest normalization formula:</p>
                 <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
-                  <li><strong>Normalization Formula</strong>: Score = min(100, 33.3 × log₁₀(1 + mass × factor value))</li>
+                  <li><strong>Formula</strong>: Score = min(100, 45 × log₁₀(1 + 14 × Σ(mᵢ × f)))</li>
                   <li><strong>R</strong>: Reflects the recyclability and regeneration potential of the reagent</li>
                   <li><strong>D</strong>: Reflects the disposal difficulty and degradability of the reagent</li>
                 </ul>
                 <p style={{ marginTop: 8, marginBottom: 0 }}>
-                  <strong>Note:</strong> S/H/E scores are calculated via sub-factors (S1-S4, H1-H2, E1-E3) on the backend. See "Green Chemistry Assessment Total Scores" section for details.
+                  <strong>Note:</strong> All scores (S/H/E/R/D/P) are calculated by the backend evaluation system. The values displayed here are directly synchronized from the Method Evaluation results.
                 </p>
               </div>
             }
@@ -740,35 +738,6 @@ const TablePage: React.FC = () => {
                 rowKey={(record) => `${record.source}-${record.reagentName}`}
                 pagination={false}
                 scroll={{ x: 1200 }}
-                summary={() => (
-                  <Table.Summary fixed>
-                    <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
-                      <Table.Summary.Cell index={1}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
-                      <Table.Summary.Cell index={3}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.mass, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={4}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.S, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={5}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.H, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={6}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.E, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={7}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.R, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={8}>
-                        {preTreatmentData.reduce((sum, r) => sum + r.D, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )}
               />
               )
             },
@@ -795,35 +764,6 @@ const TablePage: React.FC = () => {
                 rowKey={(record) => `${record.source}-${record.reagentName}`}
                 pagination={false}
                 scroll={{ x: 1200 }}
-                summary={() => (
-                  <Table.Summary fixed>
-                    <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
-                      <Table.Summary.Cell index={1}>
-                        {phaseAData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
-                      <Table.Summary.Cell index={3}>
-                        {phaseAData.reduce((sum, r) => sum + r.mass, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={4}>
-                        {phaseAData.reduce((sum, r) => sum + r.S, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={5}>
-                        {phaseAData.reduce((sum, r) => sum + r.H, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={6}>
-                        {phaseAData.reduce((sum, r) => sum + r.E, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={7}>
-                        {phaseAData.reduce((sum, r) => sum + r.R, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={8}>
-                        {phaseAData.reduce((sum, r) => sum + r.D, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )}
               />
               </>
               )
@@ -851,35 +791,6 @@ const TablePage: React.FC = () => {
                 rowKey={(record) => `${record.source}-${record.reagentName}`}
                 pagination={false}
                 scroll={{ x: 1200 }}
-                summary={() => (
-                  <Table.Summary fixed>
-                    <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                      <Table.Summary.Cell index={0}>Subtotal</Table.Summary.Cell>
-                      <Table.Summary.Cell index={1}>
-                        {phaseBData.reduce((sum, r) => sum + r.volume, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
-                      <Table.Summary.Cell index={3}>
-                        {phaseBData.reduce((sum, r) => sum + r.mass, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={4}>
-                        {phaseBData.reduce((sum, r) => sum + r.S, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={5}>
-                        {phaseBData.reduce((sum, r) => sum + r.H, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={6}>
-                        {phaseBData.reduce((sum, r) => sum + r.E, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={7}>
-                        {phaseBData.reduce((sum, r) => sum + r.R, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={8}>
-                        {phaseBData.reduce((sum, r) => sum + r.D, 0).toFixed(3)}
-                      </Table.Summary.Cell>
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )}
               />
               </>
               )

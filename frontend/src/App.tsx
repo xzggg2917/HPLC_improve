@@ -49,7 +49,8 @@ const AppContent: React.FC = () => {
     isDirty,
     setIsDirty,
     exportData,
-    setAllData
+    setAllData,
+    isLoading
   } = useAppContext()
 
   // 使用ref来存储处理函数，避免Hooks规则问题
@@ -96,6 +97,12 @@ const AppContent: React.FC = () => {
 
   // 路由守卫：如果没有打开文件，禁止访问操作页面
   useEffect(() => {
+    // 等待初始数据加载完成
+    if (isLoading) {
+      console.log('⏳ 等待初始数据加载...')
+      return
+    }
+    
     // Pages requiring a file to be opened
     const protectedPaths = ['/methods', '/factors', '/graph', '/graph/pretreatment', '/graph/instrument', '/graph/evaluation', '/table', '/hplc-gradient']
     
@@ -105,7 +112,7 @@ const AppContent: React.FC = () => {
       message.warning('Please create or open a file first')
       navigate('/', { replace: true })
     }
-  }, [location.pathname, currentFilePath, navigate])
+  }, [location.pathname, currentFilePath, navigate, isLoading])
 
   // 监听HomePage触发的文件操作事件 - 必须在所有条件判断之前声明
   useEffect(() => {
@@ -144,14 +151,21 @@ const AppContent: React.FC = () => {
 
   // Create new file (memory mode)
   const handleNewFile = async () => {
-    // Only prompt to save if file is already open and has unsaved changes
-    if (currentFilePath && isDirty) {
+    // Prompt to save if there's any open file (regardless of isDirty state)
+    if (currentFilePath) {
       confirm({
-        title: 'Unsaved Changes',
+        title: 'Create New File',
         icon: <ExclamationCircleOutlined />,
-        content: 'You have unsaved changes. Save them first?',
-        okText: 'Save',
-        cancelText: 'Don\'t Save',
+        content: isDirty 
+          ? 'You have unsaved changes in the current file. Do you want to save before creating a new file?'
+          : 'Do you want to save the current file before creating a new file?',
+        okText: 'Save & New',
+        cancelText: 'Discard & New',
+        okButtonProps: { danger: false },
+        cancelButtonProps: { type: 'default' },
+        closable: true,
+        width: 480,
+        centered: true,
         onOk: async () => {
           await handleSaveFile()
           createNewFile()

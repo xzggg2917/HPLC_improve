@@ -1671,7 +1671,7 @@ const MethodsPage: React.FC = () => {
                 const chartWidth = needsScroll ? chartData.length * 200 : '100%'  // 每个试剂200px宽
                 
                 // 计算自动最大值
-                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D, d.P]))
+                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D]))
                 const currentMax = preTreatmentYMax !== null ? preTreatmentYMax : autoMax
                 
                 return (
@@ -1757,7 +1757,6 @@ const MethodsPage: React.FC = () => {
                               <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
                               <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
                               <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -1821,13 +1820,9 @@ const MethodsPage: React.FC = () => {
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
                         Disposal Difficulty (D)
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        Energy Consumption (P)
-                      </span>
                     </div>
                     {/* Note for zero-impact reagents */}
-                    {chartData.some(d => d.S === 0 && d.H === 0 && d.E === 0 && d.R === 0 && d.D === 0 && d.P === 0) && (
+                    {chartData.some(d => d.S === 0 && d.H === 0 && d.E === 0 && d.R === 0 && d.D === 0) && (
                       <div style={{ 
                         fontSize: 11, 
                         color: '#999', 
@@ -1897,7 +1892,7 @@ const MethodsPage: React.FC = () => {
                 const chartWidth = needsScroll ? chartData.length * 200 : '100%'  // 每个试剂200px宽
                 
                 // 计算自动最大值
-                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D, d.P]))
+                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D]))
                 const currentMax = phaseAYMax !== null ? phaseAYMax : autoMax
                 
                 return (
@@ -1983,7 +1978,6 @@ const MethodsPage: React.FC = () => {
                               <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
                               <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
                               <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -2047,10 +2041,6 @@ const MethodsPage: React.FC = () => {
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
                         Disposal Difficulty (D)
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        Energy Consumption (P)
-                      </span>
                     </div>
                   </div>
                 )
@@ -2111,7 +2101,7 @@ const MethodsPage: React.FC = () => {
                 const chartWidth = needsScroll ? chartData.length * 200 : '100%'  // 每个试剂200px宽
                 
                 // 计算自动最大值
-                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D, d.P]))
+                const autoMax = Math.max(...chartData.flatMap(d => [d.S, d.H, d.E, d.R, d.D]))
                 const currentMax = phaseBYMax !== null ? phaseBYMax : autoMax
                 
                 return (
@@ -2197,7 +2187,6 @@ const MethodsPage: React.FC = () => {
                               <Bar dataKey="E" fill="#ffc658" name="Environmental Impact (E)" />
                               <Bar dataKey="R" fill="#ff8042" name="Recyclability (R)" />
                               <Bar dataKey="D" fill="#a4de6c" name="Disposal Difficulty (D)" />
-                              <Bar dataKey="P" fill="#d0ed57" name="Energy Consumption (P)" />
                             </BarChart>
                           </ResponsiveContainer>
                           
@@ -2260,10 +2249,6 @@ const MethodsPage: React.FC = () => {
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ width: 8, height: 8, background: '#a4de6c', display: 'inline-block', borderRadius: 2 }}></span>
                         Disposal Difficulty (D)
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, background: '#d0ed57', display: 'inline-block', borderRadius: 2 }}></span>
-                        Energy Consumption (P)
                       </span>
                     </div>
                   </div>

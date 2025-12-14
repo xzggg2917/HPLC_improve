@@ -3312,15 +3312,18 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
         </Form.Item>
 
         <Row gutter={16}>
-          <Col span={8}>
+          <Col span={24}>
             <Alert
-              message="Air Hazard"
+              message={
+                <span>
+                  Air Hazard 
+                  <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                    (Air Hazard score equals Chronic Toxicity)
+                  </Text>
+                </span>
+              }
               description={
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Air Hazard score equals Chronic Toxicity
-                  </Text>
-                  <br />
                   <Text strong style={{ fontSize: 16, color: ctCalculatedValue >= 0.8 ? '#ff4d4f' : ctCalculatedValue >= 0.5 ? '#fa8c16' : '#52c41a' }}>
                     {ctCalculatedValue >= 0 ? ctCalculatedValue.toFixed(3) : 'To be calculated'}
                   </Text>
@@ -3841,11 +3844,21 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           border: '1px solid #e8e8e8',
           marginBottom: 16
         }}>
-          <Row gutter={16} justify="center">
-            <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ffa39e' }}>
-                <Text strong style={{ fontSize: 14 }}>Safety Score (S)</Text>
-                <div style={{ fontSize: 22, color: '#ff4d4f', fontWeight: 'bold', marginTop: 4 }}>
+          <Row gutter={12} justify="space-between">
+            <Col span={4}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '12px 8px', 
+                background: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #ffa39e',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Text strong style={{ fontSize: 13 }}>Safety Score (S)</Text>
+                <div style={{ fontSize: 24, color: '#ff4d4f', fontWeight: 'bold', margin: '8px 0' }}>
                   {calculatedScores.safetyScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -3853,10 +3866,20 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 </Text>
               </div>
             </Col>
-            <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ffbb96' }}>
-                <Text strong style={{ fontSize: 14 }}>Health Score (H)</Text>
-                <div style={{ fontSize: 22, color: '#ff7a45', fontWeight: 'bold', marginTop: 4 }}>
+            <Col span={4}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '12px 8px', 
+                background: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #ffbb96',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Text strong style={{ fontSize: 13 }}>Health Score (H)</Text>
+                <div style={{ fontSize: 24, color: '#ff7a45', fontWeight: 'bold', margin: '8px 0' }}>
                   {calculatedScores.healthScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -3864,10 +3887,20 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 </Text>
               </div>
             </Col>
-            <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #95de64' }}>
-                <Text strong style={{ fontSize: 14 }}>Environmental Score (E)</Text>
-                <div style={{ fontSize: 22, color: '#52c41a', fontWeight: 'bold', marginTop: 4 }}>
+            <Col span={4}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '12px 8px', 
+                background: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #95de64',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Text strong style={{ fontSize: 13 }}>Environmental Score (E)</Text>
+                <div style={{ fontSize: 24, color: '#52c41a', fontWeight: 'bold', margin: '8px 0' }}>
                   {calculatedScores.envScore.toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -3875,10 +3908,20 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 </Text>
               </div>
             </Col>
-            <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #b37feb' }}>
-                <Text strong style={{ fontSize: 14 }}>Regeneration Factor (R)</Text>
-                <div style={{ fontSize: 22, color: '#722ed1', fontWeight: 'bold', marginTop: 4 }}>
+            <Col span={5}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '12px 8px', 
+                background: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #b37feb',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Text strong style={{ fontSize: 13 }}>Regeneration Factor (R)</Text>
+                <div style={{ fontSize: 24, color: '#722ed1', fontWeight: 'bold', margin: '8px 0' }}>
                   {(form.getFieldValue('regeneration') || 0).toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -3886,10 +3929,20 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                 </Text>
               </div>
             </Col>
-            <Col flex="1" style={{ minWidth: 0, maxWidth: 180 }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #ff9c6e' }}>
-                <Text strong style={{ fontSize: 14 }}>Disposal Factor (D)</Text>
-                <div style={{ fontSize: 22, color: '#fa541c', fontWeight: 'bold', marginTop: 4 }}>
+            <Col span={5}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '12px 8px', 
+                background: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #ff9c6e',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Text strong style={{ fontSize: 13 }}>Disposal Factor (D)</Text>
+                <div style={{ fontSize: 24, color: '#fa541c', fontWeight: 'bold', margin: '8px 0' }}>
                   {(form.getFieldValue('disposal') || 0).toFixed(3)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
