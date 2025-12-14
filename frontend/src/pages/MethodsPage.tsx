@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { Card, Typography, InputNumber, Select, Button, Row, Col, message, Tooltip, Divider, Spin, Statistic } from 'antd'
 import { PlusOutlined, DeleteOutlined, QuestionCircleOutlined, TrophyOutlined, ExperimentOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import { useAppContext } from '../contexts/AppContext'
 import api from '../services/api'
@@ -14,6 +14,7 @@ const { Option } = Select
 
 const MethodsPage: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data, updateMethodsData, setIsDirty } = useAppContext()
   
   // 使用Context中的数据初始化本地状态
@@ -48,13 +49,13 @@ const MethodsPage: React.FC = () => {
   // 梯度计算数据状态（用于UI显示）
   const [gradientCalculations, setGradientCalculations] = useState<any>(null)
   
+  // 数据加载状态标记（避免加载中清空图表）
+  const [isDataLoading, setIsDataLoading] = useState(true)
+  
   // 图表纵坐标范围控制 (null = 自动)
   const [preTreatmentYMax, setPreTreatmentYMax] = useState<number | null>(null)
   const [phaseAYMax, setPhaseAYMax] = useState<number | null>(null)
   const [phaseBYMax, setPhaseBYMax] = useState<number | null>(null)
-
-  // 强制刷新图表的状态
-  const [chartRefreshKey, setChartRefreshKey] = useState(0)
   
   // 图表数据缓存（使用state而非useMemo，因为计算是异步的）
   const [phaseAChartData, setPhaseAChartData] = useState<any>([])
@@ -69,8 +70,16 @@ const MethodsPage: React.FC = () => {
     []
   )
 
+  // 页面每次显示时都重新加载数据（解决从其他页面返回时图表消失的问题）
+  const pageVisibleCount = React.useRef(0)
+  const hasInitialLoad = React.useRef(false)
+  
   useEffect(() => {
-    // 加载 Factors 数据
+    pageVisibleCount.current += 1
+    const currentCount = pageVisibleCount.current
+    console.log(`👁️ MethodsPage 第 ${currentCount} 次显示`)
+    
+    // 加载 Factors 数据（定义在useEffect顶层，确保所有地方都能访问）
     const loadFactorsData = async () => {
       console.log('🔄 MethodsPage: 开始加载factors数据')
       try {
@@ -108,7 +117,7 @@ const MethodsPage: React.FC = () => {
       }
     }
 
-    // 加载评分结果
+    // 加载评分结果（定义在useEffect顶层）
     const loadScoreResults = async () => {
       console.log('🔄 MethodsPage: 开始加载评分结果')
       try {
@@ -123,9 +132,58 @@ const MethodsPage: React.FC = () => {
         console.error('❌ 加载评分结果失败:', error)
       }
     }
+    
+    // 只在首次加载时执行完整的数据加载
+    if (!hasInitialLoad.current) {
+      console.log('🔄 首次加载，执行完整数据加载')
+      hasInitialLoad.current = true
 
-    loadFactorsData()
-    loadScoreResults()
+    // 统一加载所有数据，确保数据完整性
+    const loadAllData = async () => {
+      setIsDataLoading(true)
+      console.log('🔄 开始加载所有数据...')
+      
+      // 先加载 factors
+      await loadFactorsData()
+      
+      // 再加载 gradient（依赖 factors）
+      const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+      if (gradientData?.calculations) {
+        setGradientCalculations(gradientData.calculations)
+        console.log('✅ 初始加载gradient数据成功')
+      } else {
+        console.log('⚠️ gradient数据不完整')
+        setGradientCalculations(null)
+      }
+      
+      // 加载评分结果
+      await loadScoreResults()
+      
+      // 数据加载完成
+      setIsDataLoading(false)
+      console.log('✅ 所有数据加载完成')
+    }
+    
+      loadAllData()
+    } else {
+      // 非首次加载，只验证数据是否存在，不重新设置 isDataLoading
+      console.log('🔄 后续访问，验证数据完整性')
+      const verifyData = async () => {
+        const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
+        const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+        
+        // 只有数据真的不存在时才重新加载
+        if (!factors || factors.length === 0 || !gradientData?.calculations) {
+          console.log('⚠️ 数据缺失，重新加载')
+          hasInitialLoad.current = false // 重置标记，下次完整加载
+          // 触发重新渲染，让上面的逻辑重新执行
+          setForceRenderKey(prev => prev + 1)
+        } else {
+          console.log('✓ 数据完整，无需重新加载')
+        }
+      }
+      verifyData()
+    }
 
     // 监听 HPLC Gradient 数据更新
     const handleGradientDataUpdated = async () => {
@@ -136,7 +194,6 @@ const MethodsPage: React.FC = () => {
         console.log('✅ Gradient 数据加载成功:', gradientData.calculations)
         setGradientCalculations(gradientData.calculations || null) // 更新state
       }
-      setChartRefreshKey(prev => prev + 1) // 强制刷新图表
     }
     
     // 检查打开文件时gradient数据是否包含calculations
@@ -161,9 +218,6 @@ const MethodsPage: React.FC = () => {
     const handleFileDataChanged = (e: Event) => {
       const customEvent = e as CustomEvent
       console.log('📢 MethodsPage: 接收到 fileDataChanged 事件', customEvent.detail)
-      
-      // 立即刷新图表
-      setChartRefreshKey(prev => prev + 1)
       
       // 延迟重新加载factors数据（等待FactorsPage初始化预定义数据）
       setTimeout(() => {
@@ -203,7 +257,7 @@ const MethodsPage: React.FC = () => {
       window.removeEventListener('fileDataChanged', handleFileDataChanged)
       window.removeEventListener('scoreDataUpdated', handleScoreDataUpdated)
     }
-  }, [])
+  }, [location.pathname]) // 添加 location.pathname 依赖，每次导航到此页面都重新加载
 
   // 监听Context数据变化，更新本地状态（只更新必要的字段）
   const lastSyncedData = React.useRef<string>('')
@@ -230,8 +284,39 @@ const MethodsPage: React.FC = () => {
     setMobilePhaseA(data.methods.mobilePhaseA)
     setMobilePhaseB(data.methods.mobilePhaseB)
     
-    // 刷新图表
-    setChartRefreshKey(prev => prev + 1)
+    // Context变化时也重新加载factors和gradient数据，确保图表有数据
+    const reloadData = async () => {
+      setIsDataLoading(true)
+      console.log('📥 开始重新加载数据...')
+      
+      // 顺序加载，确保数据完整性
+      const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
+      if (factors && factors.length > 0) {
+        setFactorsData(factors)
+        const reagentNames = Array.from(
+          new Set(factors.map((f: any) => f.name).filter((n: string) => n && n.trim()))
+        ).sort()
+        setAvailableReagents(reagentNames as string[])
+        console.log('  ✅ 重新加载了factors数据:', factors.length, '个')
+      } else {
+        console.log('  ⚠️ factors数据为空')
+        setFactorsData([])
+      }
+      
+      const gradientData = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
+      if (gradientData?.calculations) {
+        setGradientCalculations(gradientData.calculations)
+        console.log('  ✅ 重新加载了gradient数据')
+      } else {
+        console.log('  ⚠️ gradient数据不完整')
+        setGradientCalculations(null)
+      }
+      
+      // 数据加载完成
+      setIsDataLoading(false)
+      console.log('✅ 数据重新加载完成')
+    }
+    reloadData()
   }, [data.methods.sampleCount, data.methods.preTreatmentReagents, data.methods.mobilePhaseA, data.methods.mobilePhaseB])
 
   // 监听 availableReagents 变化
@@ -239,7 +324,7 @@ const MethodsPage: React.FC = () => {
     console.log('👀 availableReagents 状态变化:', availableReagents.length, availableReagents)
   }, [availableReagents])
 
-  // 自动保存数据到 Context 和 localStorage (每次状态变化时)
+  // 自动保存数据到 Context 和存储（每次状态变化时）
   // 使用 ref 来避免初始化时触发 dirty
   const isInitialMount = React.useRef(true)
   const lastLocalData = React.useRef<string>('')
@@ -444,9 +529,6 @@ const MethodsPage: React.FC = () => {
       // 保存更新后的gradient数据
       await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, gradientData)
       console.log('✅ 已更新gradient calculations')
-      
-      // 刷新图表
-      setChartRefreshKey(prev => prev + 1)
     } catch (error) {
       console.error('❌ 重新计算gradient calculations失败:', error)
     }
@@ -479,22 +561,30 @@ const MethodsPage: React.FC = () => {
   }
 
   // 计算柱状图数据 - Sample PreTreatment（需要乘以样品数）
-  const calculatePreTreatmentChartData = () => {
+  // 使用 useMemo 缓存柱状图数据 - Sample PreTreatment
+  const preTreatmentChartData = React.useMemo(() => {
+    console.log('🔄 计算 PreTreatment 图表数据')
     const chartData: any[] = []
-    const currentSampleCount = sampleCount || 1 // 如果没有样品数，默认为1
+    const currentSampleCount = sampleCount || 1
+    
+    // 如果factorsData未加载，返回空数组
+    if (!factorsData || factorsData.length === 0) {
+      console.log('  ⚠️ factorsData 未加载，跳过图表计算')
+      return chartData
+    }
     
     preTreatmentReagents.forEach(reagent => {
       if (!reagent.name || reagent.volume <= 0) return
       
       const factor = factorsData.find(f => f.name === reagent.name)
-      if (!factor) return
+      if (!factor) {
+        console.log(`  ⚠️ 找不到试剂 ${reagent.name} 的factor数据`)
+        return
+      }
       
-      // Individual sample pretreatment: 体积需要乘以样品数
       const totalVolume = reagent.volume * currentSampleCount
-      const mass = totalVolume * factor.density // 质量 = 总体积 × 密度
+      const mass = totalVolume * factor.density
       
-      // Note: For reagents with density=0 (like CO2, Water), all scores will be 0
-      // They will appear in the chart but with no visible bars
       chartData.push({
         reagent: reagent.name,
         S: Number((mass * factor.safetyScore).toFixed(3)),
@@ -502,12 +592,15 @@ const MethodsPage: React.FC = () => {
         E: Number((mass * factor.envScore).toFixed(3)),
         R: Number((mass * (factor.regeneration || 0)).toFixed(3)),
         D: Number((mass * factor.disposal).toFixed(3)),
-        P: 0  // P is a method-level factor, not reagent property
+        P: 0
       })
     })
     
+    console.log(`  ✅ 生成了 ${chartData.length} 个数据点`)
     return chartData
-  }
+  }, [preTreatmentReagents, sampleCount, factorsData])
+
+  // 原来的calculatePreTreatmentChartData函数删除，由useMemo替代
 
   // 计算柱状图数据 - Mobile Phase (需要 HPLC Gradient 数据)
   const calculatePhaseChartData = async (phaseType: 'A' | 'B') => {
@@ -580,23 +673,59 @@ const MethodsPage: React.FC = () => {
   // 使用 useEffect 计算图表数据（因为是异步操作）
   useEffect(() => {
     const loadPhaseAChartData = async () => {
-      console.log('🔄 重新计算 Phase A 图表数据, refreshKey:', chartRefreshKey)
+      console.log('🔄 重新计算 Phase A 图表数据')
+      console.log('  - factorsData.length:', factorsData.length)
+      console.log('  - gradientCalculations:', gradientCalculations ? '存在' : '不存在')
+      console.log('  - isDataLoading:', isDataLoading)
+      
+      // 如果正在加载，不做任何操作（保持现有图表）
+      if (isDataLoading) {
+        console.log('  ⏳ 数据加载中，保持现有图表')
+        return
+      }
+      
+      // 数据加载完成但不完整，才清空图表
+      if (factorsData.length === 0 || !gradientCalculations) {
+        console.log('  ⚠️ 数据不完整，清空 Phase A 图表')
+        setPhaseAChartData([])
+        return
+      }
+      
       const data = await calculatePhaseChartData('A')
       console.log('📈 Phase A 图表数据:', data)
       setPhaseAChartData(data)
     }
+    
     loadPhaseAChartData()
-  }, [factorsData, chartRefreshKey, mobilePhaseA])
+  }, [factorsData, gradientCalculations, isDataLoading])
   
   useEffect(() => {
     const loadPhaseBChartData = async () => {
-      console.log('🔄 重新计算 Phase B 图表数据, refreshKey:', chartRefreshKey)
+      console.log('🔄 重新计算 Phase B 图表数据')
+      console.log('  - factorsData.length:', factorsData.length)
+      console.log('  - gradientCalculations:', gradientCalculations ? '存在' : '不存在')
+      console.log('  - isDataLoading:', isDataLoading)
+      
+      // 如果正在加载，不做任何操作（保持现有图表）
+      if (isDataLoading) {
+        console.log('  ⏳ 数据加载中，保持现有图表')
+        return
+      }
+      
+      // 数据加载完成但不完整，才清空图表
+      if (factorsData.length === 0 || !gradientCalculations) {
+        console.log('  ⚠️ 数据不完整，清空 Phase B 图表')
+        setPhaseBChartData([])
+        return
+      }
+      
       const data = await calculatePhaseChartData('B')
       console.log('📈 Phase B 图表数据:', data)
       setPhaseBChartData(data)
     }
+    
     loadPhaseBChartData()
-  }, [factorsData, chartRefreshKey, mobilePhaseB])
+  }, [factorsData, gradientCalculations, isDataLoading])
   
   // Calculate Power Factor (P) score
   // 计算P因子（使用用户输入的能耗值）
@@ -1165,13 +1294,6 @@ const MethodsPage: React.FC = () => {
   
   // 确认提交
   const handleConfirm = async () => {
-    // 验证样品数
-    if (!sampleCount || sampleCount <= 0 || !Number.isInteger(sampleCount)) {
-      message.error('Please enter a valid number of samples (positive integer)')
-      setSampleCountError('Please enter a positive integer')
-      return
-    }
-
     // 验证试剂名称
     const allReagents = [...preTreatmentReagents, ...mobilePhaseA, ...mobilePhaseB]
     if (allReagents.some(r => !r.name)) {
@@ -1441,63 +1563,7 @@ const MethodsPage: React.FC = () => {
 
   return (
     <div className="methods-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Methods</Title>
-        <div>
-          <Button 
-            onClick={async () => {
-              console.log('🔄 手动加载Factors数据...')
-              const factors = await StorageHelper.getJSON<any[]>(STORAGE_KEYS.FACTORS)
-              console.log('  - Factors数据:', factors?.length, factors)
-              if (factors && factors.length > 0) {
-                const names = Array.from(new Set(factors.map((f: any) => f.name).filter(Boolean))).sort()
-                console.log('  - 提取的试剂名:', names)
-                setAvailableReagents(names as string[])
-                setFactorsData(factors)
-                message.success(`已加载 ${names.length} 个试剂`)
-              } else {
-                message.error('Factors数据为空，请先进入Factors页面')
-              }
-            }}
-            style={{ marginRight: 8 }}
-          >
-            🔧 加载试剂列表
-          </Button>
-          <Button 
-            type="primary" 
-            onClick={() => navigate(0)}
-          >
-            🔄 刷新
-          </Button>
-        </div>
-      </div>
-
-      {/* 上半部分：样品数输入 */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row gutter={24}>
-          <Col span={24}>
-            {/* 样品数输入 */}
-            <div style={{ marginBottom: 20, padding: 16, background: '#fafafa', borderRadius: 8, border: '1px solid #d9d9d9' }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-                单个样品所含物质数:
-              </div>
-              <InputNumber
-                min={1}
-                step={1}
-                placeholder="Basic usage"
-                value={sampleCount}
-                onChange={handleSampleCountChange}
-                style={{ width: '100%' }}
-                precision={0}
-                size="large"
-              />
-              {sampleCountError && (
-                <div style={{ marginTop: 8, color: '#ff4d4f', fontSize: 13 }}>{sampleCountError}</div>
-              )}
-            </div>
-          </Col>
-        </Row>
-      </Card>
+      <Title level={2}>Methods</Title>
 
       {/* 三个试剂部分 */}
       <Row gutter={16} style={{ marginLeft: 0, marginRight: 0 }}>
@@ -1508,7 +1574,7 @@ const MethodsPage: React.FC = () => {
             <div className="chart-placeholder">
               {/* Sample PreTreatment 柱状图 */}
               {(() => {
-                const chartData = calculatePreTreatmentChartData()
+                const chartData = preTreatmentChartData
                 if (chartData.length === 0) {
                   return (
                     <div style={{ height: 300, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
