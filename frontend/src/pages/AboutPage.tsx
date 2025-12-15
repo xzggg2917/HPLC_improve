@@ -322,7 +322,7 @@ const AboutPage: React.FC = () => {
             <Paragraph>
               <Text strong>Data Storage:</Text>
               <ul>
-                <li>LocalStorage - Local Data Persistence</li>
+                <li>Electron File Storage - Persistent Data Management</li>
                 <li>Custom Events - Cross-component Communication</li>
                 <li>React Hooks - State Management</li>
               </ul>

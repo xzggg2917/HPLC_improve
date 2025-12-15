@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron')
+const { app, BrowserWindow, ipcMain, globalShortcut, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 const isDev = require('electron-is-dev')
@@ -201,6 +201,64 @@ ipcMain.handle('fs:exportData', async (event, filename, data) => {
     const exportPath = path.join(app.getPath('downloads'), filename)
     await fs.writeFile(exportPath, JSON.stringify(data, null, 2), 'utf-8')
     return { success: true, path: exportPath }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+// 文件对话框 - 打开文件
+ipcMain.handle('dialog:showOpen', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: options?.filters || [{ name: 'JSON Files', extensions: ['json'] }],
+    ...options
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true }
+  }
+  
+  return { 
+    canceled: false, 
+    filePath: result.filePaths[0],
+    fileName: path.basename(result.filePaths[0])
+  }
+})
+
+// 文件对话框 - 保存文件
+ipcMain.handle('dialog:showSave', async (event, options) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    filters: options?.filters || [{ name: 'JSON Files', extensions: ['json'] }],
+    defaultPath: options?.defaultPath || 'hplc_analysis.json',
+    ...options
+  })
+  
+  if (result.canceled || !result.filePath) {
+    return { canceled: true }
+  }
+  
+  return { 
+    canceled: false, 
+    filePath: result.filePath,
+    fileName: path.basename(result.filePath)
+  }
+})
+
+// 读取文件内容
+ipcMain.handle('file:read', async (event, filePath) => {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8')
+    return { success: true, content }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+// 写入文件内容
+ipcMain.handle('file:write', async (event, filePath, content) => {
+  try {
+    await fs.writeFile(filePath, content, 'utf-8')
+    return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
   }

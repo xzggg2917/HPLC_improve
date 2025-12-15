@@ -9,6 +9,7 @@ interface User {
 interface AuthContextType {
   isAuthenticated: boolean
   currentUser: User | null
+  currentPassword: string | null // 添加当前用户密码（明文，仅在会话中保存）
   login: (username: string, password: string) => Promise<{ success: boolean; message: string }>
   register: (username: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
@@ -21,6 +22,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 初始化时直接从存储读取,避免闪现登录页面
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [currentPassword, setCurrentPassword] = useState<string | null>(null) // 当前用户密码（明文，仅在会话中保存）
   const [isInitialized, setIsInitialized] = useState(false)
 
   // 异步初始化用户状态
@@ -109,6 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setCurrentUser(currentUser)
       setIsAuthenticated(true)
+      setCurrentPassword(password) // 保存密码用于文件加密
       await StorageHelper.setCurrentUser(currentUser)
 
       return { success: true, message: 'Login successful' }
@@ -121,6 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setCurrentUser(null)
     setIsAuthenticated(false)
+    setCurrentPassword(null) // 清除密码
     
     // 清理用户登录信息
     StorageHelper.clearCurrentUser()
@@ -155,6 +159,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         isAuthenticated,
         currentUser,
+        currentPassword,
         login,
         register,
         logout,

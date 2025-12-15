@@ -26,7 +26,6 @@ import LoginPage from './pages/LoginPage'
 import ComparisonPage from './pages/ComparisonPage'
 import VineBorder from './components/VineBorder'
 import PasswordVerifyModal from './components/PasswordVerifyModal'
-import PasswordConfirmModal from './components/PasswordConfirmModal'
 import { AppProvider, useAppContext } from './contexts/AppContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { StorageHelper, STORAGE_KEYS } from './utils/storage'
@@ -40,7 +39,7 @@ const { confirm } = Modal
 const AppContent: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, currentUser, logout, verifyUser } = useAuth()
+  const { isAuthenticated, currentUser, currentPassword, logout, verifyUser } = useAuth()
   const {
     fileHandle,
     setFileHandle,
@@ -62,10 +61,6 @@ const AppContent: React.FC = () => {
   const [pendingFileData, setPendingFileData] = useState<any>(null)
   const [pendingFileHandle, setPendingFileHandle] = useState<any>(null)
 
-  // 密码确认模态框状态（用于保存加密文件）
-  const [confirmModalVisible, setConfirmModalVisible] = useState(false)
-  const [pendingSaveData, setPendingSaveData] = useState<any>(null)
-
   // 调试：监控isDirty变化
   useEffect(() => {
     console.log('🔔 isDirty状态变化:', isDirty, '文件:', currentFilePath)
@@ -75,8 +70,8 @@ const AppContent: React.FC = () => {
   // 用户可以通过导航栏重新进入需要的页面
 
   // 添加关闭浏览器前的保存提示
-  // 注意: 刷新页面(F5)不会触发此提示,因为数据已自动保存到localStorage
-  // 只有关闭标签页/浏览器窗口时才提示,因为这会丢失localStorage
+  // 注意: 数据已自动保存到 Electron 文件存储
+  // 刷新页面(F5)不会丢失数据
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // 检测是否为刷新操作
@@ -160,10 +155,8 @@ const AppContent: React.FC = () => {
           ? 'You have unsaved changes in the current file. Do you want to save before creating a new file?'
           : 'Do you want to save the current file before creating a new file?',
         okText: 'Save & New',
-        cancelText: 'Discard & New',
+        cancelText: 'Cancel',
         okButtonProps: { danger: false },
-        cancelButtonProps: { type: 'default' },
-        closable: true,
         width: 480,
         centered: true,
         onOk: async () => {
@@ -171,8 +164,23 @@ const AppContent: React.FC = () => {
           createNewFile()
         },
         onCancel: () => {
-          createNewFile()
-        }
+          // Cancel 按钮：取消操作，不新建文件
+          console.log('❌ User cancelled new file operation')
+        },
+        footer: (_, { OkBtn, CancelBtn }) => (
+          <>
+            <Button 
+              onClick={() => {
+                Modal.destroyAll()
+                createNewFile()
+              }}
+            >
+              Don't Save & New
+            </Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        ),
       })
     } else {
       createNewFile()
@@ -221,7 +229,7 @@ const AppContent: React.FC = () => {
     
     // 🔥 清空对比数据
     StorageHelper.setJSON('hplc_comparison_files', [])
-    console.log('✅ App: Cleared comparison files from localStorage')
+    console.log('✅ App: Cleared comparison files from Electron storage')
     
     // Clear file handle, set to "Untitled" state
     setFileHandle(null)
@@ -245,21 +253,41 @@ const AppContent: React.FC = () => {
   
   // Open file
   const handleOpenFile = async () => {
-    // Only prompt to save if file is already open and has unsaved changes
-    if (currentFilePath && isDirty) {
+    // Prompt to save if there's any open file (regardless of isDirty state)
+    if (currentFilePath) {
       confirm({
-        title: 'Unsaved Changes',
+        title: 'Open File',
         icon: <ExclamationCircleOutlined />,
-        content: 'You have unsaved changes. Save them first?',
-        okText: 'Save',
-        cancelText: 'Don\'t Save',
+        content: isDirty
+          ? 'You have unsaved changes in the current file. Do you want to save before opening another file?'
+          : 'Do you want to save the current file before opening another file?',
+        okText: 'Save & Open',
+        cancelText: 'Cancel',
+        okButtonProps: { danger: false },
+        width: 480,
+        centered: true,
         onOk: async () => {
           await handleSaveFile()
           openFile()
         },
         onCancel: () => {
-          openFile()
-        }
+          // Cancel 按钮：取消操作，不打开文件
+          console.log('❌ User cancelled open file operation')
+        },
+        footer: (_, { OkBtn, CancelBtn }) => (
+          <>
+            <Button 
+              onClick={() => {
+                Modal.destroyAll()
+                openFile()
+              }}
+            >
+              Don't Save & Open
+            </Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        ),
       })
     } else {
       openFile()
@@ -271,19 +299,28 @@ const AppContent: React.FC = () => {
 
   const openFile = async () => {
     try {
-      // 使用File System Access API打开文件
-      const [handle] = await (window as any).showOpenFilePicker({
-        types: [
-          {
-            description: 'JSON Files',
-            accept: { 'application/json': ['.json'] },
-          },
-        ],
-        multiple: false,
+      // 使用 Electron 的对话框选择文件
+      const result = await (window as any).electronAPI.fs.showOpenDialog({
+        filters: [{ name: 'JSON Files', extensions: ['json'] }]
       })
       
-      const file = await handle.getFile()
-      const content = await file.text()
+      if (result.canceled) {
+        console.log('❌ User cancelled file selection')
+        return
+      }
+      
+      const filePath = result.filePath
+      const fileName = result.fileName
+      console.log('📂 Selected file:', filePath)
+      
+      // 读取文件内容
+      const readResult = await (window as any).electronAPI.fs.readFile(filePath)
+      
+      if (!readResult.success) {
+        throw new Error(readResult.error || 'Failed to read file')
+      }
+      
+      const content = readResult.content
       
       // Try parsing as encrypted data (check if object format)
       let parsedContent
@@ -307,13 +344,13 @@ const AppContent: React.FC = () => {
           console.log('✅ This is current user\'s file, show password confirmation dialog')
           // Current user's file, let user enter password to decrypt
           setPendingFileData(parsedContent)
-          setPendingFileHandle(handle)
+          setPendingFileHandle({ filePath, fileName }) // 保存文件路径信息
           setVerifyModalVisible(true)
         } else {
           console.log('⚠️ This is another user\'s file, need to verify original owner password')
           // Another user's file, need to verify original owner's password
           setPendingFileData(parsedContent)
-          setPendingFileHandle(handle)
+          setPendingFileHandle({ filePath, fileName }) // 保存文件路径信息
           setVerifyModalVisible(true)
         }
       } else {
@@ -327,11 +364,16 @@ const AppContent: React.FC = () => {
         
         // Load data directly
         await setAllData(parsedContent)
-        setFileHandle(handle)
-        await setCurrentFilePath(handle.name)
+        // 保存文件路径而不是 handle
+        setFileHandle(filePath as any) // 存储文件路径
+        await setCurrentFilePath(fileName)
         setIsDirty(false)
         
-        message.warning(`File opened: ${handle.name} (Unencrypted file, recommend re-saving to encrypt)`)
+        // 触发文件打开事件
+        window.dispatchEvent(new Event('fileOpened'))
+        console.log('📢 App: Triggered fileOpened event')
+        
+        message.warning(`File opened: ${fileName} (Unencrypted file, recommend re-saving to encrypt)`)
       }
       
     } catch (error: any) {
@@ -350,43 +392,64 @@ const AppContent: React.FC = () => {
     }
 
     try {
-      // Verify user password
-      const isValid = await verifyUser(username, password)
-      
-      if (!isValid) {
-        message.error('Incorrect password, cannot open file')
+      // 1. 验证用户名必须匹配文件所有者
+      if (username !== pendingFileData.owner) {
+        message.error('Username does not match file owner')
         return false
       }
 
-      // Password correct, decrypt data
-      console.log('🔓 Password verification successful, decrypting data...')
-      const decryptedJson = decryptData(pendingFileData.data, password)
+      // 2. 使用密码尝试解密文件（密码正确性由解密结果验证）
+      console.log('🔓 Attempting to decrypt file with provided password...')
+      let decryptedJson = decryptData(pendingFileData.data, password)
+      
+      // 如果密码解密失败，尝试使用用户名解密（向后兼容旧文件）
+      if (!decryptedJson) {
+        console.log('🔓 Password failed, trying with username for backward compatibility...')
+        decryptedJson = decryptData(pendingFileData.data, username)
+      }
       
       if (!decryptedJson) {
-        message.error('Decryption failed, password may be incorrect or file corrupted')
+        message.error('Incorrect password, cannot decrypt file')
         return false
       }
 
-      // Parse decrypted JSON string
-      const decryptedData = JSON.parse(decryptedJson)
+      // 3. 解析并验证解密后的数据格式
+      let decryptedData
+      try {
+        decryptedData = JSON.parse(decryptedJson)
+      } catch (e) {
+        message.error('Decryption failed: file format error')
+        return false
+      }
 
       // Validate decrypted data format
       if (!decryptedData.version || !decryptedData.methods) {
-        throw new Error('Incorrect file format')
+        message.error('Decryption failed: invalid file content')
+        return false
       }
+
+      console.log('📄 解密后的文件数据:')
+      console.log('  - methods.preTreatmentReagents:', decryptedData.methods?.preTreatmentReagents?.length, '个')
+      console.log('  - preTreatmentReagents详情:', decryptedData.methods?.preTreatmentReagents)
+      console.log('  - methods.mobilePhaseA:', decryptedData.methods?.mobilePhaseA?.length, '个')
+      console.log('  - methods.mobilePhaseB:', decryptedData.methods?.mobilePhaseB?.length, '个')
 
       // Load decrypted data
       await setAllData(decryptedData)
-      setFileHandle(pendingFileHandle)
-      await setCurrentFilePath(pendingFileHandle.name)
+      setFileHandle(pendingFileHandle.filePath as any) // 保存文件路径
+      await setCurrentFilePath(pendingFileHandle.fileName)
       setIsDirty(false)
+      
+      // 触发文件打开事件
+      window.dispatchEvent(new Event('fileOpened'))
+      console.log('📢 App: Triggered fileOpened event')
 
       // Clear temporary data
       setPendingFileData(null)
       setPendingFileHandle(null)
       setVerifyModalVisible(false)
 
-      message.success(`File decrypted and opened: ${pendingFileHandle.name}`)
+      message.success(`File decrypted and opened: ${pendingFileHandle.fileName}`)
       return true
     } catch (error: any) {
       message.error('Failed to decrypt file: ' + error.message)
@@ -403,90 +466,76 @@ const AppContent: React.FC = () => {
     message.info('Cancelled opening file')
   }
 
-  // Save file
+  // Save file (直接使用当前用户密码加密，无需弹窗确认)
   const handleSaveFile = async () => {
     console.log('💾 Starting file save, current isDirty:', isDirty)
+    
+    if (!currentUser?.username) {
+      message.error('No user logged in, cannot save file')
+      return
+    }
     
     try {
       const dataToSave = await exportData()
       // Update lastModified timestamp
       dataToSave.lastModified = new Date().toISOString()
       
-      // Show password confirmation dialog, wait for user input
-      setPendingSaveData(dataToSave)
-      setConfirmModalVisible(true)
-      
-    } catch (error: any) {
-      message.error('Failed to prepare file for saving')
-      console.error('❌ Failed to prepare save:', error)
-    }
-  }
-
-  // Execute actual save after password confirmation
-  const handleConfirmPassword = async (password: string) => {
-    setConfirmModalVisible(false)
-    
-    if (!pendingSaveData) {
-      message.error('No data pending to save')
-      return
-    }
-
-    try {
       // 将数据转换为JSON字符串
-      const jsonString = JSON.stringify(pendingSaveData, null, 2)
+      const jsonString = JSON.stringify(dataToSave, null, 2)
       
-      // 使用密码加密数据
-      console.log('🔐 使用密码加密数据...')
-      const encryptedString = encryptData(jsonString, password)
+      // 使用当前登录用户的密码加密数据（如果密码不可用则使用用户名作为后备方案）
+      console.log('🔐 使用当前用户密码加密数据...')
+      const encryptedString = encryptData(jsonString, currentPassword || currentUser.username)
       
       // 创建加密文件格式
       const encryptedFileContent = JSON.stringify({
         encrypted: true,
-        owner: currentUser?.username,
+        owner: currentUser.username,
         version: '1.0.0',
         data: encryptedString
       }, null, 2)
       
       if (!fileHandle) {
         console.log('📝 首次保存，弹出文件选择器')
-        // 如果没有文件句柄，使用showSaveFilePicker
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: currentFilePath || 'hplc_analysis.json',
-          types: [
-            {
-              description: 'JSON Files',
-              accept: { 'application/json': ['.json'] },
-            },
-          ],
+        // 使用 Electron 的保存对话框
+        const result = await (window as any).electronAPI.fs.showSaveDialog({
+          defaultPath: currentFilePath || 'hplc_analysis.json',
+          filters: [{ name: 'JSON Files', extensions: ['json'] }]
         })
         
-        const writable = await handle.createWritable()
-        await writable.write(encryptedFileContent)
-        await writable.close()
+        if (result.canceled) {
+          console.log('❌ User cancelled save')
+          return
+        }
         
-        console.log('✅ 加密文件已写入，设置fileHandle和currentFilePath')
-        setFileHandle(handle)
-        await setCurrentFilePath(handle.name)
+        const filePath = result.filePath
+        const fileName = result.fileName
         
-        // After successful save, only clear dirty flag, don't update Context data (avoid loops)
-        console.log('🧹 Clearing isDirty flag')
+        // 写入文件
+        const writeResult = await (window as any).electronAPI.fs.writeFile(filePath, encryptedFileContent)
+        
+        if (!writeResult.success) {
+          throw new Error(writeResult.error || 'Failed to write file')
+        }
+        
+        console.log('✅ 加密文件已写入')
+        setFileHandle(filePath as any) // 保存文件路径
+        await setCurrentFilePath(fileName)
         setIsDirty(false)
-        setPendingSaveData(null)
         
-        message.success(`File encrypted and saved: ${handle.name}`)
+        message.success(`File encrypted and saved: ${fileName}`)
       } else {
         console.log('💾 Saving to existing file:', currentFilePath)
-        // Save directly to original file
-        const writable = await fileHandle.createWritable()
-        await writable.write(encryptedFileContent)
-        await writable.close()
         
-        // After successful save, only clear dirty flag, don't update Context data (avoid loops)
-        console.log('🧹 Clearing isDirty flag')
+        // 直接写入到已存在的文件
+        const writeResult = await (window as any).electronAPI.fs.writeFile(fileHandle as string, encryptedFileContent)
+        
+        if (!writeResult.success) {
+          throw new Error(writeResult.error || 'Failed to write file')
+        }
+        
         setIsDirty(false)
-        setPendingSaveData(null)
-        
-        message.success('File encrypted and saved')
+        message.success('File saved successfully')
       }
       console.log('✅ Save completed, current isDirty should be false')
     } catch (error: any) {
@@ -494,15 +543,7 @@ const AppContent: React.FC = () => {
         message.error('Failed to save file')
         console.error('❌ Save failed:', error)
       }
-      setPendingSaveData(null)
     }
-  }
-
-  // Cancel password confirmation
-  const handleCancelPasswordConfirm = () => {
-    setConfirmModalVisible(false)
-    setPendingSaveData(null)
-    message.info('Cancelled saving')
   }
 
   const menuItems: MenuProps['items'] = [
@@ -770,14 +811,6 @@ const AppContent: React.FC = () => {
         ownerUsername={pendingFileData?.owner || 'unknown'}
         onVerify={handleVerifyPassword}
         onCancel={handleCancelVerify}
-      />
-
-      {/* 密码确认模态框 - 用于保存加密文件 */}
-      <PasswordConfirmModal
-        visible={confirmModalVisible}
-        username={currentUser?.username || 'unknown'}
-        onConfirm={handleConfirmPassword}
-        onCancel={handleCancelPasswordConfirm}
       />
     </Layout>
   )

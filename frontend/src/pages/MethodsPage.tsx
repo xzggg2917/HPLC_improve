@@ -330,6 +330,23 @@ const MethodsPage: React.FC = () => {
   const lastLocalData = React.useRef<string>('')
   
   useEffect(() => {
+    // 🔥 首次挂载时跳过保存，避免覆盖刚从Context加载的数据
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      console.log('⏭️ MethodsPage: 首次挂载，跳过自动保存')
+      // 初始化lastLocalData，以便后续能正确检测变化
+      const initialDataStr = JSON.stringify({
+        sampleCount,
+        preTreatmentReagents,
+        mobilePhaseA,
+        mobilePhaseB,
+        instrumentEnergy,
+        pretreatmentEnergy
+      })
+      lastLocalData.current = initialDataStr
+      return
+    }
+    
     const saveData = async () => {
       // 过滤掉空的试剂条目（名称为空或体积为0）
       const validPreTreatmentReagents = preTreatmentReagents.filter(r => r.name && r.name.trim() && r.volume > 0)

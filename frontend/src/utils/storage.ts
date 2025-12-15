@@ -37,8 +37,13 @@ class ElectronStorage {
         console.log(`  ✅ 读取 ${key}: ${data ? '有数据' : '无数据'}`)
         return data ? JSON.stringify(data) : null
       }
-    } catch (error) {
-      console.error('ElectronStorage getItem error:', error)
+    } catch (error: any) {
+      console.error(`❌ ElectronStorage getItem error (${key}):`, error)
+      // 如果是JSON解析错误，说明文件损坏，返回null而不是抛出错误
+      if (error.message && error.message.includes('JSON')) {
+        console.warn(`⚠️ ${key} 文件损坏，将被忽略`)
+        return null
+      }
       return null
     }
   }

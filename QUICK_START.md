@@ -58,7 +58,7 @@ npm run electron:dev
 
 ### 4. 访问应用
 
-- 前端: http://localhost:5173
+- 前端: Electron 窗口自动打开
 - 后端API: http://localhost:8000
 - API文档: http://localhost:8000/docs
 
@@ -107,7 +107,7 @@ npm run backend:dev
 ## 故障排除
 
 ### 端口冲突
-如果8000或5173端口被占用，请修改相应的配置文件。
+如果8000端口被占用，请修改后端配置文件。
 
 ### 依赖安装失败
 尝试清理缓存后重新安装：

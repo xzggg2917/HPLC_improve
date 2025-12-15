@@ -4,7 +4,7 @@
 
 ### 步骤1：从浏览器导出数据
 
-1. 在浏览器打开 http://localhost:5173
+1. 运行 Electron 应用 `npm run electron:dev`
 2. 按 F12 打开开发者工具
 3. 在 Console 中执行：
 

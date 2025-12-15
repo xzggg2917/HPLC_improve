@@ -357,7 +357,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await StorageHelper.setJSON(STORAGE_KEYS.GRADIENT, newData.gradient)
     }
     
-    console.log('✅ setAllData 完成，已更新Context和localStorage')
+    console.log('✅ setAllData 完成，已更新 Context 和 Electron storage')
     
     // 恢复评分结果（如果文件中包含）
     if ((newData as any).scoreResults) {

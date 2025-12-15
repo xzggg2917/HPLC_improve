@@ -28,7 +28,7 @@
 
 #### 步骤 1：在浏览器中导出数据
 
-1. 打开开发环境 (http://localhost:5173)
+1. 运行 `npm run electron:dev` 打开 Electron 应用
 2. 按 F12 打开控制台
 3. 运行以下脚本：
 

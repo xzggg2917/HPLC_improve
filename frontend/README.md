@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-应用将在 http://localhost:5173 启动
+Electron 窗口将自动启动（开发模式下 Vite 运行在 5173 端口）
 
 ## 构建生产版本
 

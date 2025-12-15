@@ -18,5 +18,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 工具函数
     getUserDataPath: () => ipcRenderer.invoke('fs:getUserDataPath'),
     exportData: (filename, data) => ipcRenderer.invoke('fs:exportData', filename, data),
+    
+    // 文件对话框和读写操作
+    showOpenDialog: (options) => ipcRenderer.invoke('dialog:showOpen', options),
+    showSaveDialog: (options) => ipcRenderer.invoke('dialog:showSave', options),
+    readFile: (filePath) => ipcRenderer.invoke('file:read', filePath),
+    writeFile: (filePath, content) => ipcRenderer.invoke('file:write', filePath, content),
   }
 })

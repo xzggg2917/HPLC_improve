@@ -545,7 +545,7 @@ const HPLCGradientPage: React.FC = () => {
         componentVolumes.sampleCount = methods.sampleCount
       }
     } else {
-      console.log('⚠️ localStorage中没有hplc_methods_raw数据')
+      console.log('⚠️ Electron storage 中没有 hplc_methods_raw 数据')
     }
 
     console.log('📊 最终componentVolumes:', {

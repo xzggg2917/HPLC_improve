@@ -44,27 +44,69 @@ const FactorsPage: React.FC = () => {
   const [reagents, setReagents] = useState<ReagentFactor[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   
-  // 异步加载全局试剂库
+  // 异步加载全局试剂库（优先从备份恢复）
   useEffect(() => {
     const loadGlobalLibrary = async () => {
       try {
-        const stored = await StorageHelper.getJSON<ReagentFactor[]>(STORAGE_KEYS.FACTORS)
-        if (stored && stored.length > 0) {
+        // 1. 先尝试从主存储加载
+        let stored = await StorageHelper.getJSON<ReagentFactor[]>(STORAGE_KEYS.FACTORS)
+        
+        // 2. 如果主存储为空，尝试从备份恢复
+        if (!stored || stored.length === 0) {
+          console.log('⚠️ 主存储为空，尝试从备份恢复...')
+          
+          if ((window as any).electronAPI?.readAppData) {
+            try {
+              const backupStr = await (window as any).electronAPI.readAppData('hplc_factors_backup')
+              if (backupStr) {
+                const backup = JSON.parse(backupStr)
+                if (backup.reagents && backup.reagents.length > 0) {
+                  console.log('✅ 从备份恢复', backup.reagents.length, '个试剂')
+                  stored = backup.reagents
+                  // 恢复到主存储
+                  await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, stored)
+                  message.success(`Recovered ${stored.length} reagents from backup!`)
+                }
+              }
+            } catch (backupError) {
+              console.error('❌ 备份恢复失败:', backupError)
+            }
+          }
+        }
+        
+        // 3. 如果还是为空，检查是否首次使用
+        if (!stored || stored.length === 0) {
+          console.log('⚠️ 未找到试剂库数据')
+          
+          const storedVersion = await StorageHelper.getJSON<string>(STORAGE_KEYS.FACTORS_VERSION)
+          const isFirstTime = !storedVersion
+          
+          if (isFirstTime) {
+            // 首次使用：用硬编码模板初始化
+            console.log('🆕 首次使用，初始化模板数据（请编辑为正确数据）')
+            const initial = sortReagentsByName([...PREDEFINED_REAGENTS])
+            await saveToGlobalLibrary(initial) // 使用双重保存
+            await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
+            setReagents(initial)
+            message.warning('Initialized with template data. Please edit to correct values!', 5)
+          } else {
+            // 数据丢失且无备份
+            console.error('❌ 数据丢失且无备份可用！')
+            setReagents([])
+            message.error({
+              content: 'Reagent library data lost and no backup found! Use "Force Restore" to recover template, or re-enter your data.',
+              duration: 10
+            })
+          }
+        } else {
+          // 正常加载已保存的数据
           console.log('📚 从全局试剂库加载', stored.length, '个试剂')
           setReagents(sortReagentsByName(stored))
-        } else {
-          // 首次使用：初始化预定义试剂
-          console.log('🆕 首次初始化全局试剂库，使用预定义数据')
-          const initial = sortReagentsByName([...PREDEFINED_REAGENTS])
-          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, initial)
-          await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
-          setReagents(initial)
         }
       } catch (error) {
         console.error('❌ 加载全局试剂库失败:', error)
-        message.error('Failed to load reagent library')
-        // 失败时使用预定义数据
-        setReagents(sortReagentsByName([...PREDEFINED_REAGENTS]))
+        setReagents([])
+        message.error('Failed to load reagent library. Please check storage or use Force Restore.')
       } finally {
         setIsLoading(false)
       }
@@ -77,11 +119,28 @@ const FactorsPage: React.FC = () => {
   const [isDeletingMode, setIsDeletingMode] = useState<boolean>(false)
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false)
 
-  // 🔄 保存到全局试剂库（所有操作都会触发此函数）
+  // 🔄 保存到全局试剂库（双重保存：app_data.json + 独立备份）
   const saveToGlobalLibrary = async (updatedReagents: ReagentFactor[]) => {
     try {
+      // 1. 保存到 app_data.json（与其他数据一起）
       await StorageHelper.setJSON(STORAGE_KEYS.FACTORS, updatedReagents)
+      
+      // 2. 保存到独立的备份文件（防止数据丢失）
+      const backupData = {
+        version: FACTORS_DATA_VERSION,
+        lastModified: new Date().toISOString(),
+        reagentsCount: updatedReagents.length,
+        reagents: updatedReagents
+      }
+      
+      // 使用 Electron API 保存独立文件
+      if ((window as any).electronAPI?.writeAppData) {
+        await (window as any).electronAPI.writeAppData('hplc_factors_backup', JSON.stringify(backupData))
+        console.log('✅ 双重保存成功: app_data.json + factors_backup')
+      }
+      
       console.log('✅ 已保存到全局试剂库:', updatedReagents.length, '个试剂')
+      
       // 触发事件通知其他页面刷新数据
       window.dispatchEvent(new Event('factorsLibraryUpdated'))
     } catch (error) {
@@ -319,8 +378,38 @@ const FactorsPage: React.FC = () => {
     }
   }
 
+  // 🆕 强制从预定义数据恢复（删除所有自定义试剂）
+  const forceRestoreFromPredefined = async () => {
+    const predefinedIds = PREDEFINED_REAGENTS.map(r => r.id)
+    const customReagents = reagents.filter(r => !predefinedIds.includes(r.id))
+    
+    let confirmMessage = '⚠️ WARNING: This will restore TEMPLATE data (may be incorrect):\n\n'
+    confirmMessage += `- Reset all ${PREDEFINED_REAGENTS.length} predefined reagents to TEMPLATE values\n`
+    if (customReagents.length > 0) {
+      confirmMessage += `- DELETE ${customReagents.length} custom reagent(s) permanently\n`
+    }
+    confirmMessage += '\n⚠️ Template data may be incorrect. You should edit after restore.\n'
+    confirmMessage += 'This action CANNOT be undone. Continue?'
+    
+    if (window.confirm(confirmMessage)) {
+      const restored = sortReagentsByName([...PREDEFINED_REAGENTS])
+      setReagents(restored)
+      await saveToGlobalLibrary(restored)
+      await StorageHelper.setJSON(STORAGE_KEYS.FACTORS_VERSION, FACTORS_DATA_VERSION.toString())
+      
+      setIsEditing(false)
+      setIsDeletingMode(false)
+      
+      if (customReagents.length > 0) {
+        message.warning(`Restored ${restored.length} template reagents (please verify data), deleted ${customReagents.length} custom reagent(s)`, 10)
+      } else {
+        message.warning(`Restored ${restored.length} template reagents. Please edit to correct values!`, 8)
+      }
+    }
+  }
+
   return (
-    <div className="factors-page">
+    <div className="factors-page">`
       <Title level={2}>📚 Global Reagent Factor Library</Title>
       
       {/* 添加说明卡片 */}
@@ -612,9 +701,9 @@ const FactorsPage: React.FC = () => {
               </Col>
             </>
           ) : (
-            // 编辑模式：显示Delete、Save、Cancel
+            // 编辑模式：显示Delete、Save、Cancel、Force Restore
             <>
-              <Col span={8}>
+              <Col span={6}>
                 <Button
                   danger={isDeletingMode}
                   type={isDeletingMode ? 'primary' : 'default'}
@@ -625,7 +714,7 @@ const FactorsPage: React.FC = () => {
                   {isDeletingMode ? 'Cancel Delete' : 'Delete'}
                 </Button>
               </Col>
-              <Col span={8}>
+              <Col span={6}>
                 <Button
                   type="primary"
                   icon={<SaveOutlined />}
@@ -635,12 +724,22 @@ const FactorsPage: React.FC = () => {
                   Save
                 </Button>
               </Col>
-              <Col span={8}>
+              <Col span={6}>
                 <Button
                   onClick={cancelEdit}
                   style={{ width: '100%' }}
                 >
                   Cancel
+                </Button>
+              </Col>
+              <Col span={6}>
+                <Button
+                  danger
+                  onClick={forceRestoreFromPredefined}
+                  style={{ width: '100%' }}
+                  title="Force restore from predefined data (delete custom reagents)"
+                >
+                  Force Restore
                 </Button>
               </Col>
             </>

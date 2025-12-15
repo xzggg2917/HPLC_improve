@@ -95,6 +95,34 @@ const ComparisonPage: React.FC = () => {
     }
   }, [files.length]) // 添加 files.length 依赖，确保能看到最新的 files
 
+  // 监听文件打开事件，清空对比数据
+  useEffect(() => {
+    const handleFileOpened = async () => {
+      console.log('🔄 ComparisonPage: File opened event received')
+      console.log('Current files before clear:', files.length)
+      
+      // 清空对比列表（会在下一个 useEffect 中自动加载当前文件）
+      setFiles([])
+      await StorageHelper.setJSON('hplc_comparison_files', [])
+      hasLoadedCurrentFile.current = false // 重置加载标记
+      
+      console.log('Files cleared for new file, triggering update')
+      
+      // 触发更新以重新加载当前文件数据
+      setTimeout(() => {
+        setUpdateTrigger(prev => prev + 1)
+      }, 300)
+    }
+
+    console.log('📌 ComparisonPage: Registering fileOpened listener')
+    window.addEventListener('fileOpened', handleFileOpened)
+    
+    return () => {
+      console.log('📌 ComparisonPage: Unregistering fileOpened listener')
+      window.removeEventListener('fileOpened', handleFileOpened)
+    }
+  }, [files.length])
+
   // 自动加载当前打开的文件数据(包括未保存的新文件)
   // 在组件挂载时或文件更新时检查
   useEffect(() => {
@@ -115,6 +143,13 @@ const ComparisonPage: React.FC = () => {
     }
     
     const fileId = currentFilePath + '_current'
+    
+    // 检查当前文件是否已在列表中，如果不在则重置加载标记
+    const existingFile = files.find(f => f.id === fileId)
+    if (!existingFile) {
+      console.log('🔄 Current file not in list, resetting loaded flag')
+      hasLoadedCurrentFile.current = false
+    }
     
     // 如果已经标记为加载过，跳过（防止重复添加）
     if (hasLoadedCurrentFile.current) {
@@ -324,7 +359,7 @@ const ComparisonPage: React.FC = () => {
   }
   
   loadCurrentFile()
-  }, [currentFilePath, allData, updateTrigger]) // 不添加 files 依赖，避免无限循环
+  }, [currentFilePath, allData, updateTrigger, files]) // 添加 files 依赖，确保能检查文件是否在列表中
 
   // 处理已解密的数据
   const processDecryptedData = async (parsedData: any, fileName: string) => {

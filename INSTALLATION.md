@@ -125,7 +125,7 @@ VITE v5.0.8  ready in XXX ms
 ➜  Network: use --host to expose
 ```
 
-访问 http://localhost:5173 使用应用
+Electron 桌面应用窗口将自动打开
 
 **终端3 - （可选）启动Electron**
 ```bash

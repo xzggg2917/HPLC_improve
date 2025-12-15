@@ -41,23 +41,29 @@
 - **框架**: Electron
 - **打包工具**: electron-builder
 - **支持平台**: Windows, macOS, Linux
-- **数据存储**: 本地文件系统（永久保存，不受浏览器缓存影响）
+- **数据存储**: Electron 文件系统（永久保存，独立于浏览器）
+- **特性**: 本地文件加密、密码保护、跨平台支持
 
 ## 💾 数据存储
 
-### Electron 桌面应用（推荐）
+### 存储机制
+**本应用仅支持 Electron 桌面模式运行，不支持纯浏览器模式。**
+
 用户数据保存在操作系统的应用数据目录：
 - **Windows**: `C:\Users\<YourName>\AppData\Roaming\hplc-green-chemistry-app\`
 - **macOS**: `~/Library/Application Support/hplc-green-chemistry-app/`
 - **Linux**: `~/.config/hplc-green-chemistry-app/`
 
-**优势**：
-- ✅ 永久保存，清除浏览器缓存不会丢失数据
-- ✅ 可以直接备份和恢复文件
-- ✅ 更高的安全性和隔离性
+**数据文件**：
+- `app_data.json` - 应用数据（methods, gradient, factors, scores）
+- `users.json` - 用户账户信息（加密存储）
+- `data/*.json` - 加密的方法文件
 
-### Web 开发环境
-开发时使用浏览器的 localStorage（仅用于调试）
+**优势**：
+- ✅ 永久保存，不受浏览器影响
+- ✅ 文件级加密，数据安全
+- ✅ 可直接备份和恢复
+- ✅ 更高的隔离性和稳定性
 
 📖 详细文档：
 - [桌面存储架构](./DESKTOP_STORAGE_ARCHITECTURE.md)
@@ -148,7 +154,7 @@ python main.py
 cd frontend
 npm run dev
 ```
-前端应用将在 http://localhost:5173 启动
+Electron 桌面应用窗口将自动打开
 
 #### 方式二：使用Electron启动
 ```bash

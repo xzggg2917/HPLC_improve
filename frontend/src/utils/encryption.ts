@@ -19,6 +19,12 @@ export const decryptData = (encryptedData: string, password: string): string => 
     const combined = decodeURIComponent(escape(atob(encryptedData)))
     const separator = '::HPLC_SEPARATOR::'
     
+    console.log('🔍 Decryption debug:')
+    console.log('  - Input password:', password)
+    console.log('  - Input password length:', password.length)
+    console.log('  - Combined data length:', combined.length)
+    console.log('  - Has separator:', combined.includes(separator))
+    
     // 检查是否包含分隔符（新格式）
     if (!combined.includes(separator)) {
       // 旧格式：直接 Base64 编码，没有密码验证
@@ -29,6 +35,10 @@ export const decryptData = (encryptedData: string, password: string): string => 
     const parts = combined.split(separator)
     const data = parts[0]
     const storedPassword = parts[1]
+    
+    console.log('  - Stored password:', storedPassword)
+    console.log('  - Stored password length:', storedPassword.length)
+    console.log('  - Passwords match:', storedPassword === password)
     
     // 验证密码
     if (storedPassword !== password) {
