@@ -153,6 +153,7 @@ const InstrumentAnalysisPage: React.FC = () => {
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={12}
+        fontWeight="bold"
       >
         {payload.value}
       </text>
@@ -286,10 +287,10 @@ const InstrumentAnalysisPage: React.FC = () => {
           <Card title="Radar Chart Analysis" style={{ height: '550px' }}>
             <div style={{ width: '100%', height: '500px' }}>
               <ResponsiveContainer>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke="#d9d9d9" />
+                <RadarChart data={radarData} margin={{ top: 50, right:20, bottom: 30, left: 30 }}>
+                  <PolarGrid />
                   <PolarAngleAxis dataKey="subject" tick={renderCustomTick} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} />
                   <Radar
                     dataKey="score"
                     stroke={radarColor}

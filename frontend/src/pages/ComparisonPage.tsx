@@ -22,6 +22,7 @@ interface FileData {
     totalScore: number
   }
   color?: string // 基于总分的颜色
+  scoreResults?: any // 保存完整的 scoreResults 用于详细展示
 }
 
 interface PendingFile {
@@ -76,14 +77,9 @@ const ComparisonPage: React.FC = () => {
       
       console.log('Files cleared, triggering update')
       
-      // 延迟触发当前文件数据重新加载，等待 allData 准备好
-      setTimeout(() => {
-        console.log('Triggering update after new file')
-        setUpdateTrigger(prev => {
-          console.log('Update trigger:', prev, '->', prev + 1)
-          return prev + 1
-        })
-      }, 500) // 增加延迟到 500ms
+      // 立即触发更新
+      console.log('Triggering update after new file')
+      setUpdateTrigger(prev => prev + 1)
     }
 
     console.log('📌 ComparisonPage: Registering newFileCreated listener')
@@ -108,10 +104,8 @@ const ComparisonPage: React.FC = () => {
       
       console.log('Files cleared for new file, triggering update')
       
-      // 触发更新以重新加载当前文件数据
-      setTimeout(() => {
-        setUpdateTrigger(prev => prev + 1)
-      }, 300)
+      // 立即触发更新
+      setUpdateTrigger(prev => prev + 1)
     }
 
     console.log('📌 ComparisonPage: Registering fileOpened listener')
@@ -122,6 +116,45 @@ const ComparisonPage: React.FC = () => {
       window.removeEventListener('fileOpened', handleFileOpened)
     }
   }, [files.length])
+
+  // 监听数据更新事件
+  useEffect(() => {
+    const handleDataUpdated = (eventName: string) => {
+      console.log(`🔄 ComparisonPage: ${eventName} - refreshing current file`)
+      // 重置加载标记，强制重新加载当前文件数据
+      hasLoadedCurrentFile.current = false
+      setUpdateTrigger(prev => prev + 1)
+    }
+
+    const handleFactorsUpdated = async () => {
+      console.log('🔄 ComparisonPage: Factors data updated - triggering recalculation')
+      // Factors 数据变化后，需要触发重新计算
+      // 发送事件通知 Methods 页面重新计算
+      window.dispatchEvent(new CustomEvent('requestScoreRecalculation'))
+      // 重置加载标记
+      hasLoadedCurrentFile.current = false
+      // 延迟一点触发更新，等待计算完成
+      setTimeout(() => {
+        setUpdateTrigger(prev => prev + 1)
+      }, 100)
+    }
+
+    const handleScoreDataUpdated = () => handleDataUpdated('Score data updated')
+    const handleMethodsDataUpdated = () => handleDataUpdated('Methods data updated')
+    const handleGradientDataUpdated = () => handleDataUpdated('Gradient data updated')
+
+    window.addEventListener('scoreDataUpdated', handleScoreDataUpdated)
+    window.addEventListener('methodsDataUpdated', handleMethodsDataUpdated)
+    window.addEventListener('gradientDataUpdated', handleGradientDataUpdated)
+    window.addEventListener('factorsDataUpdated', handleFactorsUpdated)
+    
+    return () => {
+      window.removeEventListener('scoreDataUpdated', handleScoreDataUpdated)
+      window.removeEventListener('methodsDataUpdated', handleMethodsDataUpdated)
+      window.removeEventListener('gradientDataUpdated', handleGradientDataUpdated)
+      window.removeEventListener('factorsDataUpdated', handleFactorsUpdated)
+    }
+  }, [])
 
   // 自动加载当前打开的文件数据(包括未保存的新文件)
   // 在组件挂载时或文件更新时检查
@@ -170,77 +203,54 @@ const ComparisonPage: React.FC = () => {
         
         const instMajor = scoreResults.instrument.major_factors
         const prepMajor = scoreResults.preparation.major_factors
-        const additionalFactors = scoreResults.additional_factors || { P: powerScore, R: 0, D: 0 }
+        const additionalFactors = scoreResults.additional_factors || {}
         
+        // 使用 Method Evaluation 计算好的数据（汇总值）
         const avgS = (instMajor.S + prepMajor.S) / 2
         const avgH = (instMajor.H + prepMajor.H) / 2
         const avgE = (instMajor.E + prepMajor.E) / 2
         
-        // 计算 R 和 D（从 gradientData 获取试剂质量数据）
-        const gradientData: any = await StorageHelper.getJSON(STORAGE_KEYS.GRADIENT)
-        const methodsData: any = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
-        const factorsData = await StorageHelper.getJSON(STORAGE_KEYS.FACTORS) || []
+        // R 和 D 使用 additionalFactors 中的仪器和前处理的平均值
+        const instR = additionalFactors.instrument_R || 0
+        const instD = additionalFactors.instrument_D || 0
+        const prepR = additionalFactors.pretreatment_R || 0
+        const prepD = additionalFactors.pretreatment_D || 0
+        const avgR = (instR + prepR) / 2
+        const avgD = (instD + prepD) / 2
         
-        // 先累加所有的加权值，然后统一归一化
-        let weightedSumR = 0
-        let weightedSumD = 0
-        
-        // PreTreatment
-        if (methodsData?.preTreatmentReagents) {
-          methodsData.preTreatmentReagents.forEach((reagent: any) => {
-            if (!reagent.name || reagent.volume <= 0) return
-            const factor = factorsData.find((f: any) => f.name === reagent.name)
-            if (!factor) return
-            const mass = reagent.volume * factor.density
-            weightedSumR += mass * (factor.regeneration || 0)
-            weightedSumD += mass * factor.disposal
-          })
+        // P 因子使用加权平均（根据最终汇总权重方案）
+        const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
+        const weightMap: Record<string, { instrument: number, preparation: number }> = {
+          'Standard': { instrument: 0.6, preparation: 0.4 },
+          'Complex_Prep': { instrument: 0.3, preparation: 0.7 },
+          'Direct_Online': { instrument: 0.8, preparation: 0.2 },
+          'Equal': { instrument: 0.5, preparation: 0.5 }
         }
-        
-        // Mobile Phase A
-        if (gradientData?.calculations?.mobilePhaseA?.components) {
-          gradientData.calculations.mobilePhaseA.components.forEach((comp: any) => {
-            if (!comp.reagentName || comp.volume <= 0) return
-            const factor = factorsData.find((f: any) => f.name === comp.reagentName)
-            if (!factor) return
-            const mass = comp.volume * factor.density
-            weightedSumR += mass * (factor.regeneration || 0)
-            weightedSumD += mass * factor.disposal
-          })
-        }
-        
-        // Mobile Phase B
-        if (gradientData?.calculations?.mobilePhaseB?.components) {
-          gradientData.calculations.mobilePhaseB.components.forEach((comp: any) => {
-            if (!comp.reagentName || comp.volume <= 0) return
-            const factor = factorsData.find((f: any) => f.name === comp.reagentName)
-            if (!factor) return
-            const mass = comp.volume * factor.density
-            weightedSumR += mass * (factor.regeneration || 0)
-            weightedSumD += mass * factor.disposal
-          })
-        }
-        
-        // 对总和进行归一化 - 使用新公式
-        const totalR = weightedSumR > 0 ? Math.min(100, 33.3 * Math.log10(1 + weightedSumR)) : 0
-        const totalD = weightedSumD > 0 ? Math.min(100, 33.3 * Math.log10(1 + weightedSumD)) : 0
+        const weights = weightMap[finalWeights] || weightMap['Standard']
+        const instP = additionalFactors.instrument_P || 0
+        const prepP = additionalFactors.pretreatment_P || 0
+        const avgP = instP * weights.instrument + prepP * weights.preparation
         
         const totalScore = scoreResults.final?.score3 || 0
         const color = getColorHex(totalScore)
         
+        // 从 currentFilePath 提取干净的文件名
+        const displayName = currentFilePath.replace(/\\/g, '/').split('/').pop()?.replace(/\.(hplc|json)$/, '') || 'Current Method'
+        
         const newFileData: FileData = {
           id: fileId,
-          name: currentFilePath || 'Current Method',
+          name: displayName,
           data: {
             S: avgS,
             H: avgH,
             E: avgE,
-            R: totalR,
-            D: totalD,
-            P: additionalFactors.P,
+            R: avgR,
+            D: avgD,
+            P: avgP,
             totalScore
           },
-          color
+          color,
+          scoreResults: scoreResults // 保存 scoreResults
         }
         
         setFiles(prev => {
@@ -364,7 +374,69 @@ const ComparisonPage: React.FC = () => {
   // 处理已解密的数据
   const processDecryptedData = async (parsedData: any, fileName: string) => {
     try {
-      console.log('Processing decrypted data:', parsedData)
+      console.log('Processing decrypted/plain data for:', fileName)
+      console.log('Data structure:', parsedData)
+
+      // 优先检查是否有 scoreResults（后端计算结果）
+      if (parsedData.scoreResults?.instrument && parsedData.scoreResults?.preparation) {
+        console.log('✅ Found scoreResults in uploaded file')
+        const scoreResults = parsedData.scoreResults
+        const instMajor = scoreResults.instrument.major_factors
+        const prepMajor = scoreResults.preparation.major_factors
+        const additionalFactors = scoreResults.additional_factors || {}
+        
+        // 计算平均值
+        const avgS = (instMajor.S + prepMajor.S) / 2
+        const avgH = (instMajor.H + prepMajor.H) / 2
+        const avgE = (instMajor.E + prepMajor.E) / 2
+        
+        // R 和 D 使用平均值
+        const instR = additionalFactors.instrument_R || 0
+        const instD = additionalFactors.instrument_D || 0
+        const prepR = additionalFactors.pretreatment_R || 0
+        const prepD = additionalFactors.pretreatment_D || 0
+        const avgR = (instR + prepR) / 2
+        const avgD = (instD + prepD) / 2
+        
+        // P 因子使用加权平均
+        const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
+        const weightMap: Record<string, { instrument: number, preparation: number }> = {
+          'Standard': { instrument: 0.6, preparation: 0.4 },
+          'Complex_Prep': { instrument: 0.3, preparation: 0.7 },
+          'Direct_Online': { instrument: 0.8, preparation: 0.2 },
+          'Equal': { instrument: 0.5, preparation: 0.5 }
+        }
+        const weights = weightMap[finalWeights] || weightMap['Standard']
+        const instP = additionalFactors.instrument_P || 0
+        const prepP = additionalFactors.pretreatment_P || 0
+        const avgP = instP * weights.instrument + prepP * weights.preparation
+        
+        const totalScore = scoreResults.final?.score3 || 0
+        const color = getColorHex(totalScore)
+        
+        const fileData: FileData = {
+          id: Date.now().toString() + Math.random(),
+          name: fileName.replace('.hplc', '').replace('.json', ''),
+          color,
+          data: {
+            S: avgS,
+            H: avgH,
+            E: avgE,
+            R: avgR,
+            D: avgD,
+            P: avgP,
+            totalScore
+          },
+          scoreResults: scoreResults // 保存完整的 scoreResults
+        }
+
+        setFiles(prev => [...prev, fileData])
+        message.success(`File ${fileName} loaded successfully`)
+        return
+      }
+
+      // Fallback: 使用旧的计算逻辑（如果没有 scoreResults）
+      console.log('⚠️ No scoreResults found, using fallback calculation')
       
       const methodsData = parsedData.methods || {}
       const gradientData = parsedData.gradient || {}
@@ -597,6 +669,33 @@ const ComparisonPage: React.FC = () => {
     return scaled
   }), [radarData])
 
+  // 自定义雷达图标签渲染函数（增加标签与图表的距离）
+  const renderCustomTick = (props: any) => {
+    const { x, y, payload } = props
+    const centerX = props.cx || 0
+    const centerY = props.cy || 0
+    
+    // 计算从中心到标签的角度
+    const angle = Math.atan2(y - centerY, x - centerX)
+    
+    // 增加距离：在原有位置基础上向外延伸 25 像素
+    const offset = 10
+    const newX = x + Math.cos(angle) * offset
+    const newY = y + Math.sin(angle) * offset
+    
+    return (
+      <text
+        x={newX}
+        y={newY}
+        textAnchor={newX > centerX ? 'start' : newX < centerX ? 'end' : 'middle'}
+        dominantBaseline="central"
+        style={{ fontWeight: 'bold', fontSize: 12 }}
+      >
+        {payload.value}
+      </text>
+    )
+  }
+
   // 自定义雷达图 Tooltip（显示原始值）
   const CustomRadarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -625,6 +724,262 @@ const ComparisonPage: React.FC = () => {
   console.log('Radar Data:', radarData)
   console.log('Scaled Radar Data:', scaledRadarData)
   console.log('Files:', uniqueFiles)
+
+  // ========== 构建6个大因子的雷达图数据 ==========
+  
+  // 提取每个文件的6个大因子数据（S、H、E、R、D、P）
+  interface MajorFactorData {
+    S: number
+    H: number
+    E: number
+    R: number
+    D: number
+    P: number
+  }
+
+  interface FileMajorFactors {
+    id: string
+    name: string
+    color: string
+    preparation: MajorFactorData | null  // 前处理阶段
+    instrument: MajorFactorData | null   // 仪器分析阶段
+    average: MajorFactorData | null      // 平均值
+  }
+
+  const [filesMajorFactors, setFilesMajorFactors] = useState<FileMajorFactors[]>([])
+
+  // 异步加载所有文件的大因子数据
+  useEffect(() => {
+    const loadMajorFactors = async () => {
+      console.log('🔄 Loading major factors for', uniqueFiles.length, 'files')
+      const majorFactorsArray: FileMajorFactors[] = []
+
+      for (const file of uniqueFiles) {
+        // 如果是当前文件，从 storage 读取
+        if (file.id.endsWith('_current')) {
+          const scoreResults = await StorageHelper.getJSON(STORAGE_KEYS.SCORE_RESULTS)
+          
+          if (scoreResults?.preparation?.major_factors && scoreResults?.instrument?.major_factors) {
+            const prepMajor = scoreResults.preparation.major_factors
+            const instMajor = scoreResults.instrument.major_factors
+            const additionalFactors = scoreResults.additional_factors || {}
+            
+            // 从 additionalFactors 获取 R、D、P 的具体数据
+            const instR = additionalFactors.instrument_R || 0
+            const instD = additionalFactors.instrument_D || 0
+            const instP = additionalFactors.instrument_P || 0
+            const prepR = additionalFactors.pretreatment_R || 0
+            const prepD = additionalFactors.pretreatment_D || 0
+            const prepP = additionalFactors.pretreatment_P || 0
+            
+            // 计算平均值（对应 Method Evaluation 页面的汇总数据）
+            const avgR = (instR + prepR) / 2
+            const avgD = (instD + prepD) / 2
+            
+            // P 因子使用加权平均（根据最终汇总权重方案）
+            const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
+            const weightMap: Record<string, { instrument: number, preparation: number }> = {
+              'Standard': { instrument: 0.6, preparation: 0.4 },
+              'Complex_Prep': { instrument: 0.3, preparation: 0.7 },
+              'Direct_Online': { instrument: 0.8, preparation: 0.2 },
+              'Equal': { instrument: 0.5, preparation: 0.5 }
+            }
+            const weights = weightMap[finalWeights] || weightMap['Standard']
+            const avgP = instP * weights.instrument + prepP * weights.preparation
+
+            majorFactorsArray.push({
+              id: file.id,
+              name: file.name,
+              color: file.color || '#8884d8',
+              preparation: {
+                S: prepMajor.S,
+                H: prepMajor.H,
+                E: prepMajor.E,
+                R: prepR,
+                D: prepD,
+                P: prepP
+              },
+              instrument: {
+                S: instMajor.S,
+                H: instMajor.H,
+                E: instMajor.E,
+                R: instR,
+                D: instD,
+                P: instP
+              },
+              average: {
+                S: (prepMajor.S + instMajor.S) / 2,
+                H: (prepMajor.H + instMajor.H) / 2,
+                E: (prepMajor.E + instMajor.E) / 2,
+                R: avgR,
+                D: avgD,
+                P: avgP
+              }
+            })
+          }
+        } else {
+          // 对于上传的文件，检查是否有 scoreResults
+          if (file.scoreResults?.preparation?.major_factors && file.scoreResults?.instrument?.major_factors) {
+            const scoreResults = file.scoreResults
+            const prepMajor = scoreResults.preparation.major_factors
+            const instMajor = scoreResults.instrument.major_factors
+            const additionalFactors = scoreResults.additional_factors || {}
+            
+            const instR = additionalFactors.instrument_R || 0
+            const instD = additionalFactors.instrument_D || 0
+            const instP = additionalFactors.instrument_P || 0
+            const prepR = additionalFactors.pretreatment_R || 0
+            const prepD = additionalFactors.pretreatment_D || 0
+            const prepP = additionalFactors.pretreatment_P || 0
+            
+            const avgR = (instR + prepR) / 2
+            const avgD = (instD + prepD) / 2
+            
+            const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
+            const weightMap: Record<string, { instrument: number, preparation: number }> = {
+              'Standard': { instrument: 0.6, preparation: 0.4 },
+              'Complex_Prep': { instrument: 0.3, preparation: 0.7 },
+              'Direct_Online': { instrument: 0.8, preparation: 0.2 },
+              'Equal': { instrument: 0.5, preparation: 0.5 }
+            }
+            const weights = weightMap[finalWeights] || weightMap['Standard']
+            const avgP = instP * weights.instrument + prepP * weights.preparation
+            
+            majorFactorsArray.push({
+              id: file.id,
+              name: file.name,
+              color: file.color || '#8884d8',
+              preparation: {
+                S: prepMajor.S,
+                H: prepMajor.H,
+                E: prepMajor.E,
+                R: prepR,
+                D: prepD,
+                P: prepP
+              },
+              instrument: {
+                S: instMajor.S,
+                H: instMajor.H,
+                E: instMajor.E,
+                R: instR,
+                D: instD,
+                P: instP
+              },
+              average: {
+                S: (prepMajor.S + instMajor.S) / 2,
+                H: (prepMajor.H + instMajor.H) / 2,
+                E: (prepMajor.E + instMajor.E) / 2,
+                R: avgR,
+                D: avgD,
+                P: avgP
+              }
+            })
+          } else {
+            // Fallback: 如果没有 scoreResults，使用汇总值
+            majorFactorsArray.push({
+              id: file.id,
+              name: file.name,
+              color: file.color || '#8884d8',
+              preparation: {
+                S: file.data.S,
+                H: file.data.H,
+                E: file.data.E,
+                R: file.data.R,
+                D: file.data.D,
+                P: file.data.P
+              },
+              instrument: {
+                S: file.data.S,
+                H: file.data.H,
+                E: file.data.E,
+                R: file.data.R,
+                D: file.data.D,
+                P: file.data.P
+              },
+              average: {
+                S: file.data.S,
+                H: file.data.H,
+                E: file.data.E,
+                R: file.data.R,
+                D: file.data.D,
+                P: file.data.P
+              }
+            })
+          }
+        }
+      }
+
+      console.log('✅ Major factors loaded:', majorFactorsArray.length)
+      setFilesMajorFactors(majorFactorsArray)
+    }
+
+    if (uniqueFiles.length > 0) {
+      loadMajorFactors()
+    } else {
+      // 清空数据
+      setFilesMajorFactors([])
+    }
+  }, [uniqueFiles])
+
+  // 构建前处理阶段雷达图数据（6个大因子）
+  const preparationRadarData = [
+    { subject: 'Safety (S)', factor: 'S' },
+    { subject: 'Health (H)', factor: 'H' },
+    { subject: 'Environment (E)', factor: 'E' },
+    { subject: 'Recycle (R)', factor: 'R' },
+    { subject: 'Disposal (D)', factor: 'D' },
+    { subject: 'Power (P)', factor: 'P' }
+  ].map(item => {
+    const dataPoint: any = { subject: item.subject, _rawData: {} }
+    filesMajorFactors.forEach(file => {
+      if (file.preparation) {
+        const value = file.preparation[item.factor as keyof MajorFactorData]
+        dataPoint[file.name] = value
+        dataPoint._rawData[file.name] = value
+      }
+    })
+    return dataPoint
+  })
+
+  // 构建仪器分析阶段雷达图数据（6个大因子）
+  const instrumentRadarData = [
+    { subject: 'Safety (S)', factor: 'S' },
+    { subject: 'Health (H)', factor: 'H' },
+    { subject: 'Environment (E)', factor: 'E' },
+    { subject: 'Recycle (R)', factor: 'R' },
+    { subject: 'Disposal (D)', factor: 'D' },
+    { subject: 'Power (P)', factor: 'P' }
+  ].map(item => {
+    const dataPoint: any = { subject: item.subject, _rawData: {} }
+    filesMajorFactors.forEach(file => {
+      if (file.instrument) {
+        const value = file.instrument[item.factor as keyof MajorFactorData]
+        dataPoint[file.name] = value
+        dataPoint._rawData[file.name] = value
+      }
+    })
+    return dataPoint
+  })
+
+  // 构建总体雷达图数据（6个大因子的平均值）
+  const averageRadarData = [
+    { subject: 'Safety (S)', factor: 'S' },
+    { subject: 'Health (H)', factor: 'H' },
+    { subject: 'Environment (E)', factor: 'E' },
+    { subject: 'Recycle (R)', factor: 'R' },
+    { subject: 'Disposal (D)', factor: 'D' },
+    { subject: 'Power (P)', factor: 'P' }
+  ].map(item => {
+    const dataPoint: any = { subject: item.subject, _rawData: {} }
+    filesMajorFactors.forEach(file => {
+      if (file.average) {
+        const value = file.average[item.factor as keyof MajorFactorData]
+        dataPoint[file.name] = value
+        dataPoint._rawData[file.name] = value
+      }
+    })
+    return dataPoint
+  })
 
   const pieData = uniqueFiles.map(f => ({
     name: f.name,
@@ -722,55 +1077,75 @@ const ComparisonPage: React.FC = () => {
       key: 'name',
       fixed: 'left' as const,
       width: 150,
+      render: (text: string, record: any) => {
+        // 合并三行显示
+        if (record.rowType === 'prep') {
+          return {
+            children: <Text strong>{text}</Text>,
+            props: { rowSpan: 3 }
+          }
+        }
+        if (record.rowType === 'inst' || record.rowType === 'avg') {
+          return { props: { rowSpan: 0 } }
+        }
+        return text
+      }
+    },
+    {
+      title: 'Stage',
+      dataIndex: 'stage',
+      key: 'stage',
+      width: 150,
+      render: (text: string) => <Text type={text === 'Overall' ? 'success' : 'secondary'}>{text}</Text>
     },
     {
       title: 'S',
-      dataIndex: ['data', 'S'],
+      dataIndex: 'S',
       key: 'S',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.S - b.data.S,
     },
     {
       title: 'H',
-      dataIndex: ['data', 'H'],
+      dataIndex: 'H',
       key: 'H',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.H - b.data.H,
     },
     {
       title: 'E',
-      dataIndex: ['data', 'E'],
+      dataIndex: 'E',
       key: 'E',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.E - b.data.E,
     },
     {
       title: 'R',
-      dataIndex: ['data', 'R'],
+      dataIndex: 'R',
       key: 'R',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.R - b.data.R,
     },
     {
       title: 'D',
-      dataIndex: ['data', 'D'],
+      dataIndex: 'D',
       key: 'D',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.D - b.data.D,
     },
     {
       title: 'P',
-      dataIndex: ['data', 'P'],
+      dataIndex: 'P',
       key: 'P',
+      width: 80,
       render: (val: number) => val.toFixed(2),
-      sorter: (a: FileData, b: FileData) => a.data.P - b.data.P,
     },
     {
-      title: 'Total Score',
-      dataIndex: ['data', 'totalScore'],
-      key: 'totalScore',
-      render: (val: number) => <Text strong>{val.toFixed(3)}</Text>,
-      sorter: (a: FileData, b: FileData) => a.data.totalScore - b.data.totalScore,
+      title: 'Stage Score',
+      dataIndex: 'stageScore',
+      key: 'stageScore',
+      width: 120,
+      render: (val: number) => <Text strong>{val.toFixed(3)}</Text>
     },
     {
       title: 'Action',
@@ -778,18 +1153,86 @@ const ComparisonPage: React.FC = () => {
       fixed: 'right' as const,
       width: 100,
       align: 'center' as const,
-      render: (_: any, record: FileData) => (
-        <Button 
-          type="link" 
-          danger 
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveFile(record.id)}
-        >
-          Remove
-        </Button>
-      ),
+      render: (_: any, record: any) => {
+        if (record.rowType === 'prep') {
+          return {
+            children: (
+              <Button 
+                type="link" 
+                danger 
+                icon={<DeleteOutlined />}
+                onClick={() => handleRemoveFile(record.fileId)}
+              >
+                Remove
+              </Button>
+            ),
+            props: { rowSpan: 3 }
+          }
+        }
+        if (record.rowType === 'inst' || record.rowType === 'avg') {
+          return { props: { rowSpan: 0 } }
+        }
+        return null
+      },
     },
   ]
+
+  // 构建展开的表格数据（每个文件3行：前处理、仪器、总体）
+  const tableData = filesMajorFactors.flatMap((file, index) => {
+    // 获取对应文件的 scoreResults
+    const originalFile = uniqueFiles.find(f => f.id === file.id)
+    const scoreResults = originalFile?.scoreResults
+    
+    // 提取各阶段的总分
+    const prepScore = scoreResults?.preparation?.score2 || 0
+    const instScore = scoreResults?.instrument?.score1 || 0
+    const finalScore = scoreResults?.final?.score3 || originalFile?.data.totalScore || 0
+    
+    return [
+      {
+        key: `${file.id}-prep`,
+        fileId: file.id,
+        name: file.name,
+        stage: 'Sample Preparation',
+        rowType: 'prep',
+        S: file.preparation?.S || 0,
+        H: file.preparation?.H || 0,
+        E: file.preparation?.E || 0,
+        R: file.preparation?.R || 0,
+        D: file.preparation?.D || 0,
+        P: file.preparation?.P || 0,
+        stageScore: prepScore
+      },
+      {
+        key: `${file.id}-inst`,
+        fileId: file.id,
+        name: file.name,
+        stage: 'Instrument Analysis',
+        rowType: 'inst',
+        S: file.instrument?.S || 0,
+        H: file.instrument?.H || 0,
+        E: file.instrument?.E || 0,
+        R: file.instrument?.R || 0,
+        D: file.instrument?.D || 0,
+        P: file.instrument?.P || 0,
+        stageScore: instScore
+      },
+      {
+        key: `${file.id}-avg`,
+        fileId: file.id,
+        name: file.name,
+        stage: 'Overall',
+        rowType: 'avg',
+        S: file.average?.S || 0,
+        H: file.average?.H || 0,
+        E: file.average?.E || 0,
+        R: file.average?.R || 0,
+        D: file.average?.D || 0,
+        P: file.average?.P || 0,
+        stageScore: finalScore
+      }
+    ]
+  })
 
   return (
     <div className="comparison-page" style={{ padding: '24px' }}>
@@ -835,31 +1278,34 @@ const ComparisonPage: React.FC = () => {
           <Card title="Comparison Data" style={{ marginBottom: 24 }}>
             <Table
               columns={columns}
-              dataSource={uniqueFiles}
-              rowKey="id"
+              dataSource={tableData}
+              rowKey="key"
               pagination={false}
-              scroll={{ x: 1000 }}
+              scroll={{ x: 1200 }}
               size="small"
+              bordered
             />
           </Card>
 
+          {/* 第一行：前处理和仪器分析雷达图 */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={12}>
-              <Card title="Multi-dimensional Radar Chart (Log Scale)">
+              <Card title="Sample Preparation Stage - Major Factors">
                 <div style={{ width: '100%', height: '450px' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={scaledRadarData}>
+                    <RadarChart data={preparationRadarData} margin={{ top: 50, right: 20, bottom: 30, left: 30 }}>
                       <PolarGrid />
-                      <PolarAngleAxis dataKey="subject" />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                      {uniqueFiles.map((file, index) => (
+                      <PolarAngleAxis dataKey="subject" tick={renderCustomTick} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                      {filesMajorFactors.filter(f => f.preparation).map((file) => (
                         <Radar
                           key={file.id}
                           name={file.name}
                           dataKey={file.name}
-                          stroke={file.color || COLORS[index % COLORS.length]}
-                          fill={file.color || COLORS[index % COLORS.length]}
+                          stroke={file.color}
+                          fill={file.color}
                           fillOpacity={0.3}
+                          strokeWidth={3}
                         />
                       ))}
                       <Legend />
@@ -868,7 +1314,64 @@ const ComparisonPage: React.FC = () => {
                   </ResponsiveContainer>
                 </div>
               </Card>
-            </Col>            <Col xs={24} lg={12}>
+            </Col>
+            <Col xs={24} lg={12}>
+              <Card title="Instrument Analysis Stage - Major Factors">
+                <div style={{ width: '100%', height: '450px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={instrumentRadarData} margin={{ top: 50, right: 20, bottom: 30, left: 30 }}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="subject" tick={renderCustomTick} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                      {filesMajorFactors.filter(f => f.instrument).map((file) => (
+                        <Radar
+                          key={file.id}
+                          name={file.name}
+                          dataKey={file.name}
+                          stroke={file.color}
+                          fill={file.color}
+                          fillOpacity={0.3}
+                          strokeWidth={3}
+                        />
+                      ))}
+                      <Legend />
+                      <Tooltip content={<CustomRadarTooltip />} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 第二行：总体雷达图和总分饼状图 */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} lg={12}>
+              <Card title="Overall Comparison - Major Factors Average">
+                <div style={{ width: '100%', height: '450px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={averageRadarData} margin={{ top: 50, right: 20, bottom: 30, left: 30 }}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="subject" tick={renderCustomTick} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                      {filesMajorFactors.filter(f => f.average).map((file) => (
+                        <Radar
+                          key={file.id}
+                          name={file.name}
+                          dataKey={file.name}
+                          stroke={file.color}
+                          fill={file.color}
+                          fillOpacity={0.3}
+                          strokeWidth={3}
+                        />
+                      ))}
+                      <Legend />
+                      <Tooltip content={<CustomRadarTooltip />} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} lg={12}>
               <Card title="Total Score Comparison">
                 <div style={{ width: '100%', height: '450px' }}>
                   <ResponsiveContainer width="100%" height="100%">

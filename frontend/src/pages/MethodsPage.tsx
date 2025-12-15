@@ -291,7 +291,9 @@ const MethodsPage: React.FC = () => {
       sampleCount: data.methods.sampleCount,
       preTreatmentReagents: data.methods.preTreatmentReagents,
       mobilePhaseA: data.methods.mobilePhaseA,
-      mobilePhaseB: data.methods.mobilePhaseB
+      mobilePhaseB: data.methods.mobilePhaseB,
+      instrumentEnergy: data.methods.instrumentEnergy,
+      pretreatmentEnergy: data.methods.pretreatmentEnergy
     })
     
     // 如果数据没有变化，跳过更新
@@ -302,11 +304,13 @@ const MethodsPage: React.FC = () => {
     console.log('🔄 MethodsPage: Context数据变化，更新本地状态')
     lastSyncedData.current = currentDataStr
     
-    // 只更新试剂数据，不更新能耗（避免循环）
+    // 更新所有相关数据（包括能耗）
     setSampleCount(data.methods.sampleCount)
     setPreTreatmentReagents(data.methods.preTreatmentReagents)
     setMobilePhaseA(data.methods.mobilePhaseA)
     setMobilePhaseB(data.methods.mobilePhaseB)
+    setInstrumentEnergy(data.methods.instrumentEnergy || 0)
+    setPretreatmentEnergy(data.methods.pretreatmentEnergy || 0)
     
     // Context变化时也重新加载factors和gradient数据，确保图表有数据
     const reloadData = async () => {
@@ -341,7 +345,7 @@ const MethodsPage: React.FC = () => {
       console.log('✅ 数据重新加载完成')
     }
     reloadData()
-  }, [data.methods.sampleCount, data.methods.preTreatmentReagents, data.methods.mobilePhaseA, data.methods.mobilePhaseB])
+  }, [data.methods.sampleCount, data.methods.preTreatmentReagents, data.methods.mobilePhaseA, data.methods.mobilePhaseB, data.methods.instrumentEnergy, data.methods.pretreatmentEnergy])
 
   // 监听 availableReagents 变化
   useEffect(() => {
@@ -983,27 +987,8 @@ const MethodsPage: React.FC = () => {
               E3: cleanNumber(factor.waterHazard, 0)            // Water Hazard
             }
             
-            // 🔍 诊断日志：检查因子值是否为0
-            const hasZeroFactors = Object.entries(matrix[name]).filter(([key, val]) => val === 0)
-            if (hasZeroFactors.length > 0) {
-              console.warn(`⚠️ 试剂 "${name}" 有 ${hasZeroFactors.length} 个因子为0:`, {
-                原始数据: {
-                  releasePotential: factor.releasePotential,
-                  fireExplos: factor.fireExplos,
-                  reactDecom: factor.reactDecom,
-                  acuteToxicity: factor.acuteToxicity,
-                  chronicToxicity: factor.chronicToxicity,
-                  irritation: factor.irritation,
-                  persistency: factor.persistency,
-                  airHazard: factor.airHazard,
-                  waterHazard: factor.waterHazard
-                },
-                处理后: matrix[name],
-                为0的因子: hasZeroFactors.map(([k, v]) => k).join(', ')
-              })
-            }
           } else {
-            console.error(`❌ 找不到试剂 "${name}" 的因子数据！`)
+            throw new Error(`找不到试剂 "${name}" 的因子数据，请先在 Factors 页面导入该试剂的数据`)
           }
         })
         return matrix
@@ -1227,6 +1212,7 @@ const MethodsPage: React.FC = () => {
 
       // 10. 调用后端API
       console.log('🌐 调用后端API: /api/v1/scoring/full-score')
+      console.log('📦 请求数据:', JSON.stringify(requestData, null, 2))
       const response = await api.calculateFullScore(requestData)
       
       if (response.data.success) {

@@ -190,6 +190,16 @@ const TablePage: React.FC = () => {
       loadAllData()
     }
     
+    const handleFactorsDataUpdated = () => {
+      console.log('📢 TablePage: Factors数据已变化，触发重新计算')
+      // Factors 数据变化，需要触发 Methods 重新计算
+      window.dispatchEvent(new CustomEvent('requestScoreRecalculation'))
+      // 延迟一点加载数据，等待计算完成
+      setTimeout(() => {
+        loadAllData()
+      }, 100)
+    }
+    
     // 监听文件数据变更事件
     const handleFileDataChanged = () => {
       console.log('📢 TablePage: 接收到 fileDataChanged 事件，立即重新加载')
@@ -197,7 +207,7 @@ const TablePage: React.FC = () => {
     }
 
     window.addEventListener('gradientDataUpdated', handleDataUpdate)
-    window.addEventListener('factorsDataUpdated', handleDataUpdate)
+    window.addEventListener('factorsDataUpdated', handleFactorsDataUpdated)
     window.addEventListener('methodsDataUpdated', handleDataUpdate)
     window.addEventListener('scoreDataUpdated', handleDataUpdate)
     window.addEventListener('powerScoreUpdated', handleDataUpdate)
@@ -205,7 +215,7 @@ const TablePage: React.FC = () => {
 
     return () => {
       window.removeEventListener('gradientDataUpdated', handleDataUpdate)
-      window.removeEventListener('factorsDataUpdated', handleDataUpdate)
+      window.removeEventListener('factorsDataUpdated', handleFactorsDataUpdated)
       window.removeEventListener('methodsDataUpdated', handleDataUpdate)
       window.removeEventListener('scoreDataUpdated', handleDataUpdate)
       window.removeEventListener('powerScoreUpdated', handleDataUpdate)
@@ -620,38 +630,6 @@ const TablePage: React.FC = () => {
         />
       ) : (
         <>
-          {/* Basic Information Overview */}
-          <Card title="Basic Information" style={{ marginBottom: 24 }}>
-            <Row gutter={16}>
-              <Col span={6}>
-                <Statistic title="Sample Count" value={sampleCount} />
-              </Col>
-              <Col span={6}>
-                <Statistic 
-                  title="Total Volume" 
-                  value={totalScores?.totalVolume || 0} 
-                  precision={3}
-                  suffix="ml" 
-                />
-              </Col>
-              <Col span={6}>
-                <Statistic 
-                  title="Total Mass" 
-                  value={totalScores?.totalMass || 0} 
-                  precision={3}
-                  suffix="g" 
-                />
-              </Col>
-              <Col span={6}>
-                <Statistic 
-                  title="Total Gradient Time" 
-                  value={gradientInfo?.totalTime || 0} 
-                  suffix="min" 
-                />
-              </Col>
-            </Row>
-          </Card>
-
           {/* Total Score Summary */}
           <Card title="Green Chemistry Assessment Total Scores" style={{ marginBottom: 24 }}>
             <Row gutter={16}>

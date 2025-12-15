@@ -123,6 +123,9 @@ const FactorsPage: React.FC = () => {
       
       // 触发事件通知其他页面刷新数据
       window.dispatchEvent(new Event('factorsLibraryUpdated'))
+      window.dispatchEvent(new Event('factorsDataUpdated'))
+      
+      message.success('Factors saved successfully')
     } catch (error) {
       console.error('❌ 保存全局试剂库失败:', error)
       message.error('Save failed')

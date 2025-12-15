@@ -68,6 +68,12 @@ const MethodEvaluationPage: React.FC = () => {
       calculateTotalScores()
     }
     
+    const handleFactorsDataUpdated = () => {
+      console.log('MethodEvaluationPage: Factors data updated, triggering backend recalculation')
+      // Factors 数据变化，需要触发后端重新计算
+      window.dispatchEvent(new CustomEvent('requestScoreRecalculation'))
+    }
+    
     const handleFileDataChanged = () => {
       console.log('MethodEvaluationPage: File data changed event received')
       calculateTotalScores()
@@ -85,14 +91,14 @@ const MethodEvaluationPage: React.FC = () => {
     }
 
     window.addEventListener('gradientDataUpdated', handleDataUpdate)
-    window.addEventListener('factorsDataUpdated', handleDataUpdate)
+    window.addEventListener('factorsDataUpdated', handleFactorsDataUpdated)
     window.addEventListener('fileDataChanged', handleFileDataChanged)
     window.addEventListener('scoreDataUpdated', handleScoreDataUpdated)
     window.addEventListener('methodsDataUpdated', handleMethodsDataUpdated)
 
     return () => {
       window.removeEventListener('gradientDataUpdated', handleDataUpdate)
-      window.removeEventListener('factorsDataUpdated', handleDataUpdate)
+      window.removeEventListener('factorsDataUpdated', handleFactorsDataUpdated)
       window.removeEventListener('fileDataChanged', handleFileDataChanged)
       window.removeEventListener('scoreDataUpdated', handleScoreDataUpdated)
       window.removeEventListener('methodsDataUpdated', handleMethodsDataUpdated)

@@ -784,9 +784,14 @@ const AppContent: React.FC = () => {
         <Content style={{ margin: '24px 16px 0', overflow: 'initial', minWidth: 0 }}>
           <VineBorder>
             <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
+              {/* MethodsPage 始终挂载但隐藏，确保事件监听器始终活跃 */}
+              <div style={{ display: location.pathname === '/methods' ? 'block' : 'none' }}>
+                <MethodsPage />
+              </div>
+              
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/methods" element={<MethodsPage />} />
+                <Route path="/methods" element={null} />
                 <Route path="/factors" element={<FactorsPage />} />
                 <Route path="/graph" element={<GraphPage />} />
                 <Route path="/graph/pretreatment" element={<PretreatmentAnalysisPage />} />

@@ -75,16 +75,22 @@ const GraphPage: React.FC = () => {
       console.log('📢 GraphPage: Methods数据已变化（等待自动计算完成）')
       // MethodsPage 会自动计算评分，等待 scoreDataUpdated 事件即可
     }
+    
+    const handleFactorsDataUpdated = () => {
+      console.log('📢 GraphPage: Factors数据已变化，触发重新计算')
+      // Factors 数据变化，需要触发 Methods 重新计算
+      window.dispatchEvent(new CustomEvent('requestScoreRecalculation'))
+    }
 
     // 监听数据更新事件
     window.addEventListener('gradientDataUpdated', handleDataUpdate)
-    window.addEventListener('factorsDataUpdated', handleDataUpdate)
+    window.addEventListener('factorsDataUpdated', handleFactorsDataUpdated)
     window.addEventListener('scoreDataUpdated', handleScoreDataUpdated)
     window.addEventListener('methodsDataUpdated', handleMethodsDataUpdated)
 
     return () => {
       window.removeEventListener('gradientDataUpdated', handleDataUpdate)
-      window.removeEventListener('factorsDataUpdated', handleDataUpdate)
+      window.removeEventListener('factorsDataUpdated', handleFactorsDataUpdated)
       window.removeEventListener('scoreDataUpdated', handleScoreDataUpdated)
       window.removeEventListener('methodsDataUpdated', handleMethodsDataUpdated)
     }
