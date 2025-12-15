@@ -1,7 +1,8 @@
 ﻿import React, { useState } from 'react'
-import { Modal, Form, Input, InputNumber, Select, Row, Col, message, Space, Typography, Divider, Alert, Button } from 'antd'
-import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons'
+import { Modal, Form, Input, InputNumber, Select, Row, Col, message, Space, Typography, Divider, Alert, Button, Upload } from 'antd'
+import { ExperimentOutlined, FireOutlined, HeartOutlined, GlobalOutlined, LinkOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons'
 import type { ReagentFactor } from '../contexts/AppContext'
+import * as XLSX from 'xlsx'
 
 const { Text, Link } = Typography
 const { Option } = Select
@@ -10,6 +11,7 @@ interface AddReagentModalProps {
   visible: boolean
   onCancel: () => void
   onOk: (reagent: ReagentFactor) => void
+  onBatchImport?: (reagents: ReagentFactor[]) => void
 }
 
 // Release Potential 第一步选项
@@ -624,7 +626,7 @@ const DISPOSAL_PERCENTAGE_OPTIONS = [
   { value: 100, label: 'E. 100% (Complete Closed Loop) → P = 100', pValue: 100 }
 ]
 
-const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, onOk }) => {
+const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, onOk, onBatchImport }) => {
   // 添加输入模式状态：'select' 或 'manual'
   const [inputMode, setInputMode] = useState<'select' | 'manual'>('select')
   
@@ -643,6 +645,134 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
     healthScore: 0,
     envScore: 0
   })
+  
+  // Excel 批量导入处理
+  const handleExcelUpload = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result
+        const workbook = XLSX.read(data, { type: 'binary' })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+        
+        if (jsonData.length < 2) {
+          message.error('Excel file is empty or invalid')
+          return
+        }
+        
+        // 解析表头（第一行）
+        const headers = jsonData[0].map((h: string) => h?.toString().trim().toLowerCase())
+        
+        // 查找列索引
+        const getColIndex = (names: string[]) => {
+          for (const name of names) {
+            const idx = headers.findIndex(h => h && h.includes(name))
+            if (idx !== -1) return idx
+          }
+          return -1
+        }
+        
+        const colMap = {
+          name: getColIndex(['name', 'substance', 'reagent', '试剂', '物质']),
+          density: getColIndex(['density', 'ρ', '密度']),
+          releasePotential: getColIndex(['release', 'potential', '释放']),
+          fireExplos: getColIndex(['fire', 'explos', '火灾', '爆炸']),
+          reactDecom: getColIndex(['react', 'decom', '反应', '分解']),
+          acuteToxicity: getColIndex(['acute', 'toxicity', '急性', '毒性']),
+          irritation: getColIndex(['irritation', '刺激']),
+          chronicToxicity: getColIndex(['chronic', '慢性']),
+          persistency: getColIndex(['persistency', '持久']),
+          airHazard: getColIndex(['air', 'hazard', '空气']),
+          waterHazard: getColIndex(['water', 'hazard', '水']),
+          regeneration: getColIndex(['regeneration', '再生']),
+          disposal: getColIndex(['disposal', '处置'])
+        }
+        
+        // 检查必需列
+        if (colMap.name === -1) {
+          message.error('Excel must contain "Name" column')
+          return
+        }
+        
+        // 解析数据行
+        const reagents: ReagentFactor[] = []
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i]
+          if (!row || row.length === 0) continue
+          
+          const name = row[colMap.name]?.toString().trim()
+          if (!name) continue
+          
+          const parseNum = (idx: number, defaultVal: number = 0): number => {
+            if (idx === -1) return defaultVal
+            const val = row[idx]
+            const num = typeof val === 'number' ? val : parseFloat(val?.toString() || '0')
+            return isNaN(num) ? defaultVal : num
+          }
+          
+          const reagent: ReagentFactor = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            name,
+            density: parseNum(colMap.density),
+            releasePotential: parseNum(colMap.releasePotential),
+            fireExplos: parseNum(colMap.fireExplos),
+            reactDecom: parseNum(colMap.reactDecom),
+            acuteToxicity: parseNum(colMap.acuteToxicity),
+            irritation: parseNum(colMap.irritation),
+            chronicToxicity: parseNum(colMap.chronicToxicity),
+            persistency: parseNum(colMap.persistency),
+            airHazard: parseNum(colMap.airHazard),
+            waterHazard: parseNum(colMap.waterHazard),
+            safetyScore: 0,
+            healthScore: 0,
+            envScore: 0,
+            regeneration: parseNum(colMap.regeneration),
+            disposal: parseNum(colMap.disposal)
+          }
+          
+          // 自动计算 S、H、E
+          reagent.safetyScore = Number((
+            reagent.releasePotential +
+            reagent.fireExplos +
+            reagent.reactDecom +
+            reagent.acuteToxicity
+          ).toFixed(3))
+          
+          reagent.healthScore = Number((
+            reagent.irritation +
+            reagent.chronicToxicity
+          ).toFixed(3))
+          
+          reagent.envScore = Number((
+            reagent.persistency +
+            reagent.airHazard +
+            reagent.waterHazard
+          ).toFixed(3))
+          
+          reagents.push(reagent)
+        }
+        
+        if (reagents.length === 0) {
+          message.error('No valid data found in Excel')
+          return
+        }
+        
+        // 批量导入
+        if (onBatchImport) {
+          onBatchImport(reagents)
+          message.success(`Successfully imported ${reagents.length} reagents`)
+          onCancel()
+        }
+      } catch (error) {
+        console.error('Excel parsing error:', error)
+        message.error('Failed to parse Excel file: ' + (error as Error).message)
+      }
+    }
+    reader.readAsBinaryString(file)
+    return false // 阻止自动上传
+  }
   
   // Release Potential 的状态
   const [rpStep1, setRpStep1] = useState<string>('') // A/B/C
@@ -1663,7 +1793,7 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
           waterHazard: 0
         }}
       >
-        {/* 输入模式选择 */}
+        {/* 输入模式选择 + Excel 导入 */}
         <Alert
           message="📝 Please Select Input Method"
           description={
@@ -1697,6 +1827,28 @@ const AddReagentModal: React.FC<AddReagentModalProps> = ({ visible, onCancel, on
                     </div>
                   </div>
                 </Button>
+                
+                {/* Excel 批量导入 */}
+                <Upload
+                  accept=".xlsx,.xls"
+                  beforeUpload={handleExcelUpload}
+                  showUploadList={false}
+                  disabled={!onBatchImport}
+                >
+                  <Button
+                    size="large"
+                    icon={<UploadOutlined />}
+                    style={{ width: '100%', height: 'auto', padding: '12px 16px', textAlign: 'left' }}
+                    disabled={!onBatchImport}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 'bold', marginBottom: 4 }}>📊 Batch Import from Excel</div>
+                      <div style={{ fontSize: 12, opacity: 0.85 }}>
+                        Import multiple reagents at once from Excel file (.xlsx/.xls)
+                      </div>
+                    </div>
+                  </Button>
+                </Upload>
               </Space>
             </div>
           }

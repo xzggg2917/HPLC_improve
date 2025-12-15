@@ -149,6 +149,45 @@ const FactorsPage: React.FC = () => {
     }
   }
 
+  // 处理批量导入（覆盖已存在的同名试剂）
+  const handleBatchImport = async (importedReagents: ReagentFactor[]) => {
+    try {
+      // 构建现有试剂的名称映射
+      const existingMap = new Map(reagents.map(r => [r.name.toLowerCase(), r]))
+      
+      let addedCount = 0
+      let updatedCount = 0
+      
+      // 处理每个导入的试剂
+      importedReagents.forEach(imported => {
+        const nameLower = imported.name.toLowerCase()
+        const existing = existingMap.get(nameLower)
+        
+        if (existing) {
+          // 已存在：覆盖数据，保留原 ID
+          existingMap.set(nameLower, { ...imported, id: existing.id })
+          updatedCount++
+        } else {
+          // 不存在：新增
+          existingMap.set(nameLower, imported)
+          addedCount++
+        }
+      })
+      
+      // 合并所有试剂并排序
+      const updatedReagents = sortReagentsByName(Array.from(existingMap.values()))
+      setReagents(updatedReagents)
+      
+      // 保存到全局试剂库
+      await saveToGlobalLibrary(updatedReagents)
+      
+      message.success(`Import complete: ${addedCount} added, ${updatedCount} updated`)
+    } catch (error) {
+      console.error('批量导入失败:', error)
+      message.error('Batch import failed')
+    }
+  }
+
   // 打开添加试剂模态窗口
   const addReagent = () => {
     setIsModalVisible(true)
@@ -755,6 +794,7 @@ const FactorsPage: React.FC = () => {
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={handleAddReagent}
+        onBatchImport={handleBatchImport}
       />
     </div>
   )
