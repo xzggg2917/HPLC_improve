@@ -700,12 +700,12 @@ def calculate_full_scores(
             "pretreatment_D": round(pretreatment_d_factor, 2)   # 前处理D因子
         },
         "schemes": {
-            "safety": safety_scheme,
-            "health": health_scheme,
-            "environment": environment_scheme,
-            "instrument_stage": instrument_stage_scheme,
-            "prep_stage": prep_stage_scheme,
-            "final": final_scheme
+            "safety_scheme": safety_scheme,
+            "health_scheme": health_scheme,
+            "environment_scheme": environment_scheme,
+            "instrument_stage_scheme": instrument_stage_scheme,
+            "prep_stage_scheme": prep_stage_scheme,
+            "final_scheme": final_scheme
         }
     }
 

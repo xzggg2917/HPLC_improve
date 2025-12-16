@@ -17,12 +17,12 @@ const MethodsPage: React.FC = () => {
   const location = useLocation()
   const { data, updateMethodsData, setIsDirty } = useAppContext()
   
-  // 使用Context中的数据初始化本地状态
-  const [sampleCount, setSampleCount] = useState<number | null>(data.methods.sampleCount)
+  // 使用空数组初始化，完全从storage加载（不依赖Context，避免引用共享）
+  const [sampleCount, setSampleCount] = useState<number | null>(null)
   const [sampleCountError, setSampleCountError] = useState<string>('')
-  const [preTreatmentReagents, setPreTreatmentReagents] = useState<PreTreatmentReagent[]>(data.methods.preTreatmentReagents)
-  const [mobilePhaseA, setMobilePhaseA] = useState<Reagent[]>(data.methods.mobilePhaseA)
-  const [mobilePhaseB, setMobilePhaseB] = useState<Reagent[]>(data.methods.mobilePhaseB)
+  const [preTreatmentReagents, setPreTreatmentReagents] = useState<PreTreatmentReagent[]>([])
+  const [mobilePhaseA, setMobilePhaseA] = useState<Reagent[]>([])
+  const [mobilePhaseB, setMobilePhaseB] = useState<Reagent[]>([])
   
   // Power Factor (P) calculation states
   const [instrumentEnergy, setInstrumentEnergy] = useState<number>(data.methods.instrumentEnergy || 0)  // 仪器分析能耗 (kWh)
@@ -163,44 +163,37 @@ const MethodsPage: React.FC = () => {
           setFinalScheme(methodsData.weightSchemes.finalScheme || 'Direct_Online')
         }
         
-        // ⚠️ 关键：加载能耗数据到state（即使是0也要加载）
-        console.log('📋 检查能耗数据:', {
-          instrumentEnergy: methodsData.instrumentEnergy,
-          pretreatmentEnergy: methodsData.pretreatmentEnergy
-        })
-        if (methodsData.instrumentEnergy !== undefined && methodsData.instrumentEnergy !== null) {
-          console.log('✅ 恢复仪器能耗:', methodsData.instrumentEnergy)
-          setInstrumentEnergy(methodsData.instrumentEnergy)
-        } else {
-          console.log('⚠️ 仪器能耗为空，使用默认值0')
-          setInstrumentEnergy(0)
-        }
-        if (methodsData.pretreatmentEnergy !== undefined && methodsData.pretreatmentEnergy !== null) {
-          console.log('✅ 恢复前处理能耗:', methodsData.pretreatmentEnergy)
-          setPretreatmentEnergy(methodsData.pretreatmentEnergy)
-        } else {
-          console.log('⚠️ 前处理能耗为空，使用默认值0')
-          setPretreatmentEnergy(0)
-        }
+        // ⚠️ 能耗数据不在此处加载，由独立的useEffect管理（避免被刷新覆盖）
         
-        // ⚠️ 关键：加载已有的Mobile Phase A/B到state
+        // ⚠️ 关键：加载已有的Mobile Phase A/B到state（创建深拷贝）
         if (methodsData.mobilePhaseA && methodsData.mobilePhaseA.length > 0) {
           console.log('✅ 恢复Mobile Phase A:', methodsData.mobilePhaseA)
-          setMobilePhaseA(methodsData.mobilePhaseA)
+          setMobilePhaseA(methodsData.mobilePhaseA.map(r => ({ ...r })))
         }
         if (methodsData.mobilePhaseB && methodsData.mobilePhaseB.length > 0) {
           console.log('✅ 恢复Mobile Phase B:', methodsData.mobilePhaseB)
-          setMobilePhaseB(methodsData.mobilePhaseB)
+          setMobilePhaseB(methodsData.mobilePhaseB.map(r => ({ ...r })))
         }
         
-        // 加载前处理试剂
+        // 加载前处理试剂（创建完全独立的深拷贝）
         if (methodsData.preTreatmentReagents && methodsData.preTreatmentReagents.length > 0) {
           console.log('✅ 恢复前处理试剂:', methodsData.preTreatmentReagents)
-          setPreTreatmentReagents(methodsData.preTreatmentReagents)
+          // 创建完全独立的副本，每个对象都是新的
+          const reagentsCopy = methodsData.preTreatmentReagents.map(r => ({
+            id: r.id,
+            name: r.name,
+            volume: Number(r.volume)
+          }))
+          console.log('✅ 创建的独立副本:', reagentsCopy)
+          setPreTreatmentReagents(reagentsCopy)
+        } else {
+          // 没有数据时初始化一个空试剂
+          console.log('⚠️ 没有前处理试剂数据，创建默认空试剂')
+          setPreTreatmentReagents([{ id: Date.now().toString(), name: '', volume: 0 }])
         }
         
         // 加载样品数量
-        if (methodsData.sampleCount) {
+        if (methodsData.sampleCount !== undefined && methodsData.sampleCount !== null) {
           console.log('✅ 恢复样品数量:', methodsData.sampleCount)
           setSampleCount(methodsData.sampleCount)
         }
@@ -420,6 +413,37 @@ const MethodsPage: React.FC = () => {
     }
   }, [location.pathname]) // 添加 location.pathname 依赖，每次导航到此页面都重新加载
 
+  // ========== 能耗数据独立管理 ==========
+  // 能耗数据完全独立，不受其他数据刷新影响
+  useEffect(() => {
+    const loadEnergyData = async () => {
+      const methodsData = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
+      if (methodsData) {
+        const instEnergy = methodsData.instrumentEnergy ?? 0
+        const prepEnergy = methodsData.pretreatmentEnergy ?? 0
+        console.log('🔋 独立加载能耗数据:', { instrumentEnergy: instEnergy, pretreatmentEnergy: prepEnergy })
+        setInstrumentEnergy(instEnergy)
+        setPretreatmentEnergy(prepEnergy)
+      }
+    }
+    loadEnergyData()
+  }, []) // 只在组件挂载时加载一次，不受其他数据影响
+
+  // 能耗数据变化时单独保存（不触发其他数据的保存）
+  useEffect(() => {
+    const saveEnergyData = async () => {
+      const methodsData = await StorageHelper.getJSON(STORAGE_KEYS.METHODS) || {}
+      methodsData.instrumentEnergy = instrumentEnergy
+      methodsData.pretreatmentEnergy = pretreatmentEnergy
+      await StorageHelper.setJSON(STORAGE_KEYS.METHODS, methodsData)
+      console.log('🔋 能耗数据已保存:', { instrumentEnergy, pretreatmentEnergy })
+    }
+    // 使用防抖避免频繁保存
+    const timer = setTimeout(saveEnergyData, 300)
+    return () => clearTimeout(timer)
+  }, [instrumentEnergy, pretreatmentEnergy])
+  // ========== 能耗数据独立管理结束 ==========
+
   // 监听Context数据变化，更新本地状态（只更新必要的字段）
   const lastSyncedData = React.useRef<string>('')
   
@@ -612,9 +636,20 @@ const MethodsPage: React.FC = () => {
     console.log(`🔧 更新试剂 - type: ${type}, id: ${id}, field: ${field}, value:`, value)
     
     if (type === 'preTreatment') {
-      setPreTreatmentReagents(prev => prev.map(r => 
-        r.id === id ? { ...r, [field]: value } : r
-      ))
+      setPreTreatmentReagents(prev => {
+        console.log('📋 更新前的数组:', prev.map(r => `id:${r.id}, name:${r.name}, volume:${r.volume}`))
+        const updated = prev.map(r => {
+          if (r.id === id) {
+            const newReagent = { ...r, [field]: value }
+            console.log(`✅ 更新试剂 ${id}:`, newReagent)
+            return newReagent
+          }
+          console.log(`⏭️ 跳过试剂 ${r.id}`)
+          return r
+        })
+        console.log('📋 更新后的数组:', updated.map(r => `id:${r.id}, name:${r.name}, volume:${r.volume}`))
+        return updated
+      })
     } else if (type === 'phaseA') {
       setMobilePhaseA(prev => {
         const updated = prev.map(r => 
@@ -1836,7 +1871,18 @@ const MethodsPage: React.FC = () => {
         <Row gutter={16}>
           <Col span={8}>
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Safety Factor (S) Weight Scheme <Tooltip title="S1-Release Potential, S2-Fire/Explosion, S3-Reaction/Decomposition, S4-Acute Toxicity"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%', marginBottom: 12 }} value={safetyScheme} onChange={setSafetyScheme}>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={safetyScheme} onChange={(value) => { 
+              console.log('⚖️ 安全因子权重方案变化:', safetyScheme, '->', value); 
+              setSafetyScheme(value); 
+              setTimeout(() => {
+                console.log('⚖️ 开始触发重新计算（安全因子权重变化）');
+                calculateFullScoreAPI({ silent: true }).then(() => {
+                  console.log('✅ 重新计算完成（安全因子权重变化）');
+                }).catch(err => {
+                  console.error('❌ 重新计算失败（安全因子权重变化）:', err);
+                });
+              }, 200); 
+            }}>
               <Option value="PBT_Balanced">PBT Balanced (0.25/0.25/0.25/0.25)</Option>
               <Option value="Frontier_Focus">Frontier Focus (0.10/0.60/0.15/0.15)</Option>
               <Option value="Personnel_Exposure">Personnel Exposure (0.10/0.20/0.20/0.50)</Option>
@@ -1844,7 +1890,7 @@ const MethodsPage: React.FC = () => {
             </Select>
 
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Instrument Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/P/R/D"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%' }} value={instrumentStageScheme} onChange={setInstrumentStageScheme}>
+            <Select style={{ width: '100%' }} value={instrumentStageScheme} onChange={(value) => { setInstrumentStageScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
               <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
               <Option value="Safety_First">Safety First (S:0.30 H:0.30 E:0.10 R:0.10 D:0.10 P:0.10)</Option>
               <Option value="Eco_Friendly">Eco-Friendly (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
@@ -1854,7 +1900,7 @@ const MethodsPage: React.FC = () => {
 
           <Col span={8}>
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Health Factor (H) Weight Scheme <Tooltip title="H1-Chronic Toxicity, H2-Irritation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%', marginBottom: 12 }} value={healthScheme} onChange={setHealthScheme}>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={healthScheme} onChange={(value) => { setHealthScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
               <Option value="Occupational_Exposure">Occupational Exposure (0.70/0.30)</Option>
               <Option value="Operation_Protection">Operation Protection (0.30/0.70)</Option>
               <Option value="Strict_Compliance">Strict Compliance (0.90/0.10)</Option>
@@ -1862,7 +1908,7 @@ const MethodsPage: React.FC = () => {
             </Select>
 
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Sample Prep Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/R/D/P"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%' }} value={prepStageScheme} onChange={setPrepStageScheme}>
+            <Select style={{ width: '100%' }} value={prepStageScheme} onChange={(value) => { setPrepStageScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
               <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
               <Option value="Operation_Protection">Operation Protection (S:0.35 H:0.35 E:0.10 R:0.10 D:0.10 P:0.00)</Option>
               <Option value="Circular_Economy">Circular Economy (S:0.10 H:0.10 E:0.10 R:0.40 D:0.30 P:0.00)</Option>
@@ -1872,7 +1918,7 @@ const MethodsPage: React.FC = () => {
 
           <Col span={8}>
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Environmental Factor (E) Weight Scheme <Tooltip title="E1-Persistence, E2-Emissions, E3-Aquatic Hazards"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%', marginBottom: 12 }} value={environmentScheme} onChange={setEnvironmentScheme}>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={environmentScheme} onChange={(value) => { setEnvironmentScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
               <Option value="PBT_Balanced">PBT Balanced (0.334/0.333/0.333)</Option>
               <Option value="Emission_Compliance">Emission Compliance (0.10/0.80/0.10)</Option>
               <Option value="Deep_Impact">Deep Impact (0.10/0.10/0.80)</Option>
@@ -1880,7 +1926,18 @@ const MethodsPage: React.FC = () => {
             </Select>
 
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Final Summary Weight Scheme <Tooltip title="Weight allocation between Instrument Analysis and Sample Preparation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%' }} value={finalScheme} onChange={setFinalScheme}>
+            <Select style={{ width: '100%' }} value={finalScheme} onChange={(value) => { 
+              console.log('⚖️ 最终汇总权重方案变化:', finalScheme, '->', value); 
+              setFinalScheme(value); 
+              setTimeout(() => {
+                console.log('⚖️ 开始触发重新计算（最终权重变化）');
+                calculateFullScoreAPI({ silent: true }).then(() => {
+                  console.log('✅ 重新计算完成（最终权重变化）');
+                }).catch(err => {
+                  console.error('❌ 重新计算失败（最终权重变化）:', err);
+                });
+              }, 200); 
+            }}>
               <Option value="Direct_Online">Direct Injection (Instrument:0.8 Prep:0.2)</Option>
               <Option value="Standard">Standard (Instrument:0.6 Prep:0.4)</Option>
               <Option value="Equal">Equal Weight (Instrument:0.5 Prep:0.5)</Option>

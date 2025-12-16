@@ -232,7 +232,7 @@ const MethodEvaluationPage: React.FC = () => {
         setRadarData(chartData)
         setRadarColor(radarColorData.color) // 设置雷达图颜色
         
-        // 设置大因子得分（取仪器和前处理的平均值）
+        // 设置大因子得分（使用最终汇总权重方案的加权平均）
         const instMajor = scoreResults.instrument?.major_factors || { S: 0, H: 0, E: 0 }
         const prepMajor = scoreResults.preparation?.major_factors || { S: 0, H: 0, E: 0 }
         const additionalFactors = scoreResults.additional_factors || { 
@@ -243,12 +243,7 @@ const MethodEvaluationPage: React.FC = () => {
           pretreatment_D: 50 
         }
         
-        // R和D取仪器和前处理的平均值用于图表显示
-        const avgR = ((additionalFactors.instrument_R || 0) + (additionalFactors.pretreatment_R || 0)) / 2
-        const avgD = ((additionalFactors.instrument_D || 0) + (additionalFactors.pretreatment_D || 0)) / 2
-        
-        // P因子使用加权平均（根据最终汇总权重方案）
-        // 从scoreResults获取使用的权重方案
+        // 从scoreResults获取使用的最终汇总权重方案
         const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
         const weightMap: Record<string, { instrument: number, preparation: number }> = {
           'Standard': { instrument: 0.6, preparation: 0.4 },
@@ -257,16 +252,24 @@ const MethodEvaluationPage: React.FC = () => {
           'Equal': { instrument: 0.5, preparation: 0.5 }
         }
         const weights = weightMap[finalWeights] || weightMap['Standard']
+        console.log(`📊 MethodEvaluationPage: 使用权重方案 ${finalWeights} (仪器:${weights.instrument}, 前处理:${weights.preparation})`)
+        
+        // 所有大因子都使用最终汇总权重方案的加权平均
+        const avgS = instMajor.S * weights.instrument + prepMajor.S * weights.preparation
+        const avgH = instMajor.H * weights.instrument + prepMajor.H * weights.preparation
+        const avgE = instMajor.E * weights.instrument + prepMajor.E * weights.preparation
+        const avgR = (additionalFactors.instrument_R || 0) * weights.instrument + (additionalFactors.pretreatment_R || 0) * weights.preparation
+        const avgD = (additionalFactors.instrument_D || 0) * weights.instrument + (additionalFactors.pretreatment_D || 0) * weights.preparation
         const instP = additionalFactors.instrument_P || 0
         const prepP = additionalFactors.pretreatment_P || 0
         const avgP = instP * weights.instrument + prepP * weights.preparation
         
         setMainFactorScores({
-          S: (instMajor.S + prepMajor.S) / 2,
-          H: (instMajor.H + prepMajor.H) / 2,
-          E: (instMajor.E + prepMajor.E) / 2,
-          R: avgR,  // 仪器和前处理的平均值
-          D: avgD,  // 仪器和前处理的平均值
+          S: avgS,  // 加权平均（使用最终汇总权重）
+          H: avgH,  // 加权平均（使用最终汇总权重）
+          E: avgE,  // 加权平均（使用最终汇总权重）
+          R: avgR,  // 加权平均（使用最终汇总权重）
+          D: avgD,  // 加权平均（使用最终汇总权重）
           P: avgP   // 加权平均（使用最终汇总权重）
         })
         
