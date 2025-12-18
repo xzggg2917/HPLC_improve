@@ -32,8 +32,7 @@ const MethodsPage: React.FC = () => {
   const [safetyScheme, setSafetyScheme] = useState<string>(data.methods.weightSchemes?.safetyScheme || 'PBT_Balanced')
   const [healthScheme, setHealthScheme] = useState<string>(data.methods.weightSchemes?.healthScheme || 'Absolute_Balance')
   const [environmentScheme, setEnvironmentScheme] = useState<string>(data.methods.weightSchemes?.environmentScheme || 'PBT_Balanced')
-  const [instrumentStageScheme, setInstrumentStageScheme] = useState<string>(data.methods.weightSchemes?.instrumentStageScheme || 'Balanced')
-  const [prepStageScheme, setPrepStageScheme] = useState<string>(data.methods.weightSchemes?.prepStageScheme || 'Balanced')
+  const [stageScheme, setStageScheme] = useState<string>(data.methods.weightSchemes?.instrumentStageScheme || 'Balanced')
   const [finalScheme, setFinalScheme] = useState<string>(data.methods.weightSchemes?.finalScheme || 'Direct_Online')
 
   // 评分结果状态（新增）
@@ -158,8 +157,7 @@ const MethodsPage: React.FC = () => {
           setSafetyScheme(methodsData.weightSchemes.safetyScheme || 'PBT_Balanced')
           setHealthScheme(methodsData.weightSchemes.healthScheme || 'Absolute_Balance')
           setEnvironmentScheme(methodsData.weightSchemes.environmentScheme || 'PBT_Balanced')
-          setInstrumentStageScheme(methodsData.weightSchemes.instrumentStageScheme || 'Balanced')
-          setPrepStageScheme(methodsData.weightSchemes.prepStageScheme || 'Balanced')
+          setStageScheme(methodsData.weightSchemes.instrumentStageScheme || 'Balanced')
           setFinalScheme(methodsData.weightSchemes.finalScheme || 'Direct_Online')
         }
         
@@ -318,8 +316,7 @@ const MethodsPage: React.FC = () => {
           setSafetyScheme(methodsData.weightSchemes.safetyScheme || 'PBT_Balanced')
           setHealthScheme(methodsData.weightSchemes.healthScheme || 'Absolute_Balance')
           setEnvironmentScheme(methodsData.weightSchemes.environmentScheme || 'PBT_Balanced')
-          setInstrumentStageScheme(methodsData.weightSchemes.instrumentStageScheme || 'Balanced')
-          setPrepStageScheme(methodsData.weightSchemes.prepStageScheme || 'Balanced')
+          setStageScheme(methodsData.weightSchemes.instrumentStageScheme || 'Balanced')
           setFinalScheme(methodsData.weightSchemes.finalScheme || 'Direct_Online')
         }
         
@@ -347,6 +344,12 @@ const MethodsPage: React.FC = () => {
       if (gradientData) {
         console.log('✅ Gradient 数据加载成功:', gradientData.calculations)
         setGradientCalculations(gradientData.calculations || null) // 更新state
+        
+        // 🎯 梯度数据更新后，自动重新计算评分
+        console.log('🎯 MethodsPage: 梯度数据变化，自动重新计算评分')
+        calculateFullScoreAPI({ silent: true }).catch(err => {
+          console.warn('⚠️ 梯度数据更新后自动计算评分失败:', err)
+        })
       }
     }
     
@@ -523,13 +526,13 @@ const MethodsPage: React.FC = () => {
         mobilePhaseB: validMobilePhaseB,
         instrumentEnergy: instrumentEnergy || 0,
         pretreatmentEnergy: pretreatmentEnergy || 0,
-        // 保存权重方案
+        // 保存权重方案（stageScheme同时保存到两个字段以兼容前后处理）
         weightSchemes: {
           safetyScheme,
           healthScheme,
           environmentScheme,
-          instrumentStageScheme,
-          prepStageScheme,
+          instrumentStageScheme: stageScheme,
+          prepStageScheme: stageScheme,
           finalScheme
         }
       }
@@ -575,7 +578,7 @@ const MethodsPage: React.FC = () => {
     
     saveData()
   }, [sampleCount, preTreatmentReagents, mobilePhaseA, mobilePhaseB, instrumentEnergy, pretreatmentEnergy, 
-      safetyScheme, healthScheme, environmentScheme, instrumentStageScheme, prepStageScheme, finalScheme, 
+      safetyScheme, healthScheme, environmentScheme, stageScheme, finalScheme, 
       updateMethodsData, setIsDirty])
 
   // Handle sample count changes
@@ -1172,12 +1175,6 @@ const MethodsPage: React.FC = () => {
       
       console.log('  - 提取的试剂列表:', instrumentReagents)
       
-      if (instrumentReagents.length === 0) {
-        message.error('No reagents configured in Mobile Phase A/B. Please configure them in Methods page first.')
-        setIsCalculatingScore(false)
-        return
-      }
-
       // 验证梯度数据结构
       if (!gradientData.steps || !Array.isArray(gradientData.steps)) {
         message.error('Gradient data format error: missing steps array')
@@ -1362,8 +1359,8 @@ const MethodsPage: React.FC = () => {
         safety_scheme: safetyScheme,
         health_scheme: healthScheme,
         environment_scheme: environmentScheme,
-        instrument_stage_scheme: instrumentStageScheme,
-        prep_stage_scheme: prepStageScheme,
+        instrument_stage_scheme: stageScheme,
+        prep_stage_scheme: stageScheme,
         final_scheme: finalScheme
       }
 
@@ -1511,8 +1508,7 @@ const MethodsPage: React.FC = () => {
     safetyScheme,
     healthScheme,
     environmentScheme,
-    instrumentStageScheme,
-    prepStageScheme,
+    stageScheme,
     finalScheme,
     mobilePhaseA,
     mobilePhaseB,
@@ -1874,69 +1870,64 @@ const MethodsPage: React.FC = () => {
             <Select style={{ width: '100%', marginBottom: 12 }} value={safetyScheme} onChange={(value) => { 
               console.log('⚖️ 安全因子权重方案变化:', safetyScheme, '->', value); 
               setSafetyScheme(value); 
-              setTimeout(() => {
-                console.log('⚖️ 开始触发重新计算（安全因子权重变化）');
-                calculateFullScoreAPI({ silent: true }).then(() => {
-                  console.log('✅ 重新计算完成（安全因子权重变化）');
-                }).catch(err => {
-                  console.error('❌ 重新计算失败（安全因子权重变化）:', err);
-                });
-              }, 200); 
+              calculateFullScoreAPI({ silent: true });
+              window.dispatchEvent(new CustomEvent('weightSchemeUpdated', { detail: { type: 'safety', scheme: value } }));
             }}>
               <Option value="PBT_Balanced">PBT Balanced (0.25/0.25/0.25/0.25)</Option>
               <Option value="Frontier_Focus">Frontier Focus (0.10/0.60/0.15/0.15)</Option>
               <Option value="Personnel_Exposure">Personnel Exposure (0.10/0.20/0.20/0.50)</Option>
               <Option value="Material_Transport">Material Transport (0.50/0.20/0.20/0.10)</Option>
             </Select>
-
-            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Instrument Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/P/R/D"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%' }} value={instrumentStageScheme} onChange={(value) => { setInstrumentStageScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
-              <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
-              <Option value="Safety_First">Safety First (S:0.30 H:0.30 E:0.10 R:0.10 D:0.10 P:0.10)</Option>
-              <Option value="Eco_Friendly">Eco-Friendly (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
-              <Option value="Energy_Efficient">Energy Efficient (S:0.10 H:0.10 E:0.15 P:0.40 R:0.15 D:0.10)</Option>
-            </Select>
           </Col>
 
           <Col span={8}>
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Health Factor (H) Weight Scheme <Tooltip title="H1-Chronic Toxicity, H2-Irritation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%', marginBottom: 12 }} value={healthScheme} onChange={(value) => { setHealthScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={healthScheme} onChange={(value) => { 
+              console.log('⚖️ Health Factor权重方案变化:', healthScheme, '->', value); 
+              setHealthScheme(value); 
+              calculateFullScoreAPI({ silent: true });
+              window.dispatchEvent(new CustomEvent('weightSchemeUpdated', { detail: { type: 'health', scheme: value } }));
+            }}>
               <Option value="Occupational_Exposure">Occupational Exposure (0.70/0.30)</Option>
               <Option value="Operation_Protection">Operation Protection (0.30/0.70)</Option>
               <Option value="Strict_Compliance">Strict Compliance (0.90/0.10)</Option>
               <Option value="Absolute_Balance">Absolute Balance (0.50/0.50)</Option>
             </Select>
 
-            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Sample Prep Stage Weight Scheme (6 Factors incl. P) <Tooltip title="Contains 6 factors: S/H/E/R/D/P"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%' }} value={prepStageScheme} onChange={(value) => { setPrepStageScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
-              <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
-              <Option value="Operation_Protection">Operation Protection (S:0.35 H:0.35 E:0.10 R:0.10 D:0.10 P:0.00)</Option>
-              <Option value="Circular_Economy">Circular Economy (S:0.10 H:0.10 E:0.10 R:0.40 D:0.30 P:0.00)</Option>
-              <Option value="Environmental_Tower">Environmental Tower (S:0.15 H:0.15 E:0.40 R:0.15 D:0.15 P:0.00)</Option>
-            </Select>
-          </Col>
-
-          <Col span={8}>
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Environmental Factor (E) Weight Scheme <Tooltip title="E1-Persistence, E2-Emissions, E3-Aquatic Hazards"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
-            <Select style={{ width: '100%', marginBottom: 12 }} value={environmentScheme} onChange={(value) => { setEnvironmentScheme(value); setTimeout(() => calculateFullScoreAPI({ silent: true }), 200); }}>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={environmentScheme} onChange={(value) => { 
+              console.log('⚖️ Environmental Factor权重方案变化:', environmentScheme, '->', value); 
+              setEnvironmentScheme(value); 
+              calculateFullScoreAPI({ silent: true });
+              window.dispatchEvent(new CustomEvent('weightSchemeUpdated', { detail: { type: 'environment', scheme: value } }));
+            }}>
               <Option value="PBT_Balanced">PBT Balanced (0.334/0.333/0.333)</Option>
               <Option value="Emission_Compliance">Emission Compliance (0.10/0.80/0.10)</Option>
               <Option value="Deep_Impact">Deep Impact (0.10/0.10/0.80)</Option>
               <Option value="Degradation_Priority">Degradation Priority (0.70/0.15/0.15)</Option>
+            </Select>
+          </Col>
+
+          <Col span={8}>
+            <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Stage Weight Scheme (6 Factors) <Tooltip title="Unified weight scheme for both Instrument and Sample Prep stages. Contains 6 factors: S/H/E/R/D/P"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
+            <Select style={{ width: '100%', marginBottom: 12 }} value={stageScheme} onChange={(value) => { 
+              console.log('⚖️ Stage权重方案变化:', stageScheme, '->', value); 
+              setStageScheme(value); 
+              calculateFullScoreAPI({ silent: true });
+              window.dispatchEvent(new CustomEvent('weightSchemeUpdated', { detail: { type: 'stage', scheme: value } }));
+            }}>
+              <Option value="Balanced">Balanced (S:0.18 H:0.18 E:0.18 R:0.18 D:0.18 P:0.10)</Option>
+              <Option value="Safety_First">Safety First (S:0.30 H:0.30 E:0.10 R:0.10 D:0.10 P:0.10)</Option>
+              <Option value="Eco_Friendly">Eco-Friendly (S:0.10 H:0.10 E:0.30 P:0.10 R:0.25 D:0.15)</Option>
+              <Option value="Energy_Efficient">Energy Efficient (S:0.10 H:0.10 E:0.15 P:0.40 R:0.15 D:0.10)</Option>
             </Select>
 
             <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>Final Summary Weight Scheme <Tooltip title="Weight allocation between Instrument Analysis and Sample Preparation"><QuestionCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} /></Tooltip></div>
             <Select style={{ width: '100%' }} value={finalScheme} onChange={(value) => { 
               console.log('⚖️ 最终汇总权重方案变化:', finalScheme, '->', value); 
               setFinalScheme(value); 
-              setTimeout(() => {
-                console.log('⚖️ 开始触发重新计算（最终权重变化）');
-                calculateFullScoreAPI({ silent: true }).then(() => {
-                  console.log('✅ 重新计算完成（最终权重变化）');
-                }).catch(err => {
-                  console.error('❌ 重新计算失败（最终权重变化）:', err);
-                });
-              }, 200); 
+              calculateFullScoreAPI({ silent: true });
+              window.dispatchEvent(new CustomEvent('weightSchemeUpdated', { detail: { type: 'final', scheme: value } }));
             }}>
               <Option value="Direct_Online">Direct Injection (Instrument:0.8 Prep:0.2)</Option>
               <Option value="Standard">Standard (Instrument:0.6 Prep:0.4)</Option>

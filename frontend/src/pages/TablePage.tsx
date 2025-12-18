@@ -254,15 +254,7 @@ const TablePage: React.FC = () => {
           pretreatment_D: 0 
         }
         
-        const avgS = (instMajor.S + prepMajor.S) / 2
-        const avgH = (instMajor.H + prepMajor.H) / 2
-        const avgE = (instMajor.E + prepMajor.E) / 2
-        
-        // R和D取仪器和前处理的平均值（与后端一致）
-        const avgR = ((additionalFactors.instrument_R || 0) + (additionalFactors.pretreatment_R || 0)) / 2
-        const avgD = ((additionalFactors.instrument_D || 0) + (additionalFactors.pretreatment_D || 0)) / 2
-        
-        // P因子使用加权平均（根据最终汇总权重方案）
+        // 获取最终汇总权重方案用于加权平均
         const finalWeights = scoreResults.schemes?.final_scheme || 'Standard'
         const weightMap: Record<string, { instrument: number, preparation: number }> = {
           'Standard': { instrument: 0.6, preparation: 0.4 },
@@ -271,21 +263,51 @@ const TablePage: React.FC = () => {
           'Equal': { instrument: 0.5, preparation: 0.5 }
         }
         const weights = weightMap[finalWeights] || weightMap['Standard']
+        
+        // 计算加权平均的总分
+        const avgS = instMajor.S * weights.instrument + prepMajor.S * weights.preparation
+        const avgH = instMajor.H * weights.instrument + prepMajor.H * weights.preparation
+        const avgE = instMajor.E * weights.instrument + prepMajor.E * weights.preparation
+        const avgR = (additionalFactors.instrument_R || 0) * weights.instrument + (additionalFactors.pretreatment_R || 0) * weights.preparation
+        const avgD = (additionalFactors.instrument_D || 0) * weights.instrument + (additionalFactors.pretreatment_D || 0) * weights.preparation
         const instP = additionalFactors.instrument_P || 0
         const prepP = additionalFactors.pretreatment_P || 0
         const avgP = instP * weights.instrument + prepP * weights.preparation
         
         setTotalScores({
-          S: avgS,
-          H: avgH,
-          E: avgE,
-          R: avgR,
-          D: avgD,
+          // 样品前处理阶段得分
+          prep: {
+            S: prepMajor.S,
+            H: prepMajor.H,
+            E: prepMajor.E,
+            R: additionalFactors.pretreatment_R || 0,
+            D: additionalFactors.pretreatment_D || 0,
+            P: prepP
+          },
+          // 仪器分析阶段得分
+          instrument: {
+            S: instMajor.S,
+            H: instMajor.H,
+            E: instMajor.E,
+            R: additionalFactors.instrument_R || 0,
+            D: additionalFactors.instrument_D || 0,
+            P: instP
+          },
+          // 加权平均总分
+          total: {
+            S: avgS,
+            H: avgH,
+            E: avgE,
+            R: avgR,
+            D: avgD,
+            P: avgP
+          },
           totalVolume: gradientData?.calculations?.totalVolume || 0,
           totalMass: (gradientData?.calculations?.totalMass !== undefined && gradientData?.calculations?.totalMass !== null) 
             ? gradientData.calculations.totalMass 
             : 0,
-          totalScore: scoreResults.final?.score3 || 0
+          totalScore: scoreResults.final?.score3 || 0,
+          weights: weights  // 保存权重信息用于显示
         })
         
         setPowerScore(avgP)
@@ -630,13 +652,23 @@ const TablePage: React.FC = () => {
         />
       ) : (
         <>
-          {/* Total Score Summary */}
+          {/* Total Score Summary - 三组数据对比 */}
           <Card title="Green Chemistry Assessment Total Scores" style={{ marginBottom: 24 }}>
-            <Row gutter={16}>
+            {totalScores?.weights && (
+              <Alert 
+                message={`Weight Scheme: Instrument Analysis ${(totalScores.weights.instrument * 100).toFixed(0)}% + Sample PreTreatment ${(totalScores.weights.preparation * 100).toFixed(0)}%`}
+                type="info"
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            
+            {/* 样品前处理阶段 */}
+            <Title level={5} style={{ marginBottom: 12 }}>Sample PreTreatment Stage</Title>
+            <Row gutter={16} style={{ marginBottom: 24 }}>
               <Col span={4}>
                 <Statistic 
                   title="Safety (S)" 
-                  value={totalScores?.S || 0} 
+                  value={totalScores?.prep?.S || 0} 
                   precision={3}
                   valueStyle={{ color: '#3f8600' }}
                 />
@@ -644,7 +676,7 @@ const TablePage: React.FC = () => {
               <Col span={4}>
                 <Statistic 
                   title="Health Hazard (H)" 
-                  value={totalScores?.H || 0} 
+                  value={totalScores?.prep?.H || 0} 
                   precision={3}
                   valueStyle={{ color: '#cf1322' }}
                 />
@@ -652,7 +684,7 @@ const TablePage: React.FC = () => {
               <Col span={4}>
                 <Statistic 
                   title="Environmental Impact (E)" 
-                  value={totalScores?.E || 0} 
+                  value={totalScores?.prep?.E || 0} 
                   precision={3}
                   valueStyle={{ color: '#1890ff' }}
                 />
@@ -660,7 +692,7 @@ const TablePage: React.FC = () => {
               <Col span={4}>
                 <Statistic 
                   title="Regeneration (R)" 
-                  value={totalScores?.R || 0} 
+                  value={totalScores?.prep?.R || 0} 
                   precision={3}
                   valueStyle={{ color: '#faad14' }}
                 />
@@ -668,7 +700,7 @@ const TablePage: React.FC = () => {
               <Col span={4}>
                 <Statistic 
                   title="Disposal (D)" 
-                  value={totalScores?.D || 0} 
+                  value={totalScores?.prep?.D || 0} 
                   precision={3}
                   valueStyle={{ color: '#722ed1' }}
                 />
@@ -676,9 +708,115 @@ const TablePage: React.FC = () => {
               <Col span={4}>
                 <Statistic 
                   title="Power (P)" 
-                  value={powerScore.toFixed(3)} 
+                  value={totalScores?.prep?.P || 0} 
                   precision={3}
                   valueStyle={{ color: '#eb2f96' }}
+                />
+              </Col>
+            </Row>
+
+            {/* 仪器分析阶段 */}
+            <Title level={5} style={{ marginBottom: 12 }}>Instrument Analysis Stage</Title>
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+              <Col span={4}>
+                <Statistic 
+                  title="Safety (S)" 
+                  value={totalScores?.instrument?.S || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Health Hazard (H)" 
+                  value={totalScores?.instrument?.H || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#cf1322' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Environmental Impact (E)" 
+                  value={totalScores?.instrument?.E || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Regeneration (R)" 
+                  value={totalScores?.instrument?.R || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Disposal (D)" 
+                  value={totalScores?.instrument?.D || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Power (P)" 
+                  value={totalScores?.instrument?.P || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#eb2f96' }}
+                />
+              </Col>
+            </Row>
+
+            {/* 加权平均总分 */}
+            <Title level={5} style={{ marginBottom: 12 }}>Weighted Average Total Score</Title>
+            <Row gutter={16}>
+              <Col span={4}>
+                <Statistic 
+                  title="Safety (S)" 
+                  value={totalScores?.total?.S || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#3f8600', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Health Hazard (H)" 
+                  value={totalScores?.total?.H || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#cf1322', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Environmental Impact (E)" 
+                  value={totalScores?.total?.E || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#1890ff', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Regeneration (R)" 
+                  value={totalScores?.total?.R || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#faad14', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Disposal (D)" 
+                  value={totalScores?.total?.D || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#722ed1', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={4}>
+                <Statistic 
+                  title="Power (P)" 
+                  value={totalScores?.total?.P || 0} 
+                  precision={3}
+                  valueStyle={{ color: '#eb2f96', fontWeight: 'bold' }}
                 />
               </Col>
             </Row>

@@ -46,8 +46,9 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
         },
         axisLabel: {
           show: true,
-          color: '#999',
-          fontSize: 10,
+          color: '#000',
+          fontSize: 12,
+          fontWeight: 'bold',
           margin: 8  // 增加间距，避免与图形重叠
         },
         splitLine: {
@@ -74,8 +75,9 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
           show: false
         },
         axisLabel: {
-          fontSize: 12,
-          color: '#666',
+          fontSize: 14,
+          color: '#000',
+          fontWeight: 'bold',
           margin: 15,  // 增加间距
           interval: 0
         }
@@ -88,7 +90,8 @@ const PolarBarChart: React.FC<PolarBarChartProps> = ({ scores }) => {
         padding: [12, 16],
         textStyle: {
           color: '#333',
-          fontSize: 13
+          fontSize: 14,
+          fontWeight: 'bold'
         },
         extraCssText: 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border-radius: 8px;',
         formatter: (params: any) => {

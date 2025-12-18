@@ -156,6 +156,7 @@ const HPLCGradientPage: React.FC = () => {
   // 自动保存数据到文件（保存 steps，不覆盖 calculations）
   const isInitialMount = React.useRef(true)
   const lastLocalData = React.useRef<string>('')
+  const recalculateTimer = React.useRef<NodeJS.Timeout | null>(null)
   
   useEffect(() => {
     const currentLocalDataStr = JSON.stringify(gradientSteps)
@@ -205,6 +206,49 @@ const HPLCGradientPage: React.FC = () => {
     saveSteps()
     updateGradientData(JSON.parse(JSON.stringify(gradientSteps)))
     setIsDirty(true)
+    
+    // 🎯 防抖：梯度数据变化1.5秒后，静默重新计算并触发评分更新
+    if (recalculateTimer.current) {
+      clearTimeout(recalculateTimer.current)
+    }
+    recalculateTimer.current = setTimeout(async () => {
+      console.log('🔄 梯度数据变化，1.5秒后静默重新计算')
+      
+      // 静默验证：检查数据是否有效
+      const hasInvalidData = gradientSteps.some(step => 
+        step.time < 0 || step.phaseA < 0 || step.phaseA > 100 || step.flowRate < 0
+      )
+      
+      if (hasInvalidData) {
+        console.log('⚠️ 数据无效（负数或超出范围），跳过自动计算')
+        return
+      }
+      
+      // 检查时间递增
+      for (let i = 1; i < gradientSteps.length; i++) {
+        if (gradientSteps[i].time < gradientSteps[i - 1].time) {
+          console.log('⚠️ 时间顺序无效，跳过自动计算')
+          return
+        }
+      }
+      
+      // 检查是否有有效时间
+      const totalTime = Math.max(...gradientSteps.map(s => s.time))
+      if (totalTime === 0) {
+        console.log('⚠️ 总时间为0，跳过自动计算')
+        return
+      }
+      
+      // 数据有效，静默执行handleConfirm（不会显示错误消息）
+      console.log('✅ 数据有效，触发静默重新计算')
+      await handleConfirm()
+    }, 1500) // 1.5秒防抖，给用户足够输入时间
+    
+    return () => {
+      if (recalculateTimer.current) {
+        clearTimeout(recalculateTimer.current)
+      }
+    }
   }, [gradientSteps, updateGradientData, setIsDirty])
   
   // 监听文件数据变更事件
@@ -897,11 +941,13 @@ const HPLCGradientPage: React.FC = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="time" 
-              label={{ value: 't/s', position: 'insideBottomRight', offset: -5 }}
+              label={{ value: 't/s', position: 'insideBottomRight', offset: -5, style: { fontWeight: 'bold', fill: '#000' } }}
+              tick={{ fontWeight: 'bold', fill: '#000' }}
             />
             <YAxis 
-              label={{ value: '%', angle: -90, position: 'insideLeft' }}
+              label={{ value: '%', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold', fill: '#000' } }}
               domain={[0, 100]}
+              tick={{ fontWeight: 'bold', fill: '#000' }}
             />
             <Tooltip />
             <Legend />

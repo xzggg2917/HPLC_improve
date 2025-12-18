@@ -141,7 +141,7 @@ const PretreatmentAnalysisPage: React.FC = () => {
   const renderCustomTick = (props: any) => {
     const { x, y, payload, index } = props
     const angle = (index * 40) - 90
-    const radius = 30
+    const radius = 40
     const radian = (angle * Math.PI) / 180
     const dx = Math.cos(radian) * radius
     const dy = Math.sin(radian) * radius
@@ -150,11 +150,11 @@ const PretreatmentAnalysisPage: React.FC = () => {
       <text
         x={x + dx}
         y={y + dy}
-        fill="#666"
+        fill="#000"
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={12}
-        fontWeight="bold"
+        fontSize={14}
+        fontWeight="900"
       >
         {payload.value}
       </text>
@@ -289,12 +289,13 @@ const PretreatmentAnalysisPage: React.FC = () => {
             <div style={{ width: '100%', height: '500px' }}>
               <ResponsiveContainer>
                 <RadarChart data={radarData} margin={{ top: 50, right:20, bottom: 30, left: 30 }}>
-                  <PolarGrid />
+                  <PolarGrid stroke="#000" />
                   <PolarAngleAxis dataKey="subject" tick={renderCustomTick} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} />
                   <Radar
                     dataKey="score"
                     stroke={radarColor}
+                    strokeWidth={3}
                     fill={radarColor}
                     fillOpacity={0.6}
                   />

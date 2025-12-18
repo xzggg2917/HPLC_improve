@@ -109,7 +109,7 @@ const MethodEvaluationPage: React.FC = () => {
     const { x, y, payload, index } = props
     // 9个小因子的位置分布（360度均匀分布）
     const angle = (index * 40) - 90 // 从上方开始，顺时针方向
-    const radius = 30 // 标签距离中心的距离 - 进一步减小以更贴近图表
+    const radius = 35 // 标签距离中心的距离 - 增加以避免压线
     const radian = (angle * Math.PI) / 180
     const dx = Math.cos(radian) * radius
     const dy = Math.sin(radian) * radius
@@ -119,9 +119,9 @@ const MethodEvaluationPage: React.FC = () => {
         x={x + dx}
         y={y + dy}
         textAnchor="middle"
-        fill="#666"
-        fontSize={12}
-        fontWeight="700"
+        fill="#000"
+        fontSize={14}
+        fontWeight="900"
       >
         {payload.value}
       </text>
@@ -646,7 +646,7 @@ const MethodEvaluationPage: React.FC = () => {
                 <div style={{ width: '100%', height: '500px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={radarData} margin={{ top: 50, right:20, bottom: 30, left: 30 }}>
-                      <PolarGrid />
+                      <PolarGrid stroke="#000" />
                       <PolarAngleAxis 
                         dataKey="subject" 
                         tick={renderCustomTick}
@@ -655,6 +655,7 @@ const MethodEvaluationPage: React.FC = () => {
                       <Radar
                         dataKey="score"
                         stroke={radarColor}
+                        strokeWidth={3}
                         fill={radarColor}
                         fillOpacity={0.6}
                       />

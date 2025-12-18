@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import { getColorHex } from '../utils/colorScale'
+import { StorageHelper, STORAGE_KEYS } from '../utils/storage'
 
 interface NestedPieChartProps {
   mainFactors: {
@@ -26,133 +27,182 @@ interface NestedPieChartProps {
 
 const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors }) => {
   const chartRef = useRef<HTMLDivElement>(null)
+  const [weightScheme, setWeightScheme] = useState<string>('')
+  const [forceUpdate, setForceUpdate] = useState<number>(0)
+
+  // 监听权重方案变化
+  useEffect(() => {
+    const loadWeightScheme = async () => {
+      try {
+        const methodsData = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
+        const schemes = methodsData?.weightSchemes || {}
+        // 使用统一的stageScheme，向后兼容旧数据
+        const scheme = schemes.stageScheme || schemes.instrumentStageScheme || schemes.prepStageScheme || 'Balanced'
+        setWeightScheme(scheme)
+      } catch (error) {
+        console.error('读取权重方案失败:', error)
+        setWeightScheme('Balanced')
+      }
+    }
+    
+    loadWeightScheme()
+    
+    // 监听权重方案更新事件
+    const handleWeightSchemeUpdate = () => {
+      console.log('🔄 NestedPieChart接收到权重方案更新事件')
+      loadWeightScheme()
+      setForceUpdate(prev => prev + 1)
+    }
+    
+    window.addEventListener('weightSchemeUpdated', handleWeightSchemeUpdate)
+    
+    return () => {
+      window.removeEventListener('weightSchemeUpdated', handleWeightSchemeUpdate)
+    }
+  }, [mainFactors.P])
 
   useEffect(() => {
     if (!chartRef.current) return
 
-    const chart = echarts.init(chartRef.current)
+    const initChart = async () => {
+      const chart = echarts.init(chartRef.current!)
 
-    // 定义大因子权重（使用 Balanced 方案作为默认）
-    // 前处理阶段：5因子各20%；仪器阶段：6因子，P占25%，其他各15%
-    const getMainFactorWeights = () => {
-      if (mainFactors.P === 0) {
-        // 前处理阶段（无P）
-        return { S: 0.20, H: 0.20, E: 0.20, R: 0.20, D: 0.20, P: 0 }
-      } else {
-        // 仪器分析阶段（含P）
-        return { S: 0.15, H: 0.15, E: 0.15, R: 0.15, D: 0.15, P: 0.25 }
-      }
-    }
-
-    // 定义小因子权重（均衡方案）
-    const subFactorWeights = {
-      releasePotential: 0.25,    // S1
-      fireExplos: 0.25,          // S2
-      reactDecom: 0.25,          // S3
-      acuteToxicity: 0.25,       // S4
-      chronicToxicity: 0.50,     // H1
-      irritation: 0.50,          // H2
-      persistency: 0.334,        // E1
-      airHazard: 0.333,          // E2
-      waterHazard: 0.333         // E3
-    }
-
-    const weights = getMainFactorWeights()
-
-    // 使用权重作为占比，保留原始分数用于显示
-    const mainFactorData = [
-      { value: weights.S * 100, originalValue: mainFactors.S, name: 'S', itemStyle: { color: getColorHex(mainFactors.S) } },
-      { value: weights.H * 100, originalValue: mainFactors.H, name: 'H', itemStyle: { color: getColorHex(mainFactors.H) } },
-      { value: weights.E * 100, originalValue: mainFactors.E, name: 'E', itemStyle: { color: getColorHex(mainFactors.E) } },
-      { value: weights.R * 100, originalValue: mainFactors.R, name: 'R', itemStyle: { color: getColorHex(mainFactors.R) } },
-      { value: weights.D * 100, originalValue: mainFactors.D, name: 'D', itemStyle: { color: getColorHex(mainFactors.D) } },
-      { value: weights.P * 100, originalValue: mainFactors.P, name: 'P', itemStyle: { color: getColorHex(mainFactors.P) } }
-    ].filter(item => item.value > 0)
-
-    const subFactorData = [
-      { 
-        value: subFactorWeights.releasePotential * 100,
-        originalValue: subFactors.releasePotential,
-        name: 'Release potential',
-        itemStyle: { color: getColorHex(subFactors.releasePotential) }
-      },
-      { 
-        value: subFactorWeights.fireExplos * 100,
-        originalValue: subFactors.fireExplos,
-        name: 'Fire/Explos.',
-        itemStyle: { color: getColorHex(subFactors.fireExplos) }
-      },
-      { 
-        value: subFactorWeights.reactDecom * 100,
-        originalValue: subFactors.reactDecom,
-        name: 'React./Decom.',
-        itemStyle: { color: getColorHex(subFactors.reactDecom) }
-      },
-      { 
-        value: subFactorWeights.acuteToxicity * 100,
-        originalValue: subFactors.acuteToxicity,
-        name: 'Acute toxicity',
-        itemStyle: { color: getColorHex(subFactors.acuteToxicity) }
-      },
-      { 
-        value: subFactorWeights.irritation * 100,
-        originalValue: subFactors.irritation,
-        name: 'Irritation',
-        itemStyle: { color: getColorHex(subFactors.irritation) }
-      },
-      { 
-        value: subFactorWeights.chronicToxicity * 100,
-        originalValue: subFactors.chronicToxicity,
-        name: 'Chronic toxicity',
-        itemStyle: { color: getColorHex(subFactors.chronicToxicity) }
-      },
-      { 
-        value: subFactorWeights.persistency * 100,
-        originalValue: subFactors.persistency,
-        name: 'Persis-tency',
-        itemStyle: { color: getColorHex(subFactors.persistency) }
-      },
-      { 
-        value: subFactorWeights.airHazard * 100,
-        originalValue: subFactors.airHazard,
-        name: 'Air Hazard',
-        itemStyle: { color: getColorHex(subFactors.airHazard) }
-      },
-      { 
-        value: subFactorWeights.waterHazard * 100,
-        originalValue: subFactors.waterHazard,
-        name: 'Water Hazard',
-        itemStyle: { color: getColorHex(subFactors.waterHazard) }
-      }
-    ].filter(item => item.originalValue > 0)
-
-    const option = {
-      tooltip: {
-        trigger: 'item',
-        formatter: (params: any) => {
-          // 显示实际评分值和权重占比
-          const originalValue = params.data.originalValue
-          const weight = params.percent
-          if (originalValue !== undefined) {
-            return `${params.name}<br/>Score: ${originalValue.toFixed(2)}<br/>Weight: ${weight.toFixed(1)}%`
+      // 从storage读取实际的权重方案
+      const getMainFactorWeights = async () => {
+        try {
+          const methodsData = await StorageHelper.getJSON(STORAGE_KEYS.METHODS)
+          const schemes = methodsData?.weightSchemes || {}
+          
+          // 使用统一的stageScheme，向后兼容旧数据
+          const scheme = schemes.stageScheme || schemes.instrumentStageScheme || schemes.prepStageScheme || 'Balanced'
+          console.log('📊 Stage权重方案:', scheme, 'P因子:', mainFactors.P)
+          
+          if (scheme === 'Balanced') {
+            return { S: 0.18, H: 0.18, E: 0.18, R: 0.18, D: 0.18, P: 0.10 }
+          } else if (scheme === 'Safety_First') {
+            return { S: 0.30, H: 0.30, E: 0.10, R: 0.10, D: 0.10, P: 0.10 }
+          } else if (scheme === 'Eco_Friendly') {
+            return { S: 0.10, H: 0.10, E: 0.30, P: 0.10, R: 0.25, D: 0.15 }
+          } else if (scheme === 'Energy_Efficient') {
+            return { S: 0.10, H: 0.10, E: 0.15, P: 0.40, R: 0.15, D: 0.10 }
           }
-          return `${params.name}: ${params.value.toFixed(2)} (${weight.toFixed(1)}%)`
+          // 默认Balanced
+          return { S: 0.18, H: 0.18, E: 0.18, R: 0.18, D: 0.18, P: 0.10 }
+        } catch (error) {
+          console.error('读取权重方案失败:', error)
+          return { S: 0.18, H: 0.18, E: 0.18, R: 0.18, D: 0.18, P: 0.10 }
         }
-      },
-      legend: {
-        show: false
-      },
-      grid: {
-        top: 20,
-        bottom: 20,
-        left: 20,
-        right: 20,
-        containLabel: true
-      },
+      }
+
+      const weights = await getMainFactorWeights()
+      console.log('📊 NestedPieChart使用的权重:', weights)
+
+      // 定义小因子权重（均衡方案）
+      const subFactorWeights = {
+        releasePotential: 0.25,    // S1
+        fireExplos: 0.25,          // S2
+        reactDecom: 0.25,          // S3
+        acuteToxicity: 0.25,       // S4
+        chronicToxicity: 0.50,     // H1
+        irritation: 0.50,          // H2
+        persistency: 0.334,        // E1
+        airHazard: 0.333,          // E2
+        waterHazard: 0.333         // E3
+      }
+
+      // 使用权重作为占比，保留原始分数用于显示
+      const mainFactorData = [
+        { value: weights.S * 100, originalValue: mainFactors.S, name: 'S', itemStyle: { color: getColorHex(mainFactors.S) } },
+        { value: weights.H * 100, originalValue: mainFactors.H, name: 'H', itemStyle: { color: getColorHex(mainFactors.H) } },
+        { value: weights.E * 100, originalValue: mainFactors.E, name: 'E', itemStyle: { color: getColorHex(mainFactors.E) } },
+        { value: weights.R * 100, originalValue: mainFactors.R, name: 'R', itemStyle: { color: getColorHex(mainFactors.R) } },
+        { value: weights.D * 100, originalValue: mainFactors.D, name: 'D', itemStyle: { color: getColorHex(mainFactors.D) } },
+        { value: weights.P * 100, originalValue: mainFactors.P, name: 'P', itemStyle: { color: getColorHex(mainFactors.P) } }
+      ].filter(item => item.value > 0)
+
+      const subFactorData = [
+        { 
+          value: subFactors.releasePotential,
+          originalValue: subFactors.releasePotential,
+          name: 'Release potential',
+          itemStyle: { color: getColorHex(subFactors.releasePotential) }
+        },
+        { 
+          value: subFactors.fireExplos,
+          originalValue: subFactors.fireExplos,
+          name: 'Fire/Explos.',
+          itemStyle: { color: getColorHex(subFactors.fireExplos) }
+        },
+        { 
+          value: subFactors.reactDecom,
+          originalValue: subFactors.reactDecom,
+          name: 'React./Decom.',
+          itemStyle: { color: getColorHex(subFactors.reactDecom) }
+        },
+        { 
+          value: subFactors.acuteToxicity,
+          originalValue: subFactors.acuteToxicity,
+          name: 'Acute toxicity',
+          itemStyle: { color: getColorHex(subFactors.acuteToxicity) }
+        },
+        { 
+          value: subFactors.irritation,
+          originalValue: subFactors.irritation,
+          name: 'Irritation',
+          itemStyle: { color: getColorHex(subFactors.irritation) }
+        },
+        { 
+          value: subFactors.chronicToxicity,
+          originalValue: subFactors.chronicToxicity,
+          name: 'Chronic toxicity',
+          itemStyle: { color: getColorHex(subFactors.chronicToxicity) }
+        },
+        { 
+          value: subFactors.persistency,
+          originalValue: subFactors.persistency,
+          name: 'Persis-tency',
+          itemStyle: { color: getColorHex(subFactors.persistency) }
+        },
+        { 
+          value: subFactors.airHazard,
+          originalValue: subFactors.airHazard,
+          name: 'Air Hazard',
+          itemStyle: { color: getColorHex(subFactors.airHazard) }
+        },
+        { 
+          value: subFactors.waterHazard,
+          originalValue: subFactors.waterHazard,
+          name: 'Water Hazard',
+          itemStyle: { color: getColorHex(subFactors.waterHazard) }
+        }
+      ].filter(item => item.originalValue > 0)
+
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: (params: any) => {
+            // 显示实际评分值和权重占比
+            const originalValue = params.data.originalValue
+            const weight = params.percent
+            if (originalValue !== undefined) {
+              return `${params.name}<br/>Score: ${originalValue.toFixed(2)}<br/>Weight: ${weight.toFixed(1)}%`
+            }
+            return `${params.name}: ${params.value.toFixed(2)} (${weight.toFixed(1)}%)`
+          }
+        },
+        legend: {
+          show: false
+        },
+        grid: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20,
+          containLabel: true
+        },
       labelLayout: function (params: any) {
         // 只对内圈饼图（seriesIndex = 0）进行标签位置调整
         if (params.seriesIndex === 0) {
-          const isLeft = params.labelRect.x < chart.getWidth() / 2
           const points = params.labelLinePoints as number[][]
           
           // 计算扇形中心角度
@@ -188,8 +238,8 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
           label: {
             show: true,
             position: 'inside',
-            fontSize: 13,
-            fontWeight: 'bold',
+            fontSize: 15,
+            fontWeight: '900',
             color: '#fff',
             formatter: (params: any) => {
               return params.name
@@ -201,8 +251,8 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
           emphasis: {
             label: {
               show: true,
-              fontSize: 15,
-              fontWeight: 'bold'
+              fontSize: 17,
+              fontWeight: '900'
             }
           },
           data: mainFactorData.map((item, index) => {
@@ -226,7 +276,8 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
             return {
               ...item,
               label: {
-                fontSize: percent < 3 ? 9 : percent < 5 ? 11 : percent < 10 ? 12 : 14,
+                fontSize: percent < 3 ? 11 : percent < 5 ? 13 : percent < 10 ? 14 : 16,
+                fontWeight: '900',
                 // 使用position数组直接指定标签偏移量（相对于扇形中心）
                 offset: [
                   Math.cos(radian) * offsetDistance * 0.8,  // x方向偏移
@@ -256,18 +307,20 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
             },
             rich: {
               name: {
-                fontSize: 10,
-                color: '#666',
+                fontSize: 12,
+                color: '#000',
+                fontWeight: 'bold',
                 lineHeight: 16
               },
               value: {
-                fontSize: 11,
-                fontWeight: 'bold',
-                color: '#333',
+                fontSize: 13,
+                fontWeight: '900',
+                color: '#000',
                 lineHeight: 18
               },
               percent: {
-                fontSize: 9,
+                fontSize: 10,
+                fontWeight: 'bold',
                 color: '#fff',
                 backgroundColor: '#4C5058',
                 padding: [2, 3],
@@ -283,22 +336,25 @@ const NestedPieChart: React.FC<NestedPieChartProps> = ({ mainFactors, subFactors
           data: subFactorData
         }
       ]
+      }
+
+      chart.setOption(option)
+
+      // 响应式调整
+      const handleResize = () => {
+        chart.resize()
+      }
+
+      window.addEventListener('resize', handleResize)
+
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        chart.dispose()
+      }
     }
 
-    chart.setOption(option)
-
-    // 响应式调整
-    const handleResize = () => {
-      chart.resize()
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      chart.dispose()
-    }
-  }, [mainFactors, subFactors])
+    initChart()
+  }, [mainFactors, subFactors, weightScheme, forceUpdate])
 
   return <div ref={chartRef} style={{ width: '100%', height: '100%' }} />
 }

@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react'
-import { Card, Typography, Button, Upload, message, Row, Col, Table, Empty, Modal, Input } from 'antd'
-import { UploadOutlined, DeleteOutlined, SwapOutlined, LockOutlined } from '@ant-design/icons'
+import { Card, Typography, Button, Upload, message, Row, Col, Table, Empty } from 'antd'
+import { UploadOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { decryptData } from '../utils/encryption'
 import { useAppContext } from '../contexts/AppContext'
@@ -25,11 +25,6 @@ interface FileData {
   scoreResults?: any // 保存完整的 scoreResults 用于详细展示
 }
 
-interface PendingFile {
-  file: File
-  encryptedContent: string
-}
-
 const ComparisonPage: React.FC = () => {
   const { data: allData, currentFilePath } = useAppContext()
   const [files, setFiles] = useState<FileData[]>([])
@@ -48,10 +43,6 @@ const ComparisonPage: React.FC = () => {
     loadComparisonFiles()
   }, [])
   const [loading, setLoading] = useState(false)
-  const [pendingFile, setPendingFile] = useState<PendingFile | null>(null)
-  const [passwordModalVisible, setPasswordModalVisible] = useState(false)
-  const [password, setPassword] = useState('')
-  const [passwordLoading, setPasswordLoading] = useState(false)
   const [updateTrigger, setUpdateTrigger] = useState(0) // 用于强制更新
   const hasLoadedCurrentFile = useRef(false) // 追踪是否已加载当前文件
 
@@ -539,15 +530,25 @@ const ComparisonPage: React.FC = () => {
 
       // 检查是否为加密文件
       if (parsedContent.encrypted && parsedContent.data) {
-        console.log('🔐 Encrypted file detected')
-        setPendingFile({
-          file: file,
-          encryptedContent: parsedContent.data
-        })
-        setPasswordModalVisible(true)
+        console.log('� 检测到旧加密文件，自动解密...')
+        try {
+          // 尝试解密旧文件（不需要密码）
+          const decryptedData = decryptData(parsedContent.data, '')
+          
+          if (!decryptedData) {
+            throw new Error('无法解密文件')
+          }
+          
+          const parsedData = JSON.parse(decryptedData)
+          console.log('✅ 旧加密文件解密成功')
+          await processDecryptedData(parsedData, file.name)
+        } catch (error) {
+          console.error('解密失败:', error)
+          message.error(`解密文件失败: ${error instanceof Error ? error.message : '未知错误'}`)
+        }
         setLoading(false)
       } else {
-        console.log('📂 Unencrypted file detected')
+        console.log('📂 非加密文件')
         await processDecryptedData(parsedContent, file.name)
         setLoading(false)
       }
@@ -559,45 +560,6 @@ const ComparisonPage: React.FC = () => {
       setLoading(false)
       return false
     }
-  }
-
-  // 处理密码确认
-  const handlePasswordSubmit = async () => {
-    if (!pendingFile) return
-    
-    if (!password) {
-      message.error('Please enter password')
-      return
-    }
-
-    setPasswordLoading(true)
-    try {
-      const decryptedData = decryptData(pendingFile.encryptedContent, password)
-      
-      if (!decryptedData) {
-        message.error('Decryption failed. Please check your password.')
-        setPasswordLoading(false)
-        return
-      }
-
-      const parsedData = JSON.parse(decryptedData)
-      await processDecryptedData(parsedData, pendingFile.file.name)
-      
-      setPasswordModalVisible(false)
-      setPendingFile(null)
-      setPassword('')
-      setPasswordLoading(false)
-    } catch (error) {
-      console.error('Error decrypting file:', error)
-      message.error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      setPasswordLoading(false)
-    }
-  }
-
-  const handlePasswordCancel = () => {
-    setPasswordModalVisible(false)
-    setPendingFile(null)
-    setPassword('')
   }
 
   const handleRemoveFile = (id: string) => {
@@ -1402,31 +1364,6 @@ const ComparisonPage: React.FC = () => {
         </>
       )}
 
-      <Modal
-        title={
-          <span>
-            <LockOutlined /> Enter Password to Decrypt File
-          </span>
-        }
-        open={passwordModalVisible}
-        onOk={handlePasswordSubmit}
-        onCancel={handlePasswordCancel}
-        confirmLoading={passwordLoading}
-        okText="Decrypt"
-        cancelText="Cancel"
-      >
-        <Paragraph>
-          Please enter the password to decrypt <Text strong>{pendingFile?.file.name}</Text>
-        </Paragraph>
-        <Input.Password
-          prefix={<LockOutlined />}
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onPressEnter={handlePasswordSubmit}
-          autoFocus
-        />
-      </Modal>
     </div>
   )
 }

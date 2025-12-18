@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Typography, message, Modal, Button, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
@@ -25,11 +25,10 @@ import HPLCGradientPage from './pages/HPLCGradientPage'
 import LoginPage from './pages/LoginPage'
 import ComparisonPage from './pages/ComparisonPage'
 import VineBorder from './components/VineBorder'
-import PasswordVerifyModal from './components/PasswordVerifyModal'
 import { AppProvider, useAppContext } from './contexts/AppContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { StorageHelper, STORAGE_KEYS } from './utils/storage'
-import { encryptData, decryptData } from './utils/encryption'
+import { decryptData } from './utils/encryption'
 import './App.css'
 
 const { Header, Content, Footer, Sider } = Layout
@@ -39,7 +38,7 @@ const { confirm } = Modal
 const AppContent: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, currentUser, currentPassword, logout, verifyUser } = useAuth()
+  const { isAuthenticated, currentUser, logout } = useAuth()
   const {
     fileHandle,
     setFileHandle,
@@ -55,11 +54,6 @@ const AppContent: React.FC = () => {
   // 使用ref来存储处理函数，避免Hooks规则问题
   const handleNewFileRef = useRef<(() => void) | null>(null)
   const handleOpenFileRef = useRef<(() => void) | null>(null)
-
-  // 密码验证模态框状态（用于打开其他用户的文件）
-  const [verifyModalVisible, setVerifyModalVisible] = useState(false)
-  const [pendingFileData, setPendingFileData] = useState<any>(null)
-  const [pendingFileHandle, setPendingFileHandle] = useState<any>(null)
 
   // 调试：监控isDirty变化
   useEffect(() => {
@@ -332,40 +326,56 @@ const AppContent: React.FC = () => {
         return
       }
 
-      // Check if encrypted data
+      // 检查是否为加密文件格式
       if (parsedContent.encrypted && parsedContent.data) {
-        console.log('🔐 Encrypted file detected, password required')
+        console.log('🔓 检测到旧加密文件，自动解密...')
         
-        // Try getting file owner info (from encrypted metadata)
-        const fileOwner = parsedContent.owner || 'unknown'
-        
-        // Check if it's current user's file
-        if (fileOwner === currentUser?.username) {
-          console.log('✅ This is current user\'s file, show password confirmation dialog')
-          // Current user's file, let user enter password to decrypt
-          setPendingFileData(parsedContent)
-          setPendingFileHandle({ filePath, fileName }) // 保存文件路径信息
-          setVerifyModalVisible(true)
-        } else {
-          console.log('⚠️ This is another user\'s file, need to verify original owner password')
-          // Another user's file, need to verify original owner's password
-          setPendingFileData(parsedContent)
-          setPendingFileHandle({ filePath, fileName }) // 保存文件路径信息
-          setVerifyModalVisible(true)
+        try {
+          // 尝试解密旧文件（不需要密码）
+          const decryptedJson = decryptData(parsedContent.data, '')
+          
+          if (!decryptedJson) {
+            throw new Error('无法解密文件')
+          }
+          
+          // 解析解密后的数据
+          const decryptedData = JSON.parse(decryptedJson)
+          
+          // 验证数据格式
+          if (!decryptedData.version || !decryptedData.methods) {
+            throw new Error('文件格式不正确')
+          }
+          
+          console.log('✅ 旧加密文件解密成功')
+          
+          // 加载数据
+          await setAllData(decryptedData)
+          setFileHandle(filePath as any)
+          await setCurrentFilePath(fileName)
+          setIsDirty(false)
+          
+          // 触发文件打开事件
+          window.dispatchEvent(new Event('fileOpened'))
+          console.log('📢 App: Triggered fileOpened event')
+          
+          message.success(`文件已打开: ${fileName} (旧加密文件已自动解密)`)
+        } catch (error: any) {
+          message.error('解密文件失败: ' + error.message)
+          console.error('解密失败:', error)
+          return
         }
       } else {
-        // Unencrypted old file format, load directly
-        console.log('📂 Opening unencrypted old format file')
+        // 非加密文件，直接加载
+        console.log('📂 打开非加密文件')
         
-        // Validate data format
+        // 验证数据格式
         if (!parsedContent.version || !parsedContent.methods) {
-          throw new Error('Incorrect file format')
+          throw new Error('文件格式不正确')
         }
         
-        // Load data directly
+        // 直接加载数据
         await setAllData(parsedContent)
-        // 保存文件路径而不是 handle
-        setFileHandle(filePath as any) // 存储文件路径
+        setFileHandle(filePath as any)
         await setCurrentFilePath(fileName)
         setIsDirty(false)
         
@@ -373,7 +383,7 @@ const AppContent: React.FC = () => {
         window.dispatchEvent(new Event('fileOpened'))
         console.log('📢 App: Triggered fileOpened event')
         
-        message.warning(`File opened: ${fileName} (Unencrypted file, recommend re-saving to encrypt)`)
+        message.success(`文件已打开: ${fileName}`)
       }
       
     } catch (error: any) {
@@ -384,93 +394,7 @@ const AppContent: React.FC = () => {
     }
   }
 
-  // Open file after password verification
-  const handleVerifyPassword = async (username: string, password: string): Promise<boolean> => {
-    if (!pendingFileData || !pendingFileHandle) {
-      message.error('No file pending to open')
-      return false
-    }
-
-    try {
-      // 1. 验证用户名必须匹配文件所有者
-      if (username !== pendingFileData.owner) {
-        message.error('Username does not match file owner')
-        return false
-      }
-
-      // 2. 使用密码尝试解密文件（密码正确性由解密结果验证）
-      console.log('🔓 Attempting to decrypt file with provided password...')
-      let decryptedJson = decryptData(pendingFileData.data, password)
-      
-      // 如果密码解密失败，尝试使用用户名解密（仅向后兼容使用用户名加密的旧文件）
-      if (!decryptedJson) {
-        console.log('⚠️ Password decryption failed, trying with username for backward compatibility...')
-        decryptedJson = decryptData(pendingFileData.data, username)
-        
-        if (decryptedJson) {
-          message.warning('File was encrypted with old method (username), recommend re-saving to use password encryption')
-        }
-      }
-      
-      if (!decryptedJson) {
-        message.error('Incorrect password, cannot decrypt file')
-        return false
-      }
-
-      // 3. 解析并验证解密后的数据格式
-      let decryptedData
-      try {
-        decryptedData = JSON.parse(decryptedJson)
-      } catch (e) {
-        message.error('Decryption failed: file format error')
-        return false
-      }
-
-      // Validate decrypted data format
-      if (!decryptedData.version || !decryptedData.methods) {
-        message.error('Decryption failed: invalid file content')
-        return false
-      }
-
-      console.log('📄 解密后的文件数据:')
-      console.log('  - methods.preTreatmentReagents:', decryptedData.methods?.preTreatmentReagents?.length, '个')
-      console.log('  - preTreatmentReagents详情:', decryptedData.methods?.preTreatmentReagents)
-      console.log('  - methods.mobilePhaseA:', decryptedData.methods?.mobilePhaseA?.length, '个')
-      console.log('  - methods.mobilePhaseB:', decryptedData.methods?.mobilePhaseB?.length, '个')
-
-      // Load decrypted data
-      await setAllData(decryptedData)
-      setFileHandle(pendingFileHandle.filePath as any) // 保存文件路径
-      await setCurrentFilePath(pendingFileHandle.fileName)
-      setIsDirty(false)
-      
-      // 触发文件打开事件
-      window.dispatchEvent(new Event('fileOpened'))
-      console.log('📢 App: Triggered fileOpened event')
-
-      // Clear temporary data
-      setPendingFileData(null)
-      setPendingFileHandle(null)
-      setVerifyModalVisible(false)
-
-      message.success(`File decrypted and opened: ${pendingFileHandle.fileName}`)
-      return true
-    } catch (error: any) {
-      message.error('Failed to decrypt file: ' + error.message)
-      console.error('❌ Decryption failed:', error)
-      return false
-    }
-  }
-
-  // Cancel password verification
-  const handleCancelVerify = () => {
-    setVerifyModalVisible(false)
-    setPendingFileData(null)
-    setPendingFileHandle(null)
-    message.info('Cancelled opening file')
-  }
-
-  // Save file (直接使用当前用户密码加密，无需弹窗确认)
+  // 保存文件（不再加密，直接保存明文JSON）
   const handleSaveFile = async () => {
     console.log('💾 Starting file save, current isDirty:', isDirty)
     
@@ -484,26 +408,10 @@ const AppContent: React.FC = () => {
       // Update lastModified timestamp
       dataToSave.lastModified = new Date().toISOString()
       
-      // 将数据转换为JSON字符串
+      // 将数据转换为JSON字符串（不加密，直接保存）
       const jsonString = JSON.stringify(dataToSave, null, 2)
       
-      // 使用当前登录用户的密码加密数据（必须有密码）
-      if (!currentPassword) {
-        message.error('Unable to save: password not available, please re-login')
-        console.error('❌ 无法保存：密码不可用')
-        return
-      }
-      
-      // 静默使用用户密码加密数据
-      const encryptedString = encryptData(jsonString, currentPassword)
-      
-      // 创建加密文件格式
-      const encryptedFileContent = JSON.stringify({
-        encrypted: true,
-        owner: currentUser.username,
-        version: '1.0.0',
-        data: encryptedString
-      }, null, 2)
+      console.log('💾 保存文件（无加密）')
       
       if (!fileHandle) {
         console.log('📝 首次保存，弹出文件选择器')
@@ -521,31 +429,31 @@ const AppContent: React.FC = () => {
         const filePath = result.filePath
         const fileName = result.fileName
         
-        // 写入文件
-        const writeResult = await (window as any).electronAPI.fs.writeFile(filePath, encryptedFileContent)
+        // 写入文件（明文JSON）
+        const writeResult = await (window as any).electronAPI.fs.writeFile(filePath, jsonString)
         
         if (!writeResult.success) {
           throw new Error(writeResult.error || 'Failed to write file')
         }
         
-        console.log('✅ 加密文件已写入')
+        console.log('✅ 文件已保存')
         setFileHandle(filePath as any) // 保存文件路径
         await setCurrentFilePath(fileName)
         setIsDirty(false)
         
-        message.success(`File encrypted and saved: ${fileName}`)
+        message.success(`文件已保存: ${fileName}`)
       } else {
-        console.log('💾 Saving to existing file:', currentFilePath)
+        console.log('💾 保存到现有文件:', currentFilePath)
         
-        // 直接写入到已存在的文件
-        const writeResult = await (window as any).electronAPI.fs.writeFile(fileHandle as string, encryptedFileContent)
+        // 直接写入到已存在的文件（明文JSON）
+        const writeResult = await (window as any).electronAPI.fs.writeFile(fileHandle as string, jsonString)
         
         if (!writeResult.success) {
           throw new Error(writeResult.error || 'Failed to write file')
         }
         
         setIsDirty(false)
-        message.success('File saved successfully')
+        message.success('文件保存成功')
       }
       console.log('✅ Save completed, current isDirty should be false')
     } catch (error: any) {
@@ -819,14 +727,6 @@ const AppContent: React.FC = () => {
           HPLC Green Chemistry Analysis System ©2025 Created with React + FastAPI
         </Footer>
       </Layout>
-
-      {/* 密码验证模态框 - 用于打开其他用户的文件 */}
-      <PasswordVerifyModal
-        visible={verifyModalVisible}
-        ownerUsername={pendingFileData?.owner || 'unknown'}
-        onVerify={handleVerifyPassword}
-        onCancel={handleCancelVerify}
-      />
     </Layout>
   )
 }

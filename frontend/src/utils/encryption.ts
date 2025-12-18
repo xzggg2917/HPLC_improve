@@ -13,22 +13,18 @@ export const encryptData = (data: string, password: string): string => {
   }
 }
 
-export const decryptData = (encryptedData: string, password: string): string => {
+export const decryptData = (encryptedData: string, password: string = ''): string => {
   try {
     // Base64解码
     const combined = decodeURIComponent(escape(atob(encryptedData)))
     const separator = '::HPLC_SEPARATOR::'
     
-    console.log('🔍 Decryption debug:')
-    console.log('  - Input password:', password)
-    console.log('  - Input password length:', password.length)
-    console.log('  - Combined data length:', combined.length)
-    console.log('  - Has separator:', combined.includes(separator))
+    console.log('🔓 解密旧加密文件（兼容模式）')
     
-    // 检查是否包含分隔符（新格式）
+    // 检查是否包含分隔符（带密码的格式）
     if (!combined.includes(separator)) {
       // 旧格式：直接 Base64 编码，没有密码验证
-      console.log('⚠️ 检测到旧格式文件（无密码保护），直接返回数据')
+      console.log('✅ 旧格式文件（无密码），直接返回数据')
       return combined
     }
     
@@ -36,22 +32,14 @@ export const decryptData = (encryptedData: string, password: string): string => 
     const data = parts[0]
     const storedPassword = parts[1]
     
-    console.log('  - Stored password:', storedPassword)
-    console.log('  - Stored password length:', storedPassword.length)
-    console.log('  - Passwords match:', storedPassword === password)
+    console.log('✅ 带密码格式文件，忽略密码验证，返回数据')
     
-    // 验证密码
-    if (storedPassword !== password) {
-      throw new Error('密码错误')
-    }
-    
+    // 不再验证密码，直接返回数据（向后兼容）
     return data
   } catch (error) {
-    if (error instanceof Error && error.message === '密码错误') {
-      throw error
-    }
     console.error('解密失败:', error)
-    throw new Error('数据解密失败或密码错误')
+    // 解密失败时返回null，让调用者处理
+    return ''
   }
 }
 
